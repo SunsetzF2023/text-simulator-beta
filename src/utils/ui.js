@@ -621,9 +621,18 @@ export function showGameContainer() {
     if (initModal) initModal.classList.add('hidden');
     if (gameContainer) {
         gameContainer.classList.remove('hidden');
-        // 强制设置flex布局
-        gameContainer.style.display = 'flex';
-        gameContainer.style.minHeight = '100vh';
+        // 强制设置flex布局，使用!important覆盖CSS
+        gameContainer.style.setProperty('display', 'flex', 'important');
+        gameContainer.style.setProperty('min-height', '100vh', 'important');
+        gameContainer.style.setProperty('width', '100%', 'important');
+        
+        // 确保子容器也是flex布局
+        const flexContainer = gameContainer.querySelector('div');
+        if (flexContainer) {
+            flexContainer.style.setProperty('display', 'flex', 'important');
+            flexContainer.style.setProperty('min-height', '100vh', 'important');
+            flexContainer.style.setProperty('width', '100%', 'important');
+        }
     }
 }
 
