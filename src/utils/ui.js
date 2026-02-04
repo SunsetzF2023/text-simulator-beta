@@ -1063,15 +1063,79 @@ function simulateNPCBidding(gameState) {
             `[宗门见闻] ${npcName}冷静地举起号牌，${item.name}价格升至${bidAmount}灵石`,
             `[宗门见闻] ${npcName}微微一笑，${item.name}被抬价至${bidAmount}灵石`,
             `[宗门见闻] ${npcName}毫不犹豫地出价${bidAmount}灵石竞拍${item.name}`,
-            `[宗门见闻] ${npcName}眼中精光一闪，${item.name}价格飙升至${bidAmount}灵石`
+            `[宗门见闻] ${npcName}眼中精光一闪，${item.name}价格飙升至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}冷哼一声："${item.name}我志在必得！" 出价${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}轻蔑一笑："这点灵石也敢竞价？" 加价至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}怒目而视："谁敢与我争夺${item.name}！" 出价${bidAmount}灵石`
         ];
         
         const message = messages[Math.floor(Math.random() * messages.length)];
         addLog(message, 'text-cyan-400');
         
+        // 随机触发NPC冲突
+        if (Math.random() < 0.3) { // 30%概率触发冲突
+            triggerNPCConflict(npcName, item, bidAmount);
+        }
+        
         // 刷新拍卖会显示
         showAuction(gameState);
     }
+}
+
+// NPC冲突系统
+function triggerNPCConflict(npcName, item, bidAmount) {
+    const npcNames = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君',
+        '逍遥散人', '红尘剑客', '白云禅师', '青莲剑仙', '紫虚真人'
+    ];
+    
+    // 随机选择一个冲突对象
+    const conflictNPC = npcNames.filter(name => name !== npcName)[Math.floor(Math.random() * (npcNames.length - 1))];
+    
+    const conflicts = [
+        `[宗门见闻] ${conflictNPC}冷笑道："${npcName}，你出价倒是挺大方啊！"`,
+        `[宗门见闻] ${conflictNPC}眼神不善地盯着${npcName}："这${item.name}我是要定了！"`,
+        `[宗门见闻] ${conflictNPC}拍桌而起："${npcName}，你这是在挑衅吗？"`,
+        `[宗门见闻] ${conflictNPC}低声威胁："${npcName}，你最好想清楚再出价！"`,
+        `[宗门见闻] ${conflictNPC}剑气外露："为了${item.name}，我与你势不两立！"`
+    ];
+    
+    const conflict = conflicts[Math.floor(Math.random() * conflicts.length)];
+    addLog(conflict, 'text-orange-400');
+}
+
+// 拍卖会后的对战消息
+function generatePostAuctionBattles(gameState) {
+    const battleNPCs = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君'
+    ];
+    
+    // 随机生成1-3个对战消息
+    const battleCount = Math.floor(Math.random() * 3) + 1;
+    
+    setTimeout(() => {
+        for (let i = 0; i < battleCount; i++) {
+            setTimeout(() => {
+                const npc1 = battleNPCs[Math.floor(Math.random() * battleNPCs.length)];
+                const npc2 = battleNPCs.filter(n => n !== npc1)[Math.floor(Math.random() * (battleNPCs.length - 1))];
+                
+                const battles = [
+                    `[宗门见闻] ⚔️ ${npc1}与${npc2}在拍卖会后大打出手，灵气激荡！`,
+                    `[宗门见闻] 💥 ${npc1}与${npc2}因拍卖会积怨，在城中激战三百回合！`,
+                    `[宗门见闻] 🔥 ${npc1}怒火攻心，追杀${npc2}至城外！`,
+                    `[宗门见闻] ⚡ ${npc1}与${npc2}约定三日后决战紫禁之巅！`,
+                    `[宗门见闻] 🌪️ ${npc1}与${npc2}的战斗波及半个城池，各大宗门震惊！`,
+                    `[宗门见闻] 💀 ${npc1}与${npc2}死战，最终两败俱伤，各自疗伤而去！`,
+                    `[宗门见闻] 🎭 ${npc1}与${npc2}的恩怨传遍修真界，成为热议话题！`
+                ];
+                
+                const battle = battles[Math.floor(Math.random() * battles.length)];
+                addLog(battle, 'text-red-500 font-bold');
+            }, i * 3000);
+        }
+    }, 2000);
 }
 
 // 结束拍卖会
@@ -1119,6 +1183,9 @@ function endAuction(gameState) {
     if (modal) {
         modal.classList.add('hidden');
     }
+    
+    // 生成拍卖会后的对战消息
+    generatePostAuctionBattles(gameState);
     
     if (window.game) window.game.updateDisplay();
 }
