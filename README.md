@@ -13,7 +13,7 @@
 ## 🚀 快速开始
 
 ### 在线游玩
-访问：https://你的用户名.github.io/生化斯坦/
+访问：https://sunsetzf2023.github.io/text-simulator-beta/
 
 ### 本地运行
 ```bash
