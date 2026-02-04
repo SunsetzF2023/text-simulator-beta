@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>修仙宗门模拟器</title>
     <link rel="stylesheet" href="style.css?v=20250205-2">
+    <style>
+        /* 临时内联CSS来测试布局 */
+        #gameContainer {
+            display: flex !important;
+            min-height: 100vh !important;
+        }
+        #gameContainer > div:first-child {
+            width: 20rem !important;
+            background-color: #1e293b !important;
+            border-right: 1px solid #f59e0b !important;
+        }
+        #gameContainer > div:nth-child(2) {
+            flex: 1 !important;
+            background-color: #020617 !important;
+        }
+        #gameContainer > div:nth-child(3) {
+            width: 16rem !important;
+            background-color: #1e293b !important;
+            border-left: 1px solid #f59e0b !important;
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-emerald-400">
     <!-- 初始化弹窗 -->
