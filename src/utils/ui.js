@@ -2251,16 +2251,24 @@ window.managePosition = function(hierarchyType) {
     
     const org = gameState.organization;
     let disciples = [];
+    let title = '';
+    let availableOptions = [];
     
     switch (hierarchyType) {
         case 'personalDisciple':
             disciples = org.personalDisciples;
+            title = '🌟 亲传弟子管理';
+            availableOptions = ['innerDisciple', 'outerDisciple'];
             break;
         case 'innerDisciple':
             disciples = org.innerDisciples;
+            title = '🔵 内门弟子管理';
+            availableOptions = ['personalDisciple', 'outerDisciple'];
             break;
         case 'outerDisciple':
             disciples = org.outerDisciples;
+            title = '🟢 外门弟子管理';
+            availableOptions = ['innerDisciple', 'personalDisciple'];
             break;
     }
     
@@ -2269,9 +2277,189 @@ window.managePosition = function(hierarchyType) {
         return;
     }
     
-    // 可以在这里添加更多管理功能，比如提升/降级弟子
-    alert(`${hierarchyType}管理功能开发中...`);
+    // 创建管理弹窗
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <h2 class="text-xl font-bold text-amber-200 mb-4">${title}</h2>
+            <div class="mb-4">
+                <p class="text-sm text-amber-300">选择弟子进行管理操作</p>
+            </div>
+            
+            <!-- 弟子列表 -->
+            <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto mb-4">
+                ${disciples.map(disciple => `
+                    <div class="flex items-center justify-between p-3 bg-slate-800 rounded">
+                        <div class="flex-1">
+                            <div class="text-emerald-400 font-bold">${disciple.name}</div>
+                            <div class="text-xs text-gray-400">境界: ${disciple.realm}</div>
+                            <div class="text-xs text-gray-400">天赋: ${disciple.talent.toFixed(1)}</div>
+                            ${disciple.weapon ? `<div class="text-xs text-purple-400">武器: ${disciple.weapon.name}</div>` : ''}
+                            ${disciple.spiritBeast ? `<div class="text-xs text-cyan-400">灵兽: ${disciple.spiritBeast.name}</div>` : ''}
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="promoteDisciple('${hierarchyType}', '${disciple.id}')" 
+                                    class="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded">
+                                提升
+                            </button>
+                            <button onclick="demoteDisciple('${hierarchyType}', '${disciple.id}')" 
+                                    class="px-2 py-1 bg-orange-600 hover:bg-orange-500 text-white text-xs rounded">
+                                降级
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <!-- 操作说明 -->
+            <div class="bg-slate-800 p-3 rounded text-sm text-gray-300">
+                <div class="font-bold text-amber-300 mb-2">操作说明：</div>
+                <div>• <span class="text-green-400">提升</span>：将弟子提升到更高层级</div>
+                <div>• <span class="text-orange-400">降级</span>：将弟子降级到更低层级</div>
+                <div>• 提升需要满足相应境界要求</div>
+                <div>• 有职位的弟子无法调整层级</div>
+            </div>
+            
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded transition-colors">
+                关闭
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
 };
+
+// 提升弟子层级
+window.promoteDisciple = function(hierarchyType, discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const org = gameState.organization;
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    
+    if (!disciple) {
+        alert('弟子不存在');
+        return;
+    }
+    
+    // 检查是否有职位
+    const position = getDisciplePosition(disciple, org);
+    if (position) {
+        alert(`${disciple.name}担任${position.name}，无法调整层级`);
+        return;
+    }
+    
+    let newHierarchy = '';
+    let requiredRealm = '';
+    
+    switch (hierarchyType) {
+        case 'outerDisciple':
+            newHierarchy = 'innerDisciple';
+            requiredRealm = '金丹期';
+            break;
+        case 'innerDisciple':
+            newHierarchy = 'personalDisciple';
+            requiredRealm = '化神期';
+            break;
+        case 'personalDisciple':
+            alert('亲传弟子已是最高层级');
+            return;
+    }
+    
+    // 检查境界要求
+    const realmIndex = getRealmIndex(disciple.realm);
+    const requiredIndex = getRealmIndex(requiredRealm);
+    
+    if (realmIndex < requiredIndex) {
+        alert(`${disciple.name}境界不足，需要达到${requiredRealm}才能提升`);
+        return;
+    }
+    
+    // 执行提升
+    // 从原层级移除
+    const sourceArray = org[hierarchyType];
+    const index = sourceArray.findIndex(d => d.id == discipleId);
+    if (index !== -1) {
+        sourceArray.splice(index, 1);
+    }
+    
+    // 添加到新层级
+    org[newHierarchy].push(disciple);
+    
+    addLog(`[宗门] ${disciple.name}提升为${getHierarchyName(newHierarchy)}`, 'text-green-400');
+    
+    // 刷新显示
+    document.querySelector('.fixed').remove();
+    showOrganizationTab('hierarchy');
+    updateOrganizationDisplay(gameState);
+    if (window.game) window.game.updateDisplay();
+};
+
+// 降级弟子层级
+window.demoteDisciple = function(hierarchyType, discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const org = gameState.organization;
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    
+    if (!disciple) {
+        alert('弟子不存在');
+        return;
+    }
+    
+    // 检查是否有职位
+    const position = getDisciplePosition(disciple, org);
+    if (position) {
+        alert(`${disciple.name}担任${position.name}，无法调整层级`);
+        return;
+    }
+    
+    let newHierarchy = '';
+    
+    switch (hierarchyType) {
+        case 'personalDisciple':
+            newHierarchy = 'innerDisciple';
+            break;
+        case 'innerDisciple':
+            newHierarchy = 'outerDisciple';
+            break;
+        case 'outerDisciple':
+            alert('外门弟子已是最低层级');
+            return;
+    }
+    
+    // 执行降级
+    // 从原层级移除
+    const sourceArray = org[hierarchyType];
+    const index = sourceArray.findIndex(d => d.id == discipleId);
+    if (index !== -1) {
+        sourceArray.splice(index, 1);
+    }
+    
+    // 添加到新层级
+    org[newHierarchy].push(disciple);
+    
+    addLog(`[宗门] ${disciple.name}降级为${getHierarchyName(newHierarchy)}`, 'text-orange-400');
+    
+    // 刷新显示
+    document.querySelector('.fixed').remove();
+    showOrganizationTab('hierarchy');
+    updateOrganizationDisplay(gameState);
+    if (window.game) window.game.updateDisplay();
+};
+
+// 获取层级名称
+function getHierarchyName(hierarchyType) {
+    const names = {
+        outerDisciple: '外门弟子',
+        innerDisciple: '内门弟子',
+        personalDisciple: '亲传弟子'
+    };
+    return names[hierarchyType] || '未知';
+}
 
 // 检查弟子是否已在职位
 function isDiscipleInPosition(disciple, org) {
