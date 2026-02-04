@@ -12,6 +12,10 @@ export function updateDisplay(gameState) {
             }
         }
     });
+    
+    // 更新宗门架构
+    updateOrganizationDisplay(gameState);
+    
     // 更新宗门信息
     const displaySectName = document.getElementById('displaySectName');
     const displayName = document.getElementById('displayName');
@@ -1810,4 +1814,453 @@ export function showPastRecords(gameState) {
         // TODO: 实现往昔记录内容
         console.log('显示往昔记录');
     }
+}
+
+// 更新宗门架构显示
+function updateOrganizationDisplay(gameState) {
+    const tabsContainer = document.getElementById('organizationTabs');
+    const contentContainer = document.getElementById('organizationContent');
+    
+    if (!tabsContainer || !contentContainer) return;
+    
+    // 更新弟子分层
+    updateDiscipleHierarchy(gameState);
+    
+    // 创建标签页
+    const tabs = [
+        { id: 'hierarchy', name: '弟子分层', icon: '👥' },
+        { id: 'positions', name: '职位管理', icon: '👑' },
+        { id: 'management', name: '管理层', icon: '🏛️' }
+    ];
+    
+    tabsContainer.innerHTML = tabs.map(tab => `
+        <button onclick="showOrganizationTab('${tab.id}')" 
+                class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded transition-colors text-sm"
+                id="tab-${tab.id}">
+            ${tab.icon} ${tab.name}
+        </button>
+    `).join('');
+    
+    // 默认显示弟子分层
+    showOrganizationTab('hierarchy');
+}
+
+// 更新弟子分层
+function updateDiscipleHierarchy(gameState) {
+    const org = gameState.organization;
+    
+    // 清空现有分层
+    org.outerDisciples = [];
+    org.innerDisciples = [];
+    org.personalDisciples = [];
+    
+    // 根据弟子境界和职位进行分层
+    gameState.disciples.forEach(disciple => {
+        if (!disciple.alive) return;
+        
+        // 检查是否有特殊职位
+        const position = getDisciplePosition(disciple, org);
+        
+        if (position) {
+            // 有职位的弟子根据职位等级分层
+            if (position.level === '长老') {
+                org.elders.push({ ...disciple, position });
+            } else if (position.level === '执事') {
+                org.managers.push({ ...disciple, position });
+            }
+        } else {
+            // 没有职位的弟子根据境界分层
+            const realmIndex = getRealmIndex(disciple.realm);
+            if (realmIndex <= 2) { // 凡人、炼气期、筑基期
+                org.outerDisciples.push(disciple);
+            } else if (realmIndex <= 4) { // 金丹期、元婴期
+                org.innerDisciples.push(disciple);
+            } else { // 化神期及以上
+                org.personalDisciples.push(disciple);
+            }
+        }
+    });
+}
+
+// 获取弟子职位
+function getDisciplePosition(disciple, org) {
+    for (const [posKey, posConfig] of Object.entries(org.positions)) {
+        const member = posConfig.current.find(member => member.id === disciple.id);
+        if (member) {
+            return {
+                type: posKey,
+                name: posConfig.name,
+                level: posKey.includes('Elder') ? '长老' : '执事'
+            };
+        }
+    }
+    return null;
+}
+
+// 获取境界索引
+function getRealmIndex(realm) {
+    const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
+    return realms.indexOf(realm);
+}
+
+// 显示组织架构标签页
+window.showOrganizationTab = function(tabId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const contentContainer = document.getElementById('organizationContent');
+    if (!contentContainer) return;
+    
+    // 更新标签样式
+    document.querySelectorAll('#organizationTabs button').forEach(btn => {
+        if (btn.id === `tab-${tabId}`) {
+            btn.className = btn.className.replace('bg-slate-700', 'bg-amber-600').replace('text-amber-300', 'text-white');
+        } else {
+            btn.className = btn.className.replace('bg-amber-600', 'bg-slate-700').replace('text-white', 'text-amber-300');
+        }
+    });
+    
+    // 显示对应内容
+    switch (tabId) {
+        case 'hierarchy':
+            showDiscipleHierarchy(gameState);
+            break;
+        case 'positions':
+            showPositionManagement(gameState);
+            break;
+        case 'management':
+            showManagementStructure(gameState);
+            break;
+    }
+};
+
+// 显示弟子分层
+function showDiscipleHierarchy(gameState) {
+    const contentContainer = document.getElementById('organizationContent');
+    const org = gameState.organization;
+    
+    contentContainer.innerHTML = `
+        <div class="space-y-4">
+            <!-- 宗主 -->
+            <div class="bg-slate-700 p-3 rounded border border-amber-500">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">👑</span>
+                        <div>
+                            <div class="text-amber-300 font-bold">宗主</div>
+                            <div class="text-sm text-white">${gameState.playerName}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400">境界: ${gameState.playerRealm}</div>
+                </div>
+            </div>
+            
+            <!-- 亲传弟子 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-purple-400 font-bold">🌟 亲传弟子 (${org.personalDisciples.length})</h3>
+                    <button onclick="managePosition('personalDisciple')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
+                </div>
+                <div class="space-y-1">
+                    ${org.personalDisciples.length > 0 ? 
+                        org.personalDisciples.map(d => `
+                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                <span class="text-white">${d.name}</span>
+                                <span class="text-gray-400">${d.realm}</span>
+                            </div>
+                        `).join('') :
+                        '<div class="text-gray-500 text-sm">暂无亲传弟子</div>'
+                    }
+                </div>
+            </div>
+            
+            <!-- 内门弟子 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-blue-400 font-bold">🔵 内门弟子 (${org.innerDisciples.length})</h3>
+                    <button onclick="managePosition('innerDisciple')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
+                </div>
+                <div class="space-y-1">
+                    ${org.innerDisciples.length > 0 ? 
+                        org.innerDisciples.map(d => `
+                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                <span class="text-white">${d.name}</span>
+                                <span class="text-gray-400">${d.realm}</span>
+                            </div>
+                        `).join('') :
+                        '<div class="text-gray-500 text-sm">暂无内门弟子</div>'
+                    }
+                </div>
+            </div>
+            
+            <!-- 外门弟子 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-green-400 font-bold">🟢 外门弟子 (${org.outerDisciples.length})</h3>
+                    <button onclick="managePosition('outerDisciple')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">管理</button>
+                </div>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                    ${org.outerDisciples.length > 0 ? 
+                        org.outerDisciples.map(d => `
+                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                <span class="text-white">${d.name}</span>
+                                <span class="text-gray-400">${d.realm}</span>
+                            </div>
+                        `).join('') :
+                        '<div class="text-gray-500 text-sm">暂无外门弟子</div>'
+                    }
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 显示职位管理
+function showPositionManagement(gameState) {
+    const contentContainer = document.getElementById('organizationContent');
+    const org = gameState.organization;
+    
+    contentContainer.innerHTML = `
+        <div class="space-y-4">
+            ${Object.entries(org.positions).map(([posKey, posConfig]) => `
+                <div class="bg-slate-800 p-3 rounded">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-amber-300 font-bold">${posConfig.name}</h3>
+                        <span class="text-xs text-gray-400">${posConfig.current.length}/${posConfig.maxCount}</span>
+                    </div>
+                    <div class="space-y-1">
+                        ${posConfig.current.length > 0 ?
+                            posConfig.current.map(member => `
+                                <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                    <span class="text-white">${member.name}</span>
+                                    <button onclick="removeFromPosition('${posKey}', '${member.id}')" 
+                                            class="text-xs bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded">移除</button>
+                                </div>
+                            `).join('') :
+                            '<div class="text-gray-500 text-sm">暂无任职</div>'
+                        }
+                        ${posConfig.current.length < posConfig.maxCount ? 
+                            `<button onclick="assignToPosition('${posKey}')" 
+                                     class="w-full mt-2 bg-amber-600 hover:bg-amber-500 text-white text-sm py-1 rounded">
+                                任命弟子
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// 显示管理层结构
+function showManagementStructure(gameState) {
+    const contentContainer = document.getElementById('organizationContent');
+    const org = gameState.organization;
+    
+    contentContainer.innerHTML = `
+        <div class="space-y-4">
+            <!-- 长老层 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <h3 class="text-purple-400 font-bold mb-2">🏛️ 长老层</h3>
+                <div class="space-y-1">
+                    ${org.elders.length > 0 ?
+                        org.elders.map(elder => `
+                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                <div>
+                                    <span class="text-white">${elder.name}</span>
+                                    <span class="text-xs text-purple-400 ml-2">${elder.position.name}</span>
+                                </div>
+                                <span class="text-gray-400">${elder.realm}</span>
+                            </div>
+                        `).join('') :
+                        '<div class="text-gray-500 text-sm">暂无长老</div>'
+                    }
+                </div>
+            </div>
+            
+            <!-- 执事层 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <h3 class="text-blue-400 font-bold mb-2">📋 执事层</h3>
+                <div class="space-y-1">
+                    ${org.managers.length > 0 ?
+                        org.managers.map(manager => `
+                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                                <div>
+                                    <span class="text-white">${manager.name}</span>
+                                    <span class="text-xs text-blue-400 ml-2">${manager.position.name}</span>
+                                </div>
+                                <span class="text-gray-400">${manager.realm}</span>
+                            </div>
+                        `).join('') :
+                        '<div class="text-gray-500 text-sm">暂无执事</div>'
+                    }
+                </div>
+            </div>
+            
+            <!-- 管理关系 -->
+            <div class="bg-slate-800 p-3 rounded">
+                <h3 class="text-amber-300 font-bold mb-2">🔗 管理关系</h3>
+                <div class="text-sm text-gray-300 space-y-1">
+                    <div>• 宗主 → 所有长老和执事</div>
+                    <div>• 太上长老 → 内门长老</div>
+                    <div>• 内门长老 → 内门执事</div>
+                    <div>• 外门长老 → 外门执事</div>
+                    <div>• 执事 → 对应层级的弟子</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 任命弟子到职位
+window.assignToPosition = function(positionKey) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const posConfig = gameState.organization.positions[positionKey];
+    const availableDisciples = gameState.disciples.filter(d => 
+        d.alive && 
+        !isDiscipleInPosition(d, gameState.organization) &&
+        getRealmIndex(d.realm) >= getPositionMinRealm(positionKey)
+    );
+    
+    if (availableDisciples.length === 0) {
+        alert('没有合适的弟子可以任命');
+        return;
+    }
+    
+    // 创建选择弹窗
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 class="text-xl font-bold text-amber-200 mb-4">任命${posConfig.name}</h2>
+            <div class="mb-4">
+                <p class="text-sm text-amber-300">选择弟子担任${posConfig.name}</p>
+                <p class="text-xs text-gray-400">要求境界: ${getPositionMinRealmName(positionKey)}及以上</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto mb-4">
+                ${availableDisciples.map(disciple => `
+                    <button onclick="confirmAssignPosition('${positionKey}', '${disciple.id}')" 
+                            class="p-2 bg-slate-800 hover:bg-slate-700 rounded text-left transition-colors">
+                        <div class="text-emerald-400 font-bold">${disciple.name}</div>
+                        <div class="text-xs text-gray-400">境界: ${disciple.realm}</div>
+                        <div class="text-xs text-gray-400">天赋: ${disciple.talent.toFixed(1)}</div>
+                    </button>
+                `).join('')}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded transition-colors">
+                取消
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+// 确认任命
+window.confirmAssignPosition = function(positionKey, discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id === discipleId);
+    const posConfig = gameState.organization.positions[positionKey];
+    
+    if (disciple && posConfig.current.length < posConfig.maxCount) {
+        posConfig.current.push({
+            id: disciple.id,
+            name: disciple.name,
+            assignedAt: Date.now()
+        });
+        
+        addLog(`[宗门] ${disciple.name}被任命为${posConfig.name}`, 'text-amber-400');
+        
+        // 关闭弹窗
+        document.querySelector('.fixed').remove();
+        
+        // 刷新显示
+        showOrganizationTab('positions');
+        updateOrganizationDisplay(gameState);
+        if (window.game) window.game.updateDisplay();
+    }
+};
+
+// 从职位移除
+window.removeFromPosition = function(positionKey, discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const posConfig = gameState.organization.positions[positionKey];
+    const memberIndex = posConfig.current.findIndex(m => m.id === discipleId);
+    
+    if (memberIndex !== -1) {
+        const member = posConfig.current[memberIndex];
+        posConfig.current.splice(memberIndex, 1);
+        
+        addLog(`[宗门] ${member.name}被移除${posConfig.name}职位`, 'text-orange-400');
+        
+        // 刷新显示
+        showOrganizationTab('positions');
+        updateOrganizationDisplay(gameState);
+        if (window.game) window.game.updateDisplay();
+    }
+};
+
+// 管理弟子分层
+window.managePosition = function(hierarchyType) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const org = gameState.organization;
+    let disciples = [];
+    
+    switch (hierarchyType) {
+        case 'personalDisciple':
+            disciples = org.personalDisciples;
+            break;
+        case 'innerDisciple':
+            disciples = org.innerDisciples;
+            break;
+        case 'outerDisciple':
+            disciples = org.outerDisciples;
+            break;
+    }
+    
+    if (disciples.length === 0) {
+        alert('该层级暂无弟子');
+        return;
+    }
+    
+    // 可以在这里添加更多管理功能，比如提升/降级弟子
+    alert(`${hierarchyType}管理功能开发中...`);
+};
+
+// 检查弟子是否已在职位
+function isDiscipleInPosition(disciple, org) {
+    for (const posConfig of Object.values(org.positions)) {
+        if (posConfig.current.find(m => m.id === disciple.id)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// 获取职位最低境界要求
+function getPositionMinRealm(positionKey) {
+    const requirements = {
+        outerManager: 2, // 筑基期
+        innerManager: 3, // 金丹期
+        outerElder: 4,   // 元婴期
+        innerElder: 5,   // 化神期
+        grandElder: 6    // 炼虚期
+    };
+    return requirements[positionKey] || 0;
+}
+
+// 获取职位最低境界名称
+function getPositionMinRealmName(positionKey) {
+    const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
+    const index = getPositionMinRealm(positionKey);
+    return realms[index] || '凡人';
 }

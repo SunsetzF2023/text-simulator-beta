@@ -80,7 +80,35 @@ export const gameState = {
     alliances: [], // 同盟
     enemies: [], // 敌对势力
     activeEvents: [], // 当前事件
-    eventHistory: [] // 历史事件
+    eventHistory: [], // 历史事件
+    
+    // 宗门架构
+    organization: {
+        // 宗主：玩家自己
+        sectMaster: {
+            id: 'player',
+            name: '宗主',
+            position: '宗主',
+            level: '宗主',
+            managedBy: null
+        },
+        // 长老层
+        elders: [], // 内门长老列表
+        // 执事层
+        managers: [], // 外门执事、内门执事等
+        // 弟子分层
+        outerDisciples: [], // 外门弟子
+        innerDisciples: [], // 内门弟子
+        personalDisciples: [], // 亲传弟子
+        // 职位配置
+        positions: {
+            outerManager: { name: '外门执事', count: 0, maxCount: 2, current: [] },
+            innerManager: { name: '内门执事', count: 0, maxCount: 3, current: [] },
+            outerElder: { name: '外门长老', count: 0, maxCount: 1, current: [] },
+            innerElder: { name: '内门长老', count: 0, maxCount: 2, current: [] },
+            grandElder: { name: '太上长老', count: 0, maxCount: 1, current: [] }
+        }
+    }
 };
 
 // 保存游戏
