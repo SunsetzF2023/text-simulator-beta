@@ -7,7 +7,7 @@ export class Disciple {
         this.id = Date.now() + Math.random();
         this.name = this.generateName();
         this.gender = Math.random() > 0.5 ? '男' : '女';
-        this.age = Math.floor(Math.random() * 30) + 16; // 16-45岁
+        this.age = this.generateAge(); // 生成更合理的年龄分布
         this.appearance = APPEARANCES[Math.floor(Math.random() * APPEARANCES.length)];
         this.spiritRoot = SPIRIT_ROOTS[Math.floor(Math.random() * SPIRIT_ROOTS.length)];
         this.personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
@@ -56,6 +56,28 @@ export class Disciple {
         }
         
         this.addPersonalLog(`[诞生] ${this.name} 加入宗门，灵根：${this.spiritRoot}，体质：${this.constitution.name}，家世：${this.familyBackground.name}，天赋：${this.talent.toFixed(1)}`, 0);
+    }
+    
+    // 生成年龄 - 更合理的分布，增加年轻弟子概率
+    generateAge() {
+        const random = Math.random();
+        
+        // 30% 几岁儿童 (6-12岁) - 天才儿童
+        if (random < 0.30) {
+            return Math.floor(Math.random() * 7) + 6;
+        }
+        // 40% 青少年 (13-20岁) - 最常见的修仙年龄
+        else if (random < 0.70) {
+            return Math.floor(Math.random() * 8) + 13;
+        }
+        // 20% 青年 (21-30岁) - 有一定基础
+        else if (random < 0.90) {
+            return Math.floor(Math.random() * 10) + 21;
+        }
+        // 10% 中年 (31-45岁) - 大器晚成
+        else {
+            return Math.floor(Math.random() * 15) + 31;
+        }
     }
     
     // 生成特殊体质
