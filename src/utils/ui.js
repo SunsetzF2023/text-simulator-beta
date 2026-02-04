@@ -1357,11 +1357,18 @@ window.grantItemToDisciple = function(category, itemIndex) {
 
 // 确认赐予物品
 window.confirmGrantItem = function(category, itemIndex, discipleId) {
+    console.log('确认赐予物品:', {category, itemIndex, discipleId});
     const gameState = window.game ? window.game.gameState : null;
-    if (!gameState) return;
+    if (!gameState) {
+        console.log('gameState为空');
+        return;
+    }
     
     const item = gameState.treasury[category][itemIndex];
     const disciple = gameState.disciples.find(d => d.id === discipleId);
+    
+    console.log('物品:', item);
+    console.log('弟子:', disciple);
     
     if (item && disciple) {
         // 从宝库中移除物品
@@ -1385,6 +1392,8 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
         // 刷新显示
         showTreasuryCategory(category);
         if (window.game) window.game.updateDisplay();
+    } else {
+        console.log('物品或弟子不存在');
     }
 };
 
@@ -1541,6 +1550,118 @@ function applyOtherEffect(item, disciple) {
             if (!disciple.injuryReduction) disciple.injuryReduction = 0;
             disciple.injuryReduction += 0.2;
             addLog(`[护符] ${disciple.name}佩戴了护身符，受伤概率-20%`, 'text-blue-400');
+            break;
+        case '灵兽契约':
+            // 获得灵兽伙伴
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '灵兽',
+                type: '通用',
+                combatBonus: 25,
+                cultivationBonus: 0.15,
+                specialAbility: '守护'
+            };
+            addLog(`[灵兽] ${disciple.name}与灵兽签订契约，战斗力+25，修炼速度+15%`, 'text-cyan-400');
+            break;
+        case '青龙幼崽':
+            // 稀有灵兽
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '青龙幼崽',
+                type: '神兽',
+                combatBonus: 40,
+                cultivationBonus: 0.25,
+                specialAbility: '水系加成'
+            };
+            // 青龙特殊效果：水系灵根弟子额外加成
+            if (disciple.spiritRoot === '水') {
+                disciple.spiritBeast.combatBonus += 10;
+                disciple.spiritBeast.cultivationBonus += 0.1;
+                addLog(`[神兽] ${disciple.name}收服了青龙幼崽，水系灵根共鸣！战斗力+50，修炼速度+35%`, 'text-blue-400');
+            } else {
+                addLog(`[神兽] ${disciple.name}收服了青龙幼崽，战斗力+40，修炼速度+25%`, 'text-blue-400');
+            }
+            break;
+        case '白虎精魄':
+            // 战斗型灵兽
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '白虎精魄',
+                type: '凶兽',
+                combatBonus: 35,
+                cultivationBonus: 0.1,
+                specialAbility: '杀伐加成'
+            };
+            addLog(`[凶兽] ${disciple.name}获得了白虎精魄，战斗力+35，修炼速度+10%`, 'text-red-400');
+            break;
+        case '朱雀之羽':
+            // 火系灵兽
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '朱雀之羽',
+                type: '神鸟',
+                combatBonus: 30,
+                cultivationBonus: 0.2,
+                specialAbility: '火系加成'
+            };
+            // 朱雀特殊效果：火系灵根弟子额外加成
+            if (disciple.spiritRoot === '火') {
+                disciple.spiritBeast.combatBonus += 8;
+                disciple.spiritBeast.cultivationBonus += 0.08;
+                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，火系灵根共鸣！战斗力+38，修炼速度+28%`, 'text-orange-400');
+            } else {
+                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，战斗力+30，修炼速度+20%`, 'text-orange-400');
+            }
+            break;
+        case '玄武鳞片':
+            // 防御型灵兽
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '玄武鳞片',
+                type: '神兽',
+                combatBonus: 20,
+                cultivationBonus: 0.15,
+                specialAbility: '绝对防御'
+            };
+            // 玄武特殊效果：大幅减少受伤概率
+            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
+            disciple.injuryReduction += 0.4;
+            addLog(`[神兽] ${disciple.name}获得了玄武鳞片，战斗力+20，修炼速度+15%，受伤概率-40%`, 'text-teal-400');
+            break;
+        case '麒麟血':
+            // 传说级物品
+            if (!disciple.spiritBeast) disciple.spiritBeast = {};
+            disciple.spiritBeast = {
+                name: '麒麟血脉',
+                type: '圣兽',
+                combatBonus: 50,
+                cultivationBonus: 0.3,
+                specialAbility: '祥瑞之力'
+            };
+            // 麒麟特殊效果：全面提升
+            if (disciple.talent < 95) {
+                disciple.talent = Math.min(95, disciple.talent + 5);
+                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，天赋+5，战斗力+50，修炼速度+30%`, 'text-yellow-400');
+            } else {
+                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，战斗力+50，修炼速度+30%`, 'text-yellow-400');
+            }
+            break;
+        case '修仙秘典':
+            // 传说功法
+            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
+            disciple.cultivationBonus += 0.25;
+            disciple.cultivation += 50;
+            addLog(`[秘典] ${disciple.name}研读修仙秘典，修为+50，修炼速度+25%`, 'text-purple-400');
+            break;
+        case '仙丹':
+            // 传说丹药
+            disciple.cultivation += 200;
+            if (disciple.talent < 90) {
+                disciple.talent = Math.min(90, disciple.talent + 8);
+                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+200，天赋+8`, 'text-gold-400');
+            } else {
+                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+200`, 'text-gold-400');
+            }
             break;
         default:
             // 通用效果

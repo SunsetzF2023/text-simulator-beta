@@ -164,7 +164,7 @@ export class Disciple {
         return 1.0; // 默认无加成
     }
     
-    // 计算实际修炼速度（综合体质和命格加成）
+    // 计算实际修炼速度（综合体质、命格和灵兽加成）
     getCultivationSpeed() {
         let baseSpeed = 1.0;
         
@@ -184,6 +184,11 @@ export class Disciple {
             baseSpeed *= (1 + this.cultivationBonus);
         }
         
+        // 灵兽加成
+        if (this.spiritBeast && this.spiritBeast.cultivationBonus) {
+            baseSpeed *= (1 + this.spiritBeast.cultivationBonus);
+        }
+        
         // 天赋加成（天赋值转换为加成系数）
         const talentBonus = 0.5 + (this.talent / 100); // 0.5-1.5的加成
         baseSpeed *= talentBonus;
@@ -191,7 +196,7 @@ export class Disciple {
         return baseSpeed;
     }
     
-    // 计算战斗力（综合体质和命格加成）
+    // 计算战斗力（综合体质、命格、武器和灵兽加成）
     getCombatPower() {
         let basePower = this.talent; // 基础战斗力基于天赋
         
@@ -209,6 +214,11 @@ export class Disciple {
         // 武器加成
         if (this.weapon && this.weapon.combatBonus) {
             basePower += this.weapon.combatBonus;
+        }
+        
+        // 灵兽加成
+        if (this.spiritBeast && this.spiritBeast.combatBonus) {
+            basePower += this.spiritBeast.combatBonus;
         }
         
         // 临时加成
