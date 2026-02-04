@@ -1376,8 +1376,11 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
         return;
     }
     
+    console.log('所有弟子ID:', gameState.disciples.map(d => ({name: d.name, id: d.id, idType: typeof d.id})));
+    console.log('查找的弟子ID:', discipleId, '类型:', typeof discipleId);
+    
     const item = gameState.treasury[category][itemIndex];
-    const disciple = gameState.disciples.find(d => d.id === discipleId);
+    const disciple = gameState.disciples.find(d => d.id == discipleId); // 使用 == 而不是 ===
     
     console.log('物品:', item);
     console.log('弟子:', disciple);
@@ -1411,6 +1414,9 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
         if (window.game) window.game.updateDisplay();
     } else {
         console.log('物品或弟子不存在');
+        console.log('item:', item);
+        console.log('disciple:', disciple);
+        console.log('gameState.disciples:', gameState.disciples);
     }
 };
 
