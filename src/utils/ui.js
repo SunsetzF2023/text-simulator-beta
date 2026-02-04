@@ -861,6 +861,12 @@ export function showAuction(gameState) {
     // 如果拍卖会为空或已结束，生成新的拍卖会
     if (gameState.auctionItems.length === 0 || Date.now() > gameState.auctionEndTime) {
         generateAuctionItems(gameState);
+        // 初始NPC竞拍，让拍卖会一开始就有活动
+        setTimeout(() => {
+            for (let i = 0; i < 3; i++) { // 初始3次NPC竞拍
+                setTimeout(() => simulateNPCBidding(gameState), i * 1000);
+            }
+        }, 2000);
     }
     
     auctionItems.innerHTML = '';
@@ -1018,7 +1024,7 @@ function updateAuctionTimer(gameState) {
         timerElement.textContent = `剩余时间: ${minutes}:${seconds.toString().padStart(2, '0')}`;
         
         // NPC竞拍活动 - 随机让NPC参与竞拍
-        if (Math.random() < 0.15) { // 15%概率触发NPC竞拍
+        if (Math.random() < 0.4) { // 提高到40%概率触发NPC竞拍
             simulateNPCBidding(gameState);
         }
     }
@@ -1042,9 +1048,9 @@ function simulateNPCBidding(gameState) {
     
     // 计算NPC出价策略
     const minBid = item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT;
-    const maxBid = item.currentBid + Math.floor(item.value * 0.3); // 最多出到物品价值的30%
+    const maxBid = item.currentBid + Math.floor(item.value * 0.5); // 提高到物品价值的50%
     
-    if (minBid <= maxBid && Math.random() < 0.7) { // 70%概率出价
+    if (minBid <= maxBid && Math.random() < 0.85) { // 提高到85%概率出价
         const bidAmount = Math.floor(Math.random() * (maxBid - minBid + 1)) + minBid;
         
         item.currentBid = bidAmount;
