@@ -125,6 +125,17 @@ class CultivationGame {
             return disciple;
         });
         
+        // 数据迁移 - 修复天赋词条格式
+        gameState.disciples.forEach(disciple => {
+            if (disciple.traits && disciple.traits.length > 0) {
+                // 检查是否是旧格式（对象）
+                if (typeof disciple.traits[0] === 'object' && disciple.traits[0].name) {
+                    disciple.traits = disciple.traits.map(trait => trait.name);
+                    console.log(`迁移弟子 ${disciple.name} 的天赋词条数据`);
+                }
+            }
+        });
+        
         // 显示游戏界面
         showGameContainer();
         

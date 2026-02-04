@@ -224,10 +224,12 @@ export function showDiscipleDetails(disciple, gameState) {
             <h3 class="text-lg font-bold text-amber-200 mb-2">🌟 天赋词条</h3>
             <div class="flex flex-wrap gap-2">
                 ${disciple.traits.map(trait => {
-                    const traitType = TRAITS.find(t => t.name === trait)?.type || 'neutral';
+                    // 确保trait是字符串，如果是对象则提取name
+                    const traitName = typeof trait === 'object' ? trait.name : trait;
+                    const traitType = TRAITS.find(t => t.name === traitName)?.type || 'neutral';
                     const colorClass = traitType === 'positive' ? 'text-green-400 bg-green-900' : 
                                      traitType === 'negative' ? 'text-red-400 bg-red-900' : 'text-yellow-400 bg-yellow-900';
-                    return `<span class="px-3 py-1 rounded text-sm font-medium ${colorClass}">${trait}</span>`;
+                    return `<span class="px-3 py-1 rounded text-sm font-medium ${colorClass}">${traitName}</span>`;
                 }).join('')}
             </div>
         </div>

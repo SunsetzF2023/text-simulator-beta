@@ -1,6 +1,17 @@
 import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES } from '../data/constants.js';
 import { advancedAI } from '../ai/AdvancedAI.js';
 
+// 数据迁移函数 - 修复旧格式的天赋词条
+function migrateTraitsData(disciple) {
+    if (disciple.traits && disciple.traits.length > 0) {
+        // 检查是否是旧格式（对象）
+        if (typeof disciple.traits[0] === 'object' && disciple.traits[0].name) {
+            disciple.traits = disciple.traits.map(trait => trait.name);
+            console.log(`迁移弟子 ${disciple.name} 的天赋词条数据`);
+        }
+    }
+}
+
 // 弟子类
 export class Disciple {
     constructor(isInitial = false) {
