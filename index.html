@@ -102,121 +102,91 @@
     </div>
     
     <!-- 游戏主界面 -->
-    <div id="gameContainer" class="hidden min-h-screen flex">
-        <!-- 左侧状态栏 -->
-        <div class="w-80 bg-slate-900 border-r border-amber-500 p-6">
-            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门信息</h2>
-            
-            <div class="space-y-3 mb-6">
-                <div class="p-3 bg-slate-800 rounded ancient-border">
-                    <p class="text-sm text-amber-300">宗门名称</p>
-                    <p id="displaySectName" class="text-lg font-bold text-emerald-400">-</p>
-                </div>
+    <div id="gameContainer" class="hidden" style="display: none; min-height: 100vh; background: #020617;">
+        <div style="display: flex; min-height: 100vh;">
+            <!-- 左侧状态栏 -->
+            <div style="width: 320px; background: #1e293b; border-right: 1px solid #f59e0b; padding: 24px; overflow-y: auto;">
+                <h2 style="font-size: 1.25rem; font-weight: bold; color: #fbbf24; margin-bottom: 16px;">宗门信息</h2>
                 
-                <div class="p-3 bg-slate-800 rounded ancient-border">
-                    <p class="text-sm text-amber-300">宗主</p>
-                    <p id="displayName" class="text-lg font-bold text-emerald-400">-</p>
-                    <p id="playerRealm" class="text-lg font-bold text-emerald-400">境界：-</p>
-                    <p id="playerSpouse" class="text-sm text-pink-400">道侣：-</p>
-                </div>
-                
-                <div class="space-y-3">
-                <h3 class="text-lg font-bold text-amber-200">宗门信息</h3>
-                <div class="p-3 bg-slate-800 rounded ancient-border">
-                    <p class="text-sm text-amber-300">时间</p>
-                    <p class="text-emerald-400" id="timeDisplay">1年1月1日</p>
-                </div>
-                
-                <div class="p-3 bg-slate-800 rounded ancient-border">
-                    <p class="text-sm text-amber-300">资源</p>
-                    <p class="text-emerald-400">灵石：<span id="spiritStones">0</span></p>
-                    <p class="text-emerald-400">破境丹：<span id="breakthroughPills">0</span></p>
-                    <p class="text-emerald-400">弟子：<span id="disciples">0</span></p>
-                </div>
-            </div>
-            
-            <div class="space-y-3">
-                <h3 class="text-lg font-bold text-amber-200">弟子列表</h3>
-                <div id="discipleList" class="space-y-2 max-h-64 overflow-y-auto scroll-container">
-                    <!-- 弟子列表将在这里动态生成 -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- 中间日志栏 -->
-        <div class="flex-1 bg-slate-950 p-6">
-            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门见闻</h2>
-            <div id="logContainer" class="bg-slate-900 rounded p-4 h-96 overflow-y-auto scroll-container ancient-border">
-                <!-- 日志将在这里显示 -->
-            </div>
-            
-            <!-- 组织架构 -->
-            <div class="mt-6">
-                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">组织架构</h2>
-                
-                <div class="bg-slate-800 p-4 rounded ancient-border">
-                    <div id="organizationTabs" class="flex space-x-2 mb-4">
-                        <!-- 标签页将在这里动态生成 -->
+                <div style="margin-bottom: 24px;">
+                    <div style="padding: 12px; background: #1e293b; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 12px;">
+                        <p style="font-size: 0.875rem; color: #fbbf24; margin-bottom: 4px;">宗门名称</p>
+                        <p id="displaySectName" style="font-size: 1.125rem; font-weight: bold; color: #34d399;">-</p>
                     </div>
-                    <div id="organizationContent" class="space-y-2">
-                        <!-- 组织内容将在这里动态生成 -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 右侧操作栏 -->
-        <div class="w-64 bg-slate-900 border-l border-amber-500 p-6">
-            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门操作</h2>
-            
-            <div class="space-y-4">
-                <button id="collectBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                    采集灵石
-                </button>
-                
-                <button id="breakthroughBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                    弟子突破
-                </button>
-                
-                <button id="pastRecordsBtn" class="w-full py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                    往昔录
-                </button>
-                
-                <button id="recruitBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                    招募外门弟子 (消耗10灵石)
-                </button>
-                
-                <button id="taskHallBtn" class="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                    任务堂
-                </button>
-            </div>
-            
-            <div class="mt-6">
-                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门建筑</h2>
-                
-                <div class="space-y-4">
-                    <button id="techniqueHallBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors ancient-border" disabled>
-                        📚 功法堂 (需要宗门2级)
-                    </button>
-                    <button id="treasuryBtn" class="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                        🏛️ 宗门宝库
-                    </button>
-                </div>
-            </div>
-            
-            <div class="mt-6">
-                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">坊市交易</h2>
-                
-                <div class="space-y-4">
-                    <button id="marketBtn" class="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                        🏪 坊市
-                    </button>
                     
-                    <button id="auctionBtn" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors ancient-border">
-                        🎯 拍卖会
-                    </button>
+                    <div style="padding: 12px; background: #1e293b; border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 12px;">
+                        <p style="font-size: 0.875rem; color: #fbbf24; margin-bottom: 4px;">时间</p>
+                        <p class="text-emerald-400" id="timeDisplay" style="color: #34d399;">1年1月1日</p>
+                    </div>
+                    
+                    <div style="padding: 12px; background: #1e293b; border: 1px solid #f59e0b; border-radius: 8px;">
+                        <p style="font-size: 0.875rem; color: #fbbf24; margin-bottom: 4px;">资源</p>
+                        <p style="color: #34d399;">灵石：<span id="spiritStones">0</span></p>
+                        <p style="color: #34d399;">破境丹：<span id="breakthroughPills">0</span></p>
+                        <p style="color: #34d399;">弟子：<span id="disciples">0</span></p>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 style="font-size: 1.125rem; font-weight: bold; color: #fbbf24; margin-bottom: 12px;">弟子列表</h3>
+                    <div id="discipleList" style="max-height: 256px; overflow-y: auto;">
+                        <!-- 弟子列表将在这里动态生成 -->
+                    </div>
                 </div>
             </div>
+            
+            <!-- 中间日志栏 -->
+            <div style="flex: 1; background: #020617; padding: 24px; overflow-y: auto;">
+                <h2 style="font-size: 1.25rem; font-weight: bold; color: #fbbf24; margin-bottom: 16px;">宗门见闻</h2>
+                <div id="logContainer" style="background: #1e293b; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; height: 384px; overflow-y: auto; margin-bottom: 24px;">
+                    <!-- 日志将在这里显示 -->
+                </div>
+                
+                <!-- 组织架构 -->
+                <div>
+                    <h2 style="font-size: 1.25rem; font-weight: bold; color: #fbbf24; margin-bottom: 16px;">组织架构</h2>
+                    
+                    <div style="background: #1e293b; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px;">
+                        <div id="organizationTabs" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                            <!-- 标签页将在这里动态生成 -->
+                        </div>
+                        <div id="organizationContent" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- 组织内容将在这里动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧操作栏 -->
+            <div style="width: 256px; background: #1e293b; border-left: 1px solid #f59e0b; padding: 24px;">
+                <h2 style="font-size: 1.25rem; font-weight: bold; color: #fbbf24; margin-bottom: 16px;">宗门操作</h2>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <button id="collectBtn" style="width: 100%; padding: 12px; background: #10b981; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">采集灵石</button>
+                    
+                    <button id="breakthroughBtn" style="width: 100%; padding: 12px; background: #8b5cf6; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">弟子突破</button>
+                    
+                    <button id="recruitBtn" style="width: 100%; padding: 12px; background: #3b82f6; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">招募弟子</button>
+                    
+                    <button id="taskHallBtn" style="width: 100%; padding: 12px; background: #06b6d4; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">任务堂</button>
+                    
+                    <button id="marketBtn" style="width: 100%; padding: 12px; background: #f59e0b; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">坊市</button>
+                    
+                    <button id="auctionBtn" style="width: 100%; padding: 12px; background: #ef4444; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">拍卖会</button>
+                    
+                    <button id="treasuryBtn" style="width: 100%; padding: 12px; background: #a855f7; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">宗门宝库</button>
+                    
+                    <button id="techniqueHallBtn" style="width: 100%; padding: 12px; background: #6366f1; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">功法堂</button>
+                    
+                    <button id="pastRecordsBtn" style="width: 100%; padding: 12px; background: #6b7280; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">往昔录</button>
+                    
+                    <button id="eventsBtn" style="width: 100%; padding: 12px; background: #ec4899; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">集体事件</button>
+                    
+                    <button id="regionBtn" style="width: 100%; padding: 12px; background: #14b8a6; color: white; font-weight: bold; border-radius: 8px; cursor: pointer;">地区管理</button>
+                </div>
+            </div>
+        </div>
+    </div>
             
             <div class="mt-6">
                 <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">对外事务</h2>
