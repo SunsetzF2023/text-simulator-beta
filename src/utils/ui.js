@@ -2,6 +2,16 @@ import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFI
 
 // 更新主界面显示
 export function updateDisplay(gameState) {
+    // 强制迁移天赋词条数据
+    gameState.disciples.forEach(disciple => {
+        if (disciple.traits && disciple.traits.length > 0) {
+            // 检查是否是旧格式（对象）
+            if (typeof disciple.traits[0] === 'object' && disciple.traits[0].name) {
+                disciple.traits = disciple.traits.map(trait => trait.name);
+                console.log(`强制迁移弟子 ${disciple.name} 的天赋词条数据`);
+            }
+        }
+    });
     // 更新宗门信息
     const displaySectName = document.getElementById('displaySectName');
     const displayName = document.getElementById('displayName');
@@ -1211,13 +1221,13 @@ export function showTreasury(gameState) {
     const modal = document.getElementById('treasuryModal');
     if (modal) {
         modal.classList.remove('hidden');
-        showTreasuryCategory('pills', gameState);
+        showTreasuryCategory('pills');
     }
 }
 
 // 显示宝库分类
-window.showTreasuryCategory = function(category, gameState) {
-    if (!gameState) gameState = window.game ? window.game.gameState : null;
+window.showTreasuryCategory = function(category) {
+    const gameState = window.game ? window.game.gameState : null;
     if (!gameState) return;
     
     const treasuryItems = document.getElementById('treasuryItems');
@@ -1355,7 +1365,7 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
         document.querySelector('.fixed').remove();
         
         // 刷新显示
-        showTreasuryCategory(category, gameState);
+        showTreasuryCategory(category);
         if (window.game) window.game.updateDisplay();
     }
 };
