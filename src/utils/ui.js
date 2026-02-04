@@ -1818,10 +1818,17 @@ export function showPastRecords(gameState) {
 
 // 更新宗门架构显示
 function updateOrganizationDisplay(gameState) {
+    console.log('更新宗门架构显示');
     const tabsContainer = document.getElementById('organizationTabs');
     const contentContainer = document.getElementById('organizationContent');
     
-    if (!tabsContainer || !contentContainer) return;
+    console.log('tabsContainer:', tabsContainer);
+    console.log('contentContainer:', contentContainer);
+    
+    if (!tabsContainer || !contentContainer) {
+        console.log('找不到组织架构元素');
+        return;
+    }
     
     // 更新弟子分层
     updateDiscipleHierarchy(gameState);
@@ -1833,6 +1840,8 @@ function updateOrganizationDisplay(gameState) {
         { id: 'management', name: '管理层', icon: '🏛️' }
     ];
     
+    console.log('创建标签页:', tabs);
+    
     tabsContainer.innerHTML = tabs.map(tab => `
         <button onclick="showOrganizationTab('${tab.id}')" 
                 class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded transition-colors text-sm"
@@ -1840,6 +1849,8 @@ function updateOrganizationDisplay(gameState) {
             ${tab.icon} ${tab.name}
         </button>
     `).join('');
+    
+    console.log('标签页HTML已设置');
     
     // 默认显示弟子分层
     showOrganizationTab('hierarchy');
@@ -1905,11 +1916,20 @@ function getRealmIndex(realm) {
 
 // 显示组织架构标签页
 window.showOrganizationTab = function(tabId) {
+    console.log('显示组织架构标签页:', tabId);
     const gameState = window.game ? window.game.gameState : null;
-    if (!gameState) return;
+    if (!gameState) {
+        console.log('gameState为空');
+        return;
+    }
     
     const contentContainer = document.getElementById('organizationContent');
-    if (!contentContainer) return;
+    if (!contentContainer) {
+        console.log('找不到organizationContent元素');
+        return;
+    }
+    
+    console.log('contentContainer找到，设置内容');
     
     // 更新标签样式
     document.querySelectorAll('#organizationTabs button').forEach(btn => {
@@ -1923,12 +1943,15 @@ window.showOrganizationTab = function(tabId) {
     // 显示对应内容
     switch (tabId) {
         case 'hierarchy':
+            console.log('显示弟子分层');
             showDiscipleHierarchy(gameState);
             break;
         case 'positions':
+            console.log('显示职位管理');
             showPositionManagement(gameState);
             break;
         case 'management':
+            console.log('显示管理层');
             showManagementStructure(gameState);
             break;
     }
