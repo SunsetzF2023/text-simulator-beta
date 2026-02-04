@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修仙宗门模拟器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-emerald-400">
+    <!-- 初始化弹窗 -->
+    <div id="initModal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-8 max-w-md w-full mx-4">
+            <h1 class="text-3xl font-bold text-center text-amber-200 mb-6 glow-text">修仙宗门模拟器</h1>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-amber-200 mb-2">宗门名称</label>
+                    <input type="text" id="sectName" class="w-full px-3 py-2 bg-slate-800 border border-amber-500 rounded text-emerald-400 focus:outline-none focus:border-amber-300" placeholder="输入宗门名称">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-amber-200 mb-2">玩家姓名</label>
+                    <input type="text" id="playerName" class="w-full px-3 py-2 bg-slate-800 border border-amber-500 rounded text-emerald-400 focus:outline-none focus:border-amber-300" placeholder="输入您的姓名">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-amber-200 mb-2">性别</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="gender" value="男" checked class="mr-2">
+                            <span>男</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="gender" value="女" class="mr-2">
+                            <span>女</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-amber-200 mb-2">宗门风格</label>
+                    <select id="sectStyle" class="w-full px-3 py-2 bg-slate-800 border border-amber-500 rounded text-emerald-400 focus:outline-none focus:border-amber-300">
+                        <option value="剑修">剑修</option>
+                        <option value="法修">法修</option>
+                        <option value="魔道">魔道</option>
+                        <option value="长生">长生</option>
+                        <option value="刀修">刀修</option>
+                        <option value="符修">符修</option>
+                        <option value="丹修">丹修</option>
+                        <option value="阵修">阵修</option>
+                        <option value="邪修">邪修</option>
+                        <option value="劫修">劫修</option>
+                        <option value="采补">采补</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-amber-200 mb-2">灵根属性</label>
+                    <select id="spiritRoot" class="w-full px-3 py-2 bg-slate-800 border border-amber-500 rounded text-emerald-400 focus:outline-none focus:border-amber-300">
+                        <option value="金">金灵根</option>
+                        <option value="木">木灵根</option>
+                        <option value="水">水灵根</option>
+                        <option value="火">火灵根</option>
+                        <option value="土">土灵根</option>
+                        <option value="雷">雷灵根</option>
+                        <option value="风">风灵根</option>
+                        <option value="冰">冰灵根</option>
+                        <option value="光">光灵根</option>
+                        <option value="暗">暗灵根</option>
+                        <option value="五行">五行灵根</option>
+                        <option value="阴阳">阴阳灵根</option>
+                        <option value="大道">大道灵根</option>
+                    </select>
+                </div>
+                
+                <button id="startBtn" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    开启仙途
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 游戏主界面 -->
+    <div id="gameContainer" class="hidden min-h-screen flex">
+        <!-- 左侧状态栏 -->
+        <div class="w-80 bg-slate-900 border-r border-amber-500 p-6">
+            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门信息</h2>
+            
+            <div class="space-y-3 mb-6">
+                <div class="p-3 bg-slate-800 rounded ancient-border">
+                    <p class="text-sm text-amber-300">宗门名称</p>
+                    <p id="displaySectName" class="text-lg font-bold text-emerald-400">-</p>
+                </div>
+                
+                <div class="p-3 bg-slate-800 rounded ancient-border">
+                    <p class="text-sm text-amber-300">宗主</p>
+                    <p id="displayName" class="text-lg font-bold text-emerald-400">-</p>
+                    <p id="playerRealm" class="text-lg font-bold text-emerald-400">境界：-</p>
+                    <p id="playerSpouse" class="text-sm text-pink-400">道侣：-</p>
+                </div>
+                
+                <div class="p-3 bg-slate-800 rounded ancient-border">
+                    <p class="text-sm text-amber-300">资源</p>
+                    <p class="text-emerald-400">灵石：<span id="spiritStones">0</span></p>
+                    <p class="text-emerald-400">破境丹：<span id="breakthroughPills">0</span></p>
+                    <p class="text-emerald-400">弟子：<span id="disciples">0</span></p>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <h3 class="text-lg font-bold text-amber-200">弟子列表</h3>
+                <div id="discipleList" class="space-y-2 max-h-64 overflow-y-auto scroll-container">
+                    <!-- 弟子列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中间日志栏 -->
+        <div class="flex-1 bg-slate-950 p-6">
+            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门见闻</h2>
+            <div id="logContainer" class="bg-slate-900 rounded p-4 h-96 overflow-y-auto scroll-container ancient-border">
+                <!-- 日志将在这里显示 -->
+            </div>
+            
+            <!-- 组织架构 -->
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">组织架构</h2>
+                
+                <div class="bg-slate-800 p-4 rounded ancient-border">
+                    <div id="organizationTabs" class="flex space-x-2 mb-4">
+                        <!-- 标签页将在这里动态生成 -->
+                    </div>
+                    <div id="organizationContent" class="space-y-2">
+                        <!-- 组织内容将在这里动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧操作栏 -->
+        <div class="w-64 bg-slate-900 border-l border-amber-500 p-6">
+            <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门操作</h2>
+            
+            <div class="space-y-4">
+                <button id="collectBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    采集灵石
+                </button>
+                
+                <button id="breakthroughBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    弟子突破
+                </button>
+                
+                <button id="pastRecordsBtn" class="w-full py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    往昔录
+                </button>
+                
+                <button id="recruitBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    招募外门弟子 (消耗10灵石)
+                </button>
+                
+                <button id="taskHallBtn" class="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                    任务堂
+                </button>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门建筑</h2>
+                
+                <div class="space-y-4">
+                    <button id="techniqueHallBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors ancient-border" disabled>
+                        📚 功法堂 (需要宗门2级)
+                    </button>
+                    <button id="treasuryBtn" class="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                        🏛️ 宗门宝库
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">坊市交易</h2>
+                
+                <div class="space-y-4">
+                    <button id="marketBtn" class="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                        🏪 坊市
+                    </button>
+                    
+                    <button id="auctionBtn" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                        🎯 拍卖会
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">对外事务</h2>
+                
+                <div class="space-y-4">
+                    <button id="renameBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded transition-colors">
+                        ✏️ 改名
+                    </button>
+                    <button id="chatBtn_${disciple.id}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded transition-colors">
+                        💬 聊天
+                    </button>
+                    <button id="divineChatBtn_${disciple.id}" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded transition-colors">
+                        🧠 神识传音
+                    </button>
+                    <button id="giftBtn" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded transition-colors">
+                        🎁 送礼
+                    </button>
+                    
+                    <button id="eventsBtn" class="w-full py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                        📅 集体事件
+                    </button>
+                    
+                    <button id="regionBtn" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-colors ancient-border">
+                        🗺️ 地区查看
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-amber-200 mb-4 glow-text">宗门影响力</h2>
+                
+                <div class="bg-slate-800 p-4 rounded ancient-border">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-amber-300">宗门等级:</span>
+                        <span id="sectLevel" class="text-purple-400 font-bold">Lv.1</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-amber-300">影响力等级:</span>
+                        <span id="influenceLevel" class="text-yellow-400 font-bold">1级</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-amber-300">当前声望:</span>
+                        <span id="influenceReputation" class="text-green-400 font-bold">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-amber-300">势力范围:</span>
+                        <span id="factionCount" class="text-blue-400 font-bold">0个</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弟子详情模态框 -->
+    <div id="discipleModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">弟子详情</h2>
+                <button id="closeDiscipleModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div id="discipleDetails">
+                <!-- 弟子详情将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务堂模态框 -->
+    <div id="taskHallModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">任务堂</h2>
+                <button id="closeTaskHallModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div id="taskList">
+                <!-- 任务列表将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 坊市模态框 -->
+    <div id="marketModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">🏪 修仙坊市</h2>
+                <button id="closeMarketModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">坊市每日刷新，各种奇珍异宝等你来淘！</p>
+                <button id="refreshMarketBtn" class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">
+                    🔄 刷新商品 (消耗5灵石)
+                </button>
+            </div>
+            <div id="marketItems" class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 坊市商品将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 宗门宝库模态框 -->
+    <div id="treasuryModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-5xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">🏛️ 宗门宝库</h2>
+                <button id="closeTreasuryModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">存放宗门收集的各种珍贵物品，可以赐予有功弟子</p>
+            </div>
+            
+            <!-- 物品分类标签 -->
+            <div class="flex space-x-2 mb-4">
+                <button onclick="showTreasuryCategory('pills')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">丹药</button>
+                <button onclick="showTreasuryCategory('weapons')" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded transition-colors">武器</button>
+                <button onclick="showTreasuryCategory('materials')" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded transition-colors">材料</button>
+                <button onclick="showTreasuryCategory('other')" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded transition-colors">其他</button>
+            </div>
+            
+            <div id="treasuryItems" class="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 宝库物品将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 功法堂模态框 -->
+    <div id="techniqueHallModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-4xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">📚 功法堂</h2>
+                <button id="closeTechniqueHallModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">存放宗门收集的功法残本，虽然残缺但仍蕴含着先贤智慧</p>
+            </div>
+            <div id="techniqueFragments" class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 功法残本将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 拍卖会模态框 -->
+    <div id="auctionModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">🎯 修仙拍卖会</h2>
+                <button id="closeAuctionModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">定期举行的拍卖会，稀有宝物等你来抢！</p>
+                <div id="auctionTimer" class="text-yellow-400 font-bold mt-2"></div>
+            </div>
+            <div id="auctionItems" class="space-y-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 拍卖物品将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 拜访势力模态框 -->
+    <div id="visitModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">🤝 拜访势力</h2>
+                <button id="closeVisitModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">选择要拜访的势力，进行外交活动</p>
+            </div>
+            <div id="visitList" class="space-y-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 势力列表将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 集体事件模态框 -->
+    <div id="eventsModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">📅 集体事件</h2>
+                <button id="closeEventsModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">当前发生的集体事件，需要宗门共同应对</p>
+                <button id="refreshEventsBtn" class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors">
+                    🔄 刷新事件
+                </button>
+            </div>
+            <div id="eventsList" class="space-y-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 事件列表将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 地区查看模态框 -->
+    <div id="regionModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-4xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">🗺️ 势力范围</h2>
+                <button id="closeRegionModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-300 text-sm">查看宗门附近的各个势力和地区</p>
+            </div>
+            <div id="regionMap" class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto scroll-container">
+                <!-- 地区地图将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 往昔录模态框 -->
+    <div id="pastRecordsModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-3xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-amber-200">📜 往昔录</h2>
+                <button id="closePastRecordsModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
+            </div>
+            <div class="mb-4">
+                <p class="text-gray-400 text-sm">记录那些曾经为宗门效力，如今已离去的弟子...</p>
+            </div>
+            <div id="pastRecordsList" class="space-y-3 max-h-96 overflow-y-auto scroll-container">
+                <!-- 往昔记录将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1221 @@
+import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFIG, INFLUENCE_LEVELS, VISIT_EVENTS, COLLECTIVE_EVENTS, REGION_CONFIG, REALMS, TRAITS } from '../data/constants.js';
+
+// 更新主界面显示
+export function updateDisplay(gameState) {
+    // 更新宗门信息
+    const displaySectName = document.getElementById('displaySectName');
+    const displayName = document.getElementById('displayName');
+    const playerRealm = document.getElementById('playerRealm');
+    
+    if (displaySectName) displaySectName.textContent = gameState.sectName || '-';
+    if (displayName) displayName.textContent = gameState.playerName || '-';
+    if (playerRealm) playerRealm.textContent = gameState.playerRealm || '凡人';
+    
+    // 更新资源
+    const spiritStones = document.getElementById('spiritStones');
+    const breakthroughPills = document.getElementById('breakthroughPills');
+    const reputation = document.getElementById('reputation');
+    
+    if (spiritStones) spiritStones.textContent = gameState.spiritStones || 0;
+    if (breakthroughPills) breakthroughPills.textContent = gameState.breakthroughPills || 0;
+    if (reputation) reputation.textContent = gameState.reputation || 0;
+    
+    // 更新影响力信息
+    updateInfluenceDisplay(gameState);
+    
+    // 更新弟子列表
+    updateDiscipleList(gameState);
+}
+
+// 更新影响力显示
+function updateInfluenceDisplay(gameState) {
+    const influenceElement = document.getElementById('influence');
+    if (influenceElement) {
+        influenceElement.textContent = gameState.influence || 0;
+    }
+}
+
+// 计算战力
+function calculateCombatPower(disciple) {
+    if (!disciple.alive) return 0;
+    
+    // 基础战力：天赋 × 10 (天赋范围1-100，所以基础战力10-1000)
+    let power = disciple.talent * 10;
+    
+    // 修为加成：修为 × 2 (修为0-100，所以加成0-200)
+    power += disciple.cultivation * 2;
+    
+    // 境界加成：根据境界等级大幅提升
+    const realmIndex = REALMS.indexOf(disciple.realm);
+    if (realmIndex >= 0) {
+        // 炼气期：0-10
+        // 筑基期：11-20 (+100基础)
+        // 金丹期：21-30 (+300基础)
+        // 元婴期：31-40 (+600基础)
+        // 化神期：41-50 (+1000基础)
+        if (realmIndex >= 11 && realmIndex <= 20) { // 筑基
+            power += 100;
+        } else if (realmIndex >= 21 && realmIndex <= 30) { // 金丹
+            power += 300;
+        } else if (realmIndex >= 31 && realmIndex <= 40) { // 元婴
+            power += 600;
+        } else if (realmIndex >= 41 && realmIndex <= 50) { // 化神
+            power += 1000;
+        }
+    }
+    
+    // 体质加成：特殊体质提供额外加成
+    if (disciple.constitution && disciple.constitution.combat) {
+        power *= disciple.constitution.combat; // 体质加成是乘数
+    }
+    
+    // 忠诚度加成：忠诚度越高，发挥越稳定 (0-10)
+    power += disciple.loyalty / 10;
+    
+    // 家世背景加成：小幅加成
+    if (disciple.familyBackground && disciple.familyBackground.bonus) {
+        const bonus = disciple.familyBackground.bonus;
+        if (bonus.spiritStones) {
+            power += Math.min(bonus.spiritStones, 50); // 最多加50
+        }
+        if (bonus.reputation) {
+            power += Math.min(bonus.reputation * 2, 100); // 最多加100
+        }
+    }
+    
+    return Math.floor(power);
+}
+
+// 生成弟子携带宝物
+function generateTreasures(disciple) {
+    const treasures = [];
+    
+    // 根据修为境界生成宝物
+    const realmIndex = REALMS.indexOf(disciple.realm);
+    if (realmIndex >= 20) { // 筑基期以上
+        treasures.push('基础法器');
+    }
+    if (realmIndex >= 30) { // 金丹期以上
+        treasures.push('中级丹药');
+    }
+    if (realmIndex >= 40) { // 元婴期以上
+        treasures.push('高级符箓');
+    }
+    
+    // 根据家世背景添加宝物
+    if (disciple.familyBackground && disciple.familyBackground.name) {
+        if (disciple.familyBackground.name.includes('贵族')) {
+            treasures.push('家族传家宝');
+        }
+        if (disciple.familyBackground.name.includes('商人')) {
+            treasures.push('灵石袋');
+        }
+    }
+    
+    // 根据特殊体质添加宝物
+    if (disciple.constitution && disciple.constitution.name) {
+        if (disciple.constitution.name.includes('灵体')) {
+            treasures.push('护身符');
+        }
+    }
+    
+    // 如果没有宝物，给一个基础的
+    if (treasures.length === 0) {
+        treasures.push('无');
+    }
+    
+    return treasures;
+}
+
+// 更新弟子列表
+export function updateDiscipleList(gameState) {
+    const discipleList = document.getElementById('discipleList');
+    if (!discipleList) return;
+    
+    discipleList.innerHTML = '';
+    
+    gameState.disciples.forEach(disciple => {
+        const discipleCard = createDiscipleCard(disciple, gameState);
+        discipleList.appendChild(discipleCard);
+    });
+}
+
+// 创建弟子卡片
+function createDiscipleCard(disciple, gameState) {
+    const card = document.createElement('div');
+    card.className = 'disciple-card p-3 bg-slate-800 rounded ancient-border cursor-pointer';
+    
+    const statusColor = disciple.alive ? (disciple.injured ? 'text-yellow-400' : 'text-emerald-400') : 'text-red-400';
+    const taskStatus = disciple.onTask ? ' (任务中)' : '';
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-center">
+            <div class="${statusColor}">
+                <div class="font-bold">${disciple.name}${taskStatus}</div>
+                <div class="text-xs">${disciple.realm} | ${disciple.spiritRoot}灵根</div>
+                <div class="text-xs">天赋: ${disciple.talent.toFixed(1)} | 忠诚: ${disciple.loyalty}</div>
+            </div>
+            <div class="text-xs text-amber-300">
+                ${disciple.alive ? (disciple.injured ? '受伤' : '健康') : '已故'}
+            </div>
+        </div>
+    `;
+    
+    card.addEventListener('click', () => {
+        showDiscipleDetails(disciple, gameState);
+    });
+    
+    return card;
+}
+
+// 显示弟子详情
+export function showDiscipleDetails(disciple, gameState) {
+    const modal = document.getElementById('discipleModal');
+    const details = document.getElementById('discipleDetails');
+    
+    if (!modal || !details) return;
+    
+    // 计算战力
+    const combatPower = calculateCombatPower(disciple);
+    
+    details.innerHTML = `
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-amber-200 mb-2">👤 基本信息</h3>
+                <p><span class="text-amber-300">姓名:</span> <span class="text-cyan-400 font-bold">${disciple.name}</span></p>
+                <p><span class="text-amber-300">性别:</span> ${disciple.gender}</p>
+                <p><span class="text-amber-300">年龄:</span> ${disciple.age}岁</p>
+                <p><span class="text-amber-300">灵根:</span> <span class="text-blue-400">${disciple.spiritRoot}</span></p>
+                <p><span class="text-amber-300">体质:</span> <span class="text-purple-400 font-bold">${disciple.constitution.name}</span></p>
+                <p><span class="text-amber-300">体质描述:</span> <span class="text-gray-400 text-sm">${disciple.constitution.description}</span></p>
+                <p><span class="text-amber-300">家世背景:</span> <span class="text-green-400">${disciple.familyBackground.name}</span></p>
+                <p><span class="text-amber-300">家世描述:</span> <span class="text-gray-400 text-sm">${disciple.familyBackground.description}</span></p>
+                <p><span class="text-amber-300">性格:</span> ${disciple.personality}</p>
+                <p><span class="text-amber-300">外貌:</span> ${disciple.appearance}</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-amber-200 mb-2">⚔️ 修炼状态</h3>
+                <p><span class="text-amber-300">境界:</span> <span class="text-yellow-400 font-bold">${disciple.realm}</span></p>
+                <p><span class="text-amber-300">修为:</span> 
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: ${disciple.cultivation}%"></div>
+                    </div>
+                    <span class="text-blue-400">${disciple.cultivation.toFixed(1)}%</span>
+                </p>
+                <p><span class="text-amber-300">战力:</span> <span class="text-red-400 font-bold text-lg">${combatPower}</span></p>
+                <p><span class="text-amber-300">天赋:</span> <span class="text-orange-400">${disciple.talent.toFixed(1)}/100</span></p>
+                <p><span class="text-amber-300">忠诚度:</span> 
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: ${disciple.loyalty}%"></div>
+                    </div>
+                    <span class="text-green-400">${disciple.loyalty}/100</span>
+                </p>
+                <p><span class="text-amber-300">状态:</span> 
+                    <span class="${disciple.alive ? (disciple.injured ? 'text-yellow-400' : 'text-green-400') : 'text-red-400'} font-bold">
+                        ${disciple.alive ? (disciple.injured ? '🏥 受伤治疗中' : (disciple.onTask ? '⚡ 任务执行中' : '✅ 正常')) : '💀 已故'}
+                    </span>
+                </p>
+                <p><span class="text-amber-300">好感度:</span> <span class="text-pink-400">${disciple.affection}/100</span></p>
+                <p><span class="text-amber-300">好感等级:</span> <span class="text-pink-400 font-bold">${disciple.affectionLevel.name || '未知'}</span></p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">🌟 天赋词条</h3>
+            <div class="flex flex-wrap gap-2">
+                ${disciple.traits.map(trait => {
+                    const traitType = TRAITS.find(t => t.name === trait)?.type || 'neutral';
+                    const colorClass = traitType === 'positive' ? 'text-green-400 bg-green-900' : 
+                                     traitType === 'negative' ? 'text-red-400 bg-red-900' : 'text-yellow-400 bg-yellow-900';
+                    return `<span class="px-3 py-1 rounded text-sm font-medium ${colorClass}">${trait}</span>`;
+                }).join('')}
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">🎒 携带物品</h3>
+            <div class="grid grid-cols-3 gap-2">
+                ${generateTreasures(disciple).map(treasure => 
+                    `<div class="bg-slate-700 p-2 rounded text-center">
+                        <span class="text-amber-300 text-sm">${treasure}</span>
+                    </div>`
+                ).join('')}
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">📜 个人日志</h3>
+            <div class="max-h-32 overflow-y-auto bg-slate-800 p-3 rounded border border-slate-600">
+                ${disciple.personalLog.slice(-5).map(log => 
+                    `<p class="text-xs text-gray-300 mb-1">[${log.time || '未知时间'}] ${log.message}</p>`
+                ).join('') || '<p class="text-xs text-gray-500">暂无日志</p>'}
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">🎮 操作</h3>
+            ${disciple.alive ? `
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="discipleNameInput" value="${disciple.name}" 
+                           class="flex-1 px-3 py-2 bg-slate-700 text-white rounded border border-slate-600 focus:border-amber-400 focus:outline-none"
+                           placeholder="输入新名字">
+                    <button id="renameDiscipleBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded transition-colors">
+                        ✏️ 改名
+                    </button>
+                </div>
+                ${disciple.injured ? `
+                    <button id="healBtn" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded transition-colors">
+                        💊 治疗 (消耗5灵石)
+                    </button>
+                ` : ''}
+                <button id="arrangeMarriageBtn" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded transition-colors">
+                    💑 安排道侣
+                </button>
+                <button id="expelBtn" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded transition-colors">
+                    ⚔️ 逐出宗门
+                </button>
+            ` : `
+                <div class="text-red-400 font-bold">⚰️ 该弟子已经不在宗门</div>
+            `}
+        </div>
+    `;
+    
+    // 显示模态框
+    modal.classList.remove('hidden');
+    
+    // 设置事件监听器
+    setupDiscipleModalEvents(disciple, gameState);
+}
+
+// 设置弟子模态框事件
+function setupDiscipleModalEvents(disciple, gameState) {
+    // 关闭按钮
+    const closeBtn = document.getElementById('closeDiscipleModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            document.getElementById('discipleModal').classList.add('hidden');
+        };
+    }
+    
+    // 治疗按钮
+    const healBtn = document.getElementById('healBtn');
+    if (healBtn && disciple.injured) {
+        healBtn.onclick = () => {
+            if (gameState.spiritStones >= 5) {
+                gameState.spiritStones -= 5;
+                disciple.heal();
+                updateDisplay(gameState);
+                showDiscipleDetails(disciple, gameState); // 刷新详情
+                addLog(`[治疗] 为${disciple.name}治疗伤势，消耗5灵石`, 'text-green-400');
+            } else {
+                addLog('[治疗] 灵石不足，需要5灵石才能治疗', 'text-red-400');
+            }
+        };
+    }
+    
+    // 改名按钮
+    const renameBtn = document.getElementById('renameDiscipleBtn');
+    const nameInput = document.getElementById('discipleNameInput');
+    if (renameBtn && nameInput && disciple.alive) {
+        renameBtn.onclick = () => {
+            const newName = nameInput.value.trim();
+            if (newName && newName !== disciple.name) {
+                const oldName = disciple.name;
+                disciple.name = newName;
+                disciple.addPersonalLog(`[改名] ${oldName} 改名为 ${newName}`, Date.now());
+                updateDisplay(gameState);
+                showDiscipleDetails(disciple, gameState); // 刷新详情
+                addLog(`[改名] ${oldName} 改名为 ${newName}`, 'text-blue-400');
+            } else if (newName === disciple.name) {
+                addLog('[改名] 新名字与原名相同', 'text-gray-400');
+            } else {
+                addLog('[改名] 请输入有效的名字', 'text-red-400');
+            }
+        };
+        
+        // 回车键也可以改名
+        nameInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                renameBtn.click();
+            }
+        };
+    }
+    
+    // 安排道侣按钮
+    const marryBtn = document.getElementById('arrangeMarriageBtn');
+    if (marryBtn && disciple.alive && !disciple.spouse) {
+        marryBtn.onclick = () => {
+            showMarriageOptions(disciple, gameState);
+        };
+    }
+    
+    // 逐出宗门按钮
+    const expelBtn = document.getElementById('expelBtn');
+    if (expelBtn && disciple.alive) {
+        expelBtn.onclick = () => {
+            if (confirm(`确定要将${disciple.name}逐出宗门吗？`)) {
+                disciple.leaveSect();
+                updateDisplay(gameState);
+                document.getElementById('discipleModal').classList.add('hidden');
+                addLog(`[宗门] ${disciple.name}被逐出宗门`, 'text-red-400');
+            }
+        };
+    }
+}
+
+// 显示结婚选项
+function showMarriageOptions(disciple, gameState) {
+    const availablePartners = gameState.disciples.filter(d => 
+        d.id !== disciple.id && 
+        d.alive && 
+        !d.spouse && 
+        d.gender !== disciple.gender
+    );
+    
+    if (availablePartners.length === 0) {
+        addLog('[婚姻] 没有合适的结婚对象', 'text-yellow-400');
+        return;
+    }
+    
+    const partner = availablePartners[Math.floor(Math.random() * availablePartners.length)];
+    
+    if (confirm(`确定要让${disciple.name}与${partner.name}结为道侣吗？`)) {
+        if (disciple.marry(partner)) {
+            addLog(`[婚姻] ${disciple.name}与${partner.name}结为道侣，宗门氛围更加和谐`, 'text-pink-400');
+            updateDisplay(gameState);
+            showDiscipleDetails(disciple, gameState); // 刷新详情
+        }
+    }
+}
+
+// 获取状态文本
+function getStatusText(details) {
+    if (!details.alive) return '已故';
+    if (details.injured) return '受伤';
+    if (details.onTask) return '任务中';
+    return '健康';
+}
+
+// 获取词条颜色
+function getTraitColor(type) {
+    switch (type) {
+        case 'positive': return 'trait-positive';
+        case 'negative': return 'trait-negative';
+        default: return 'trait-neutral';
+    }
+}
+
+// 显示任务堂
+export function showTaskHall() {
+    const modal = document.getElementById('taskHallModal');
+    const taskList = document.getElementById('taskList');
+    
+    if (!modal || !taskList) return;
+    
+    // 生成随机任务
+    const availableTasks = generateRandomTasks();
+    
+    taskList.innerHTML = `
+        <div class="space-y-4">
+            ${availableTasks.map(task => createTaskCard(task)).join('')}
+        </div>
+    `;
+    
+    // 显示模态框
+    modal.classList.remove('hidden');
+    
+    // 设置关闭事件
+    const closeBtn = document.getElementById('closeTaskHallModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+    }
+}
+
+// 生成随机任务
+function generateRandomTasks() {
+    const tasks = [];
+    const taskCount = Math.floor(Math.random() * 3) + 3; // 3-5个任务
+    
+    for (let i = 0; i < taskCount; i++) {
+        const template = TASK_TEMPLATES[Math.floor(Math.random() * TASK_TEMPLATES.length)];
+        tasks.push({
+            ...template,
+            id: Date.now() + i,
+            reward: { ...template.reward },
+            difficulty: template.difficulty
+        });
+    }
+    
+    return tasks;
+}
+
+// 创建任务卡片
+function createTaskCard(task) {
+    const difficultyClass = getTaskDifficultyClass(task.difficulty);
+    const difficultyText = getTaskDifficultyText(task.difficulty);
+    
+    return `
+        <div class="task-card p-4 bg-slate-800 rounded ancient-border ${difficultyClass}">
+            <div class="flex justify-between items-start mb-2">
+                <h4 class="font-bold text-amber-200">${task.name}</h4>
+                <span class="text-xs px-2 py-1 bg-slate-700 rounded">${difficultyText}</span>
+            </div>
+            <p class="text-sm text-amber-300 mb-3">${task.description}</p>
+            <div class="text-sm">
+                <div class="text-emerald-400">奖励：</div>
+                ${formatTaskReward(task.reward)}
+            </div>
+            <div class="mt-3">
+                <button onclick="assignTask(${task.id})" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors">
+                    分配任务
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// 获取任务难度样式
+function getTaskDifficultyClass(difficulty) {
+    switch (difficulty) {
+        case 1: return 'task-difficulty-easy';
+        case 2: return 'task-difficulty-medium';
+        case 3: return 'task-difficulty-hard';
+        default: return '';
+    }
+}
+
+// 获取任务难度文本
+function getTaskDifficultyText(difficulty) {
+    switch (difficulty) {
+        case 1: return '简单';
+        case 2: return '中等';
+        case 3: return '困难';
+        default: return '未知';
+    }
+}
+
+// 格式化任务奖励
+function formatTaskReward(reward) {
+    const parts = [];
+    if (reward.spiritStones) parts.push(`${reward.spiritStones}灵石`);
+    if (reward.breakthroughPills) parts.push(`${reward.breakthroughPills}破境丹`);
+    if (reward.experience) parts.push(`${reward.experience}修为`);
+    if (reward.reputation) parts.push(`${reward.reputation}声望`);
+    
+    return parts.join('、') || '无';
+}
+
+// 分配任务
+window.assignTask = function(taskId) {
+    // 直接从全局获取gameState
+    const gameState = window.game ? window.game.gameState : null;
+    
+    if (!gameState) {
+        addLog('[任务] 游戏状态未找到，请确保游戏已启动', 'text-red-400');
+        console.error('无法获取gameState，window.game:', window.game);
+        return;
+    }
+    
+    const availableDisciples = gameState.disciples.filter(d => d.alive && !d.injured && !d.onTask);
+    
+    if (availableDisciples.length === 0) {
+        addLog('[任务] 没有可用的弟子执行任务', 'text-red-400');
+        return;
+    }
+    
+    // 简化版：随机选择弟子
+    const disciple = availableDisciples[Math.floor(Math.random() * availableDisciples.length)];
+    
+    // 找到任务
+    const taskCards = document.querySelectorAll('.task-card');
+    let targetTask = null;
+    
+    taskCards.forEach(card => {
+        if (card.innerHTML.includes(`assignTask(${taskId})`)) {
+            // 从模板重新构建任务对象
+            const taskName = card.querySelector('h4').textContent;
+            const template = TASK_TEMPLATES.find(t => t.name === taskName);
+            if (template) {
+                targetTask = { ...template, id: taskId };
+            }
+        }
+    });
+    
+    if (targetTask && disciple.acceptTask(targetTask)) {
+        addLog(`[任务] ${disciple.name}接受了任务：${targetTask.name}`, 'text-blue-400');
+        
+        // 模拟任务执行
+        setTimeout(() => {
+            const result = disciple.executeTask();
+            if (result) {
+                if (result.success) {
+                    // 发放奖励
+                    if (result.reward) {
+                        if (result.reward.spiritStones) gameState.spiritStones += result.reward.spiritStones;
+                        if (result.reward.breakthroughPills) gameState.breakthroughPills += result.reward.breakthroughPills;
+                        if (result.reward.reputation) gameState.reputation += result.reward.reputation;
+                    }
+                    addLog(result.message, 'text-green-400');
+                } else {
+                    addLog(result.message, 'text-red-400');
+                }
+                // 更新显示
+                if (window.game && window.game.updateDisplay) {
+                    window.game.updateDisplay();
+                }
+            }
+        }, targetTask.duration || 5000);
+        
+        // 关闭任务堂
+        document.getElementById('taskHallModal').classList.add('hidden');
+    }
+};
+
+// 添加日志
+export function addLog(message, colorClass = 'text-emerald-400') {
+    const logContainer = document.getElementById('logContainer');
+    if (!logContainer) return;
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `log-entry mb-2 ${colorClass} fade-in`;
+    logEntry.innerHTML = `<span class="text-xs text-amber-300">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+    
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+    
+    // 限制日志数量
+    const logs = logContainer.children;
+    if (logs.length > 100) {
+        logContainer.removeChild(logs[0]);
+    }
+}
+
+// 显示/隐藏界面
+export function showGameContainer() {
+    const initModal = document.getElementById('initModal');
+    const gameContainer = document.getElementById('gameContainer');
+    
+    if (initModal) initModal.classList.add('hidden');
+    if (gameContainer) gameContainer.classList.remove('hidden');
+}
+
+export function showInitModal() {
+    const initModal = document.getElementById('initModal');
+    const gameContainer = document.getElementById('gameContainer');
+    
+    if (initModal) initModal.classList.remove('hidden');
+    if (gameContainer) gameContainer.classList.add('hidden');
+}
+
+// 获取表单数据
+export function getFormData() {
+    const sectName = document.getElementById('sectName')?.value?.trim() || '';
+    const playerName = document.getElementById('playerName')?.value?.trim() || '';
+    const gender = document.querySelector('input[name="gender"]:checked')?.value || '';
+    const sectStyle = document.getElementById('sectStyle')?.value || '';
+    const spiritRoot = document.getElementById('spiritRoot')?.value || '';
+    
+    return { sectName, playerName, gender, sectStyle, spiritRoot };
+}
+
+// 验证表单
+export function validateForm(data) {
+    return data.sectName && data.playerName;
+}
+
+// 设置按钮事件监听器
+export function setupButtonListeners(callbacks) {
+    console.log('开始设置按钮事件监听器...');
+    const buttons = {
+        collectBtn: () => callbacks.onCollect(),
+        breakthroughBtn: () => callbacks.onBreakthrough(),
+        recruitBtn: () => callbacks.onRecruit(),
+        taskHallBtn: () => callbacks.onTaskHall(),
+        marketBtn: () => callbacks.onMarket(),
+        auctionBtn: () => callbacks.onAuction(),
+        treasuryBtn: () => callbacks.onTreasury(),
+        techniqueHallBtn: () => callbacks.onTechniqueHall(),
+        pastRecordsBtn: () => callbacks.onPastRecords(),
+        eventsBtn: () => callbacks.onEvents(),
+        regionBtn: () => callbacks.onRegion()
+    };
+    
+    Object.entries(buttons).forEach(([id, handler]) => {
+        const button = document.getElementById(id);
+        if (button) {
+            console.log(`找到按钮 ${id}，添加事件监听器...`);
+            button.addEventListener('click', (e) => {
+                console.log(`按钮 ${id} 被点击！`, e);
+                handler();
+            });
+            console.log(`按钮 ${id} 事件监听器设置完成`);
+        } else {
+            console.warn(`Button ${id} not found`);
+        }
+    });
+    
+    // 特别检查宝库按钮
+    const treasuryBtn = document.getElementById('treasuryBtn');
+    if (treasuryBtn) {
+        console.log('宝库按钮找到，当前状态:', treasuryBtn.disabled);
+    } else {
+        console.warn('宝库按钮未找到！');
+    }
+    
+    // 设置模态框关闭按钮
+    const closeButtons = [
+        'closeEventsModal',
+        'closeRegionModal',
+        'closeTreasuryModal',
+        'closeTechniqueHallModal',
+        'closePastRecordsModal'
+    ];
+    
+    closeButtons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.fixed');
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+    });
+    
+    console.log('所有按钮事件监听器设置完成');
+}
+
+// 显示坊市
+export function showMarket(gameState) {
+    const modal = document.getElementById('marketModal');
+    const marketItems = document.getElementById('marketItems');
+    
+    if (!modal || !marketItems) return;
+    
+    // 如果坊市为空或需要刷新，生成新商品
+    if (gameState.marketItems.length === 0) {
+        generateMarketItems(gameState);
+    }
+    
+    marketItems.innerHTML = '';
+    
+    gameState.marketItems.forEach(item => {
+        const itemCard = createMarketItemCard(item, gameState);
+        marketItems.appendChild(itemCard);
+    });
+    
+    // 显示模态框
+    modal.classList.remove('hidden');
+    
+    // 设置关闭事件
+    const closeBtn = document.getElementById('closeMarketModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+    }
+    
+    // 设置刷新按钮事件
+    const refreshBtn = document.getElementById('refreshMarketBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = () => {
+            if (gameState.spiritStones >= 5) {
+                gameState.spiritStones -= 5;
+                generateMarketItems(gameState);
+                showMarket(gameState); // 刷新显示
+                addLog('[坊市] 消耗5灵石刷新商品', 'text-blue-400');
+                if (window.game) window.game.updateDisplay();
+            } else {
+                addLog('[坊市] 灵石不足，需要5灵石才能刷新', 'text-red-400');
+            }
+        };
+    }
+}
+
+// 生成坊市商品
+function generateMarketItems(gameState) {
+    gameState.marketItems = [];
+    const itemCount = Math.floor(Math.random() * 6) + 8; // 8-13个商品
+    
+    for (let i = 0; i < itemCount; i++) {
+        const template = MARKET_ITEMS[Math.floor(Math.random() * MARKET_ITEMS.length)];
+        const priceVariation = 0.8 + Math.random() * 0.4; // 价格在80%-120%之间波动
+        const item = {
+            ...template,
+            id: Date.now() + i,
+            price: Math.floor(template.basePrice * priceVariation),
+            stock: Math.floor(Math.random() * 3) + 1 // 1-3个库存
+        };
+        gameState.marketItems.push(item);
+    }
+    
+    gameState.lastMarketRefresh = Date.now();
+}
+
+// 创建坊市商品卡片
+function createMarketItemCard(item, gameState) {
+    const card = document.createElement('div');
+    const rarityInfo = RARITY_CONFIG[item.rarity] || RARITY_CONFIG.common;
+    const canAfford = gameState.spiritStones >= item.price;
+    const hasStock = item.stock > 0;
+    
+    card.className = `p-3 bg-slate-800 rounded ancient-border ${!canAfford || !hasStock ? 'opacity-50' : ''}`;
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+            <h4 class="font-bold ${rarityInfo.color}">${item.name}</h4>
+            <span class="text-xs px-2 py-1 bg-slate-700 rounded ${rarityInfo.color}">${rarityInfo.name}</span>
+        </div>
+        <p class="text-xs text-amber-300 mb-2">${item.description}</p>
+        <div class="flex justify-between items-center">
+            <div>
+                <span class="text-emerald-400 font-bold">${item.price}灵石</span>
+                <span class="text-xs text-gray-400 ml-2">库存: ${item.stock}</span>
+            </div>
+            ${canAfford && hasStock ? `
+                <button onclick="buyMarketItem(${item.id})" class="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded transition-colors">
+                    购买
+                </button>
+            ` : `
+                <button disabled class="px-3 py-1 bg-gray-600 text-gray-400 text-xs rounded">
+                    ${!hasStock ? '售罄' : '灵石不足'}
+                </button>
+            `}
+        </div>
+    `;
+    
+    return card;
+}
+
+// 购买坊市商品
+window.buyMarketItem = function(itemId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const item = gameState.marketItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (gameState.spiritStones >= item.price && item.stock > 0) {
+        gameState.spiritStones -= item.price;
+        item.stock--;
+        
+        addLog(`[坊市] 购买了${item.name}，消耗${item.price}灵石`, 'text-green-400');
+        
+        // 应用物品效果
+        applyItemEffect(item, gameState);
+        
+        // 如果库存为0，移除商品
+        if (item.stock <= 0) {
+            gameState.marketItems = gameState.marketItems.filter(i => i.id !== itemId);
+        }
+        
+        // 刷新显示
+        showMarket(gameState);
+        if (window.game) window.game.updateDisplay();
+    }
+};
+
+// 应用物品效果
+function applyItemEffect(item, gameState) {
+    switch (item.type) {
+        case 'pill':
+            if (item.name === '回血丹') {
+                // 治疗一个受伤的弟子
+                const injuredDisciples = gameState.disciples.filter(d => d.alive && d.injured);
+                if (injuredDisciples.length > 0) {
+                    const disciple = injuredDisciples[0];
+                    disciple.heal();
+                    addLog(`[丹药] ${disciple.name}服用了${item.name}，伤势恢复`, 'text-green-400');
+                }
+            } else if (item.name === '破障丹') {
+                gameState.breakthroughPills += 1;
+                addLog(`[丹药] 获得1枚破境丹`, 'text-purple-400');
+            }
+            break;
+        case 'resource':
+            if (item.name === '下品灵石') {
+                gameState.spiritStones += 10;
+            } else if (item.name === '中品灵石') {
+                gameState.spiritStones += 100;
+            } else if (item.name === '上品灵石') {
+                gameState.spiritStones += 1000;
+            }
+            break;
+        default:
+            // 其他物品暂时只记录日志
+            addLog(`[获得] ${item.name}已加入背包`, 'text-blue-400');
+    }
+}
+
+// 显示拍卖会
+export function showAuction(gameState) {
+    const modal = document.getElementById('auctionModal');
+    const auctionItems = document.getElementById('auctionItems');
+    const auctionTimer = document.getElementById('auctionTimer');
+    
+    if (!modal || !auctionItems) return;
+    
+    // 如果拍卖会为空或已结束，生成新的拍卖会
+    if (gameState.auctionItems.length === 0 || Date.now() > gameState.auctionEndTime) {
+        generateAuctionItems(gameState);
+        // 初始NPC竞拍，让拍卖会一开始就有活动
+        setTimeout(() => {
+            for (let i = 0; i < 3; i++) { // 初始3次NPC竞拍
+                setTimeout(() => simulateNPCBidding(gameState), i * 1000);
+            }
+        }, 2000);
+    }
+    
+    auctionItems.innerHTML = '';
+    
+    gameState.auctionItems.forEach(item => {
+        const itemCard = createAuctionItemCard(item, gameState);
+        auctionItems.appendChild(itemCard);
+    });
+    
+    // 更新拍卖会计时器
+    updateAuctionTimer(gameState);
+    
+    // 显示模态框
+    modal.classList.remove('hidden');
+    
+    // 设置关闭事件
+    const closeBtn = document.getElementById('closeAuctionModal');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+    }
+    
+    // 启动计时器更新
+    if (!window.auctionTimerInterval) {
+        window.auctionTimerInterval = setInterval(() => {
+            updateAuctionTimer(gameState);
+        }, 1000);
+    }
+}
+
+// 生成拍卖会物品
+function generateAuctionItems(gameState) {
+    gameState.auctionItems = [];
+    gameState.playerBids = {};
+    
+    const itemCount = Math.floor(Math.random() * 3) + AUCTION_CONFIG.START_ITEMS; // 3-5个物品
+    
+    for (let i = 0; i < itemCount; i++) {
+        // 拍卖会物品质量更高
+        const availableItems = MARKET_ITEMS.filter(item => 
+            item.rarity !== 'junk' && item.rarity !== 'common'
+        );
+        const template = availableItems[Math.floor(Math.random() * availableItems.length)];
+        
+        const item = {
+            ...template,
+            id: Date.now() + i,
+            currentBid: Math.floor(template.basePrice * 0.5), // 起拍价为原价的50%
+            bidder: null,
+            bidCount: 0
+        };
+        gameState.auctionItems.push(item);
+    }
+    
+    gameState.auctionEndTime = Date.now() + AUCTION_CONFIG.AUCTION_DURATION;
+}
+
+// 创建拍卖物品卡片
+function createAuctionItemCard(item, gameState) {
+    const card = document.createElement('div');
+    const rarityInfo = RARITY_CONFIG[item.rarity] || RARITY_CONFIG.common;
+    const timeLeft = Math.max(0, gameState.auctionEndTime - Date.now());
+    const isPlayerHighest = gameState.playerBids[item.id] === item.currentBid;
+    
+    card.className = `p-4 bg-slate-800 rounded ancient-border ${isPlayerHighest ? 'border-green-500' : ''}`;
+    
+    card.innerHTML = `
+        <div class="flex justify-between items-start mb-2">
+            <h4 class="font-bold ${rarityInfo.color}">${item.name}</h4>
+            <span class="text-xs px-2 py-1 bg-slate-700 rounded ${rarityInfo.color}">${rarityInfo.name}</span>
+        </div>
+        <p class="text-xs text-amber-300 mb-3">${item.description}</p>
+        <div class="space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-emerald-400 font-bold">当前出价: ${item.currentBid}灵石</span>
+                ${item.bidder ? `<span class="text-xs text-blue-400">出价者: ${item.bidder}</span>` : ''}
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="placeBid(${item.id}, ${item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT})" 
+                        class="px-3 py-1 bg-yellow-600 hover:bg-yellow-500 text-white text-xs rounded transition-colors">
+                    出价 ${item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT}
+                </button>
+                <button onclick="placeBid(${item.id}, ${item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT * 2})" 
+                        class="px-3 py-1 bg-orange-600 hover:bg-orange-500 text-white text-xs rounded transition-colors">
+                    出价 ${item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT * 2}
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+// 出价
+window.placeBid = function(itemId, bidAmount) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const item = gameState.auctionItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (bidAmount <= item.currentBid) {
+        addLog('[拍卖会] 出价必须高于当前价格', 'text-red-400');
+        return;
+    }
+    
+    if (gameState.spiritStones < bidAmount) {
+        addLog('[拍卖会] 灵石不足', 'text-red-400');
+        return;
+    }
+    
+    // 如果玩家之前有出价，退还之前的出价
+    if (gameState.playerBids[itemId]) {
+        gameState.spiritStones += gameState.playerBids[itemId];
+    }
+    
+    // 扣除新的出价
+    gameState.spiritStones -= bidAmount;
+    gameState.playerBids[itemId] = bidAmount;
+    
+    // 更新拍卖物品
+    item.currentBid = bidAmount;
+    item.bidder = gameState.playerName;
+    item.bidCount++;
+    
+    // 移除延时机制，让拍卖更紧凑
+    // const timeLeft = gameState.auctionEndTime - Date.now();
+    // if (timeLeft < 30000) {
+    //     gameState.auctionEndTime += AUCTION_CONFIG.EXTENSION_TIME;
+    //     addLog('[拍卖会] 竞争激烈，拍卖时间延长10秒！', 'text-yellow-400');
+    // }
+    
+    addLog(`[拍卖会] ${gameState.playerName}对${item.name}出价${bidAmount}灵石`, 'text-yellow-400');
+    
+    // 刷新显示
+    showAuction(gameState);
+    if (window.game) window.game.updateDisplay();
+};
+
+// 更新拍卖会计时器
+function updateAuctionTimer(gameState) {
+    const timerElement = document.getElementById('auctionTimer');
+    if (!timerElement) return;
+    
+    const timeLeft = Math.max(0, gameState.auctionEndTime - Date.now());
+    
+    if (timeLeft === 0) {
+        // 拍卖会结束，处理结果
+        endAuction(gameState);
+        timerElement.textContent = '拍卖会已结束';
+    } else {
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        timerElement.textContent = `剩余时间: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // NPC竞拍活动 - 随机让NPC参与竞拍
+        if (Math.random() < 0.4) { // 提高到40%概率触发NPC竞拍
+            simulateNPCBidding(gameState);
+        }
+    }
+}
+
+// NPC竞拍模拟
+function simulateNPCBidding(gameState) {
+    if (gameState.auctionItems.length === 0) return;
+    
+    // 随机选择一个物品进行竞拍
+    const item = gameState.auctionItems[Math.floor(Math.random() * gameState.auctionItems.length)];
+    
+    // NPC名字池
+    const npcNames = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君',
+        '逍遥散人', '红尘剑客', '白云禅师', '青莲剑仙', '紫虚真人'
+    ];
+    
+    const npcName = npcNames[Math.floor(Math.random() * npcNames.length)];
+    
+    // 计算NPC出价策略
+    const minBid = item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT;
+    const maxBid = item.currentBid + Math.floor(item.value * 0.5); // 提高到物品价值的50%
+    
+    if (minBid <= maxBid && Math.random() < 0.85) { // 提高到85%概率出价
+        const bidAmount = Math.floor(Math.random() * (maxBid - minBid + 1)) + minBid;
+        
+        item.currentBid = bidAmount;
+        item.bidder = npcName;
+        item.bidCount++;
+        
+        // 根据NPC类型添加不同的竞拍消息
+        const messages = [
+            `[宗门见闻] ${npcName}对${item.name}出价${bidAmount}灵石，神情志在必得`,
+            `[宗门见闻] ${npcName}冷静地举起号牌，${item.name}价格升至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}微微一笑，${item.name}被抬价至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}毫不犹豫地出价${bidAmount}灵石竞拍${item.name}`,
+            `[宗门见闻] ${npcName}眼中精光一闪，${item.name}价格飙升至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}冷哼一声："${item.name}我志在必得！" 出价${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}轻蔑一笑："这点灵石也敢竞价？" 加价至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}怒目而视："谁敢与我争夺${item.name}！" 出价${bidAmount}灵石`
+        ];
+        
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        addLog(message, 'text-cyan-400');
+        
+        // 随机触发NPC冲突
+        if (Math.random() < 0.3) { // 30%概率触发冲突
+            triggerNPCConflict(npcName, item, bidAmount);
+        }
+        
+        // 刷新拍卖会显示
+        showAuction(gameState);
+    }
+}
+
+// NPC冲突系统
+function triggerNPCConflict(npcName, item, bidAmount) {
+    const npcNames = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君',
+        '逍遥散人', '红尘剑客', '白云禅师', '青莲剑仙', '紫虚真人'
+    ];
+    
+    // 随机选择一个冲突对象
+    const conflictNPC = npcNames.filter(name => name !== npcName)[Math.floor(Math.random() * (npcNames.length - 1))];
+    
+    const conflicts = [
+        `[宗门见闻] ${conflictNPC}冷笑道："${npcName}，你出价倒是挺大方啊！"`,
+        `[宗门见闻] ${conflictNPC}眼神不善地盯着${npcName}："这${item.name}我是要定了！"`,
+        `[宗门见闻] ${conflictNPC}拍桌而起："${npcName}，你这是在挑衅吗？"`,
+        `[宗门见闻] ${conflictNPC}低声威胁："${npcName}，你最好想清楚再出价！"`,
+        `[宗门见闻] ${conflictNPC}剑气外露："为了${item.name}，我与你势不两立！"`
+    ];
+    
+    const conflict = conflicts[Math.floor(Math.random() * conflicts.length)];
+    addLog(conflict, 'text-orange-400');
+}
+
+// 拍卖会后的对战消息
+function generatePostAuctionBattles(gameState) {
+    const battleNPCs = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君'
+    ];
+    
+    // 随机生成1-3个对战消息
+    const battleCount = Math.floor(Math.random() * 3) + 1;
+    
+    setTimeout(() => {
+        for (let i = 0; i < battleCount; i++) {
+            setTimeout(() => {
+                const npc1 = battleNPCs[Math.floor(Math.random() * battleNPCs.length)];
+                const npc2 = battleNPCs.filter(n => n !== npc1)[Math.floor(Math.random() * (battleNPCs.length - 1))];
+                
+                const battles = [
+                    `[宗门见闻] ⚔️ ${npc1}与${npc2}在拍卖会后大打出手，灵气激荡！`,
+                    `[宗门见闻] 💥 ${npc1}与${npc2}因拍卖会积怨，在城中激战三百回合！`,
+                    `[宗门见闻] 🔥 ${npc1}怒火攻心，追杀${npc2}至城外！`,
+                    `[宗门见闻] ⚡ ${npc1}与${npc2}约定三日后决战紫禁之巅！`,
+                    `[宗门见闻] 🌪️ ${npc1}与${npc2}的战斗波及半个城池，各大宗门震惊！`,
+                    `[宗门见闻] 💀 ${npc1}与${npc2}死战，最终两败俱伤，各自疗伤而去！`,
+                    `[宗门见闻] 🎭 ${npc1}与${npc2}的恩怨传遍修真界，成为热议话题！`
+                ];
+                
+                const battle = battles[Math.floor(Math.random() * battles.length)];
+                addLog(battle, 'text-red-500 font-bold');
+            }, i * 3000);
+        }
+    }, 2000);
+}
+
+// 结束拍卖会
+function endAuction(gameState) {
+    gameState.auctionItems.forEach(item => {
+        if (item.bidder === gameState.playerName) {
+            // 玩家赢得了拍卖
+            applyItemEffect(item, gameState);
+            addLog(`[拍卖会] 🎉 恭喜！您以${item.currentBid}灵石成功拍得${item.name}`, 'text-green-400 font-bold');
+        } else if (item.bidder) {
+            // 其他人赢得了拍卖，添加更多趣味描述
+            const winMessages = [
+                `[拍卖会] ${item.name}最终被${item.bidder}以${item.currentBid}灵石收入囊中`,
+                `[拍卖会] 💰 ${item.bidder}豪掷${item.currentBid}灵石，将${item.name}拍下`,
+                `[拍卖会] ${item.bidder}志在必得，${item.name}以${item.currentBid}灵石成交`,
+                `[拍卖会] 经过激烈竞拍，${item.name}被${item.bidder}以${item.currentBid}灵石获得`
+            ];
+            const message = winMessages[Math.floor(Math.random() * winMessages.length)];
+            addLog(message, 'text-blue-400');
+        } else {
+            // 流拍
+            addLog(`[拍卖会] ${item.name}无人问津，遗憾流拍`, 'text-gray-400');
+        }
+        
+        // 退还未中标的玩家的出价
+        if (gameState.playerBids[item.id] && item.bidder !== gameState.playerName) {
+            gameState.spiritStones += gameState.playerBids[item.id];
+            addLog(`[拍卖会] 💰 退还${item.name}的出价${gameState.playerBids[item.id]}灵石`, 'text-green-400');
+        }
+    });
+    
+    // 清空拍卖会
+    gameState.auctionItems = [];
+    gameState.playerBids = {};
+    gameState.auctionEndTime = 0;
+    
+    // 清除计时器
+    if (window.auctionTimerInterval) {
+        clearInterval(window.auctionTimerInterval);
+        window.auctionTimerInterval = null;
+    }
+    
+    // 关闭拍卖会界面
+    const modal = document.getElementById('auctionModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // 生成拍卖会后的对战消息
+    generatePostAuctionBattles(gameState);
+    
+    if (window.game) window.game.updateDisplay();
+}
+
+// 显示功法阁
+export function showTechniqueHall(gameState) {
+    const modal = document.getElementById('techniqueHallModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // TODO: 实现功法阁内容
+        console.log('显示功法阁');
+    }
+}
+
+// 显示宝库
+export function showTreasury(gameState) {
+    const modal = document.getElementById('treasuryModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // TODO: 实现宝库内容
+        console.log('显示宝库');
+    }
+}
+
+// 显示往昔记录
+export function showPastRecords(gameState) {
+    const modal = document.getElementById('pastRecordsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // TODO: 实现往昔记录内容
+        console.log('显示往昔记录');
+    }
+}

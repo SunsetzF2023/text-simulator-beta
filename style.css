@@ -1,0 +1,655 @@
+/* 修仙宗门模拟器样式 */
+
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'SimSun', sans-serif;
+    background-color: #020617;
+    color: #34d399;
+}
+
+/* 布局类 */
+.min-h-screen {
+    min-height: 100vh;
+}
+
+.flex {
+    display: flex;
+}
+
+.hidden {
+    display: none;
+}
+
+.w-64 {
+    width: 16rem;
+}
+
+.w-80 {
+    width: 20rem;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.max-w-md {
+    max-width: 28rem;
+}
+
+.max-w-2xl {
+    max-width: 42rem;
+}
+
+.mx-4 {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.space-x-2 > * + * {
+    margin-left: 0.5rem;
+}
+
+.space-x-4 > * + * {
+    margin-left: 1rem;
+}
+
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+/* 间距 */
+.p-2 {
+    padding: 0.5rem;
+}
+
+.p-3 {
+    padding: 0.75rem;
+}
+
+.p-4 {
+    padding: 1rem;
+}
+
+.p-6 {
+    padding: 1.5rem;
+}
+
+.p-8 {
+    padding: 2rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+
+/* 文字样式 */
+.text-xs {
+    font-size: 0.75rem;
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.text-lg {
+    font-size: 1.125rem;
+}
+
+.text-xl {
+    font-size: 1.25rem;
+}
+
+.text-2xl {
+    font-size: 1.5rem;
+}
+
+.text-3xl {
+    font-size: 1.875rem;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* 颜色类 */
+.bg-slate-950 {
+    background-color: #020617;
+}
+
+.bg-slate-900 {
+    background-color: #0f172a;
+}
+
+.bg-slate-800 {
+    background-color: #1e293b;
+}
+
+.bg-slate-700 {
+    background-color: #334155;
+}
+
+.bg-black {
+    background-color: #000000;
+}
+
+.bg-opacity-80 {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.bg-opacity-90 {
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+.bg-emerald-600 {
+    background-color: #059669;
+}
+
+.bg-purple-600 {
+    background-color: #9333ea;
+}
+
+.bg-blue-600 {
+    background-color: #2563eb;
+}
+
+.bg-yellow-600 {
+    background-color: #ca8a04;
+}
+
+.bg-amber-600 {
+    background-color: #d97706;
+}
+
+.hover\:bg-emerald-500:hover {
+    background-color: #10b981;
+}
+
+.hover\:bg-purple-500:hover {
+    background-color: #8b5cf6;
+}
+
+.hover\:bg-blue-500:hover {
+    background-color: #3b82f6;
+}
+
+.hover\:bg-yellow-500:hover {
+    background-color: #eab308;
+}
+
+.hover\:bg-amber-500:hover {
+    background-color: #f59e0b;
+}
+
+.text-emerald-400 {
+    color: #34d399;
+}
+
+.text-amber-200 {
+    color: #fde68a;
+}
+
+.text-amber-300 {
+    color: #fcd34d;
+}
+
+.text-purple-400 {
+    color: #a78bfa;
+}
+
+.text-blue-400 {
+    color: #60a5fa;
+}
+
+.text-yellow-400 {
+    color: #fbbf24;
+}
+
+.text-red-400 {
+    color: #f87171;
+}
+
+.text-green-400 {
+    color: #4ade80;
+}
+
+.text-pink-400 {
+    color: #f472b6;
+}
+
+.text-white {
+    color: #ffffff;
+}
+
+/* 边框 */
+.border {
+    border-width: 1px;
+}
+
+.border-r {
+    border-right-width: 1px;
+}
+
+.border-l {
+    border-left-width: 1px;
+}
+
+.border-amber-500 {
+    border-color: #f59e0b;
+}
+
+.rounded {
+    border-radius: 0.25rem;
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+/* 定位 */
+.fixed {
+    position: fixed;
+}
+
+.inset-0 {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.z-50 {
+    z-index: 50;
+}
+
+/* 溢出 */
+.overflow-y-auto {
+    overflow-y: auto;
+}
+
+.max-h-64 {
+    max-height: 16rem;
+}
+
+.max-h-96 {
+    max-height: 24rem;
+}
+
+.h-96 {
+    height: 24rem;
+}
+
+/* 过渡 */
+.transition-colors {
+    transition-property: color, background-color, border-color;
+    transition-duration: 0.3s;
+}
+
+/* 表单元素 */
+input, select, button {
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.px-2 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.py-1 {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.py-4 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* 网格 */
+.grid {
+    display: grid;
+}
+
+.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+/* 自定义样式 */
+.ancient-border {
+    border: 1px solid #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.glow-text {
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background: #f59e0b;
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 按钮和交互效果 */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 弟子卡片样式 */
+.disciple-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.disciple-card:hover {
+    background-color: #374151;
+    transform: translateX(4px);
+}
+
+/* 日志样式 */
+.log-entry {
+    border-left: 3px solid #f59e0b;
+    padding-left: 12px;
+}
+
+.log-entry.cultivation {
+    border-left-color: #4ade80;
+}
+
+.log-entry.adventure {
+    border-left-color: #fbbf24;
+}
+
+.log-entry.accident {
+    border-left-color: #f87171;
+}
+
+.log-entry.social {
+    border-left-color: #60a5fa;
+}
+
+/* 模态框样式 */
+.fixed {
+    backdrop-filter: blur(4px);
+}
+
+/* 单选按钮样式 */
+input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+/* 块级元素 */
+.block {
+    display: block;
+}
+
+/* 标签样式 */
+label {
+    display: block;
+}
+
+/* 弟子详情样式 */
+.trait-positive {
+    color: #4ade80;
+}
+
+.trait-negative {
+    color: #f87171;
+}
+
+.trait-neutral {
+    color: #fbbf24;
+}
+
+/* 拍卖卡片样式 */
+.task-difficulty-easy {
+    border-left: 3px solid #4ade80;
+}
+
+.task-difficulty-medium {
+    border-left: 3px solid #fbbf24;
+}
+
+.task-difficulty-hard {
+    border-left: 3px solid #f87171;
+}
+
+/* 坊市和拍卖会样式 */
+.market-item {
+    transition: all 0.3s ease;
+}
+
+.market-item:hover {
+    background-color: #374151;
+    transform: translateY(-2px);
+}
+
+.auction-item {
+    transition: all 0.3s ease;
+}
+
+.auction-item:hover {
+    background-color: #374151;
+    transform: translateY(-2px);
+}
+
+.auction-item.border-green-500 {
+    border-color: #10b981;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+/* 稀有度颜色 */
+.text-gray-400 {
+    color: #9ca3af;
+}
+
+.text-white {
+    color: #ffffff;
+}
+
+.text-green-400 {
+    color: #4ade80;
+}
+
+.text-blue-400 {
+    color: #60a5fa;
+}
+
+.text-purple-400 {
+    color: #a78bfa;
+}
+
+/* 网格布局 */
+.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 间距调整 */
+.space-x-2 > * + * {
+    margin-left: 0.5rem;
+}
+
+.space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+/* 按钮变体 */
+.bg-orange-600 {
+    background-color: #ea580c;
+}
+
+.hover\:bg-orange-500:hover {
+    background-color: #f97316;
+}
+
+.bg-red-600 {
+    background-color: #dc2626;
+}
+
+.hover\:bg-red-500:hover {
+    background-color: #ef4444;
+}
+
+.bg-yellow-600 {
+    background-color: #ca8a04;
+}
+
+.hover\:bg-yellow-500:hover {
+    background-color: #eab308;
+}
+
+.bg-green-600 {
+    background-color: #16a34a;
+}
+
+.hover\:bg-green-500:hover {
+    background-color: #22c55e;
+}
+
+.bg-blue-600 {
+    background-color: #2563eb;
+}
+
+.hover\:bg-blue-500:hover {
+    background-color: #3b82f6;
+}
+
+.bg-gray-600 {
+    background-color: #4b5563;
+}
+
+.text-gray-400 {
+    color: #9ca3af;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .max-w-3xl {
+        max-width: 100%;
+        margin: 1rem;
+    }
+}
