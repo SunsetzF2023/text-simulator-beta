@@ -1,4 +1,4 @@
-import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG } from '../data/constants.js';
+import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES } from '../data/constants.js';
 import { advancedAI } from '../ai/AdvancedAI.js';
 
 // 弟子类
@@ -28,6 +28,9 @@ export class Disciple {
         // 词条
         this.traits = this.generateTraits();
         
+        // 命格系统
+        this.destiny = this.generateDestiny();
+        
         // 个人日志
         this.personalLog = [];
         
@@ -55,7 +58,7 @@ export class Disciple {
             this.cultivation = Math.floor(Math.random() * 20) + 10; // 10-30
         }
         
-        this.addPersonalLog(`[诞生] ${this.name} 加入宗门，灵根：${this.spiritRoot}，体质：${this.constitution.name}，家世：${this.familyBackground.name}，天赋：${this.talent.toFixed(1)}`, 0);
+        this.addPersonalLog(`[诞生] ${this.name} 加入宗门，灵根：${this.spiritRoot}，体质：${this.constitution.name}，家世：${this.familyBackground.name}，天赋：${this.talent.toFixed(1)}${this.destiny ? `，命格：${this.destiny.name}` : ''}`, 0);
     }
     
     // 生成年龄 - 更合理的分布，增加年轻弟子概率
@@ -78,6 +81,132 @@ export class Disciple {
         else {
             return Math.floor(Math.random() * 15) + 31;
         }
+    }
+    
+    // 生成命格
+    generateDestiny() {
+        const random = Math.random();
+        
+        // 60%概率无命格（普通人）
+        if (random < 0.60) {
+            return null;
+        }
+        
+        // 40%概率有命格
+        const destinyType = random < 0.80 ? 'positive' : 'negative'; // 80%正向，20%负向
+        const destinies = DESTINIES[destinyType];
+        
+        // 根据稀有度概率选择命格
+        const destinyRandom = Math.random();
+        let selectedDestiny = null;
+        
+        for (const destiny of destinies) {
+            const rarityChance = {
+                'common': 0.50,
+                'uncommon': 0.30,
+                'rare': 0.15,
+                'epic': 0.04,
+                'legendary': 0.01
+            };
+            
+            if (destinyRandom <= rarityChance[destiny.rarity]) {
+                selectedDestiny = destiny;
+                break;
+            }
+        }
+        
+        // 如果没有选中，选择一个普通的
+        if (!selectedDestiny) {
+            selectedDestiny = destinies.find(d => d.rarity === 'common');
+        }
+        
+        return selectedDestiny;
+    }
+    
+    // 获取命格加成
+    getDestinyEffects() {
+        if (!this.destiny) {
+            return {};
+        }
+        return this.destiny.effects;
+    }
+    
+    // 应用命格效果到属性
+    applyDestinyEffects() {
+        const effects = this.getDestinyEffects();
+        
+        // 修炼速度加成
+        if (effects.cultivation) {
+            return effects.cultivation;
+        }
+        
+        // 战斗力加成
+        if (effects.combat) {
+            return effects.combat;
+        }
+        
+        // 任务成功率加成
+        if (effects.taskSuccess) {
+            return effects.taskSuccess;
+        }
+        
+        return 1.0; // 默认无加成
+    }
+    
+    // 计算实际修炼速度（综合体质和命格加成）
+    getCultivationSpeed() {
+        let baseSpeed = 1.0;
+        
+        // 体质加成
+        if (this.constitution && this.constitution.cultivation) {
+            baseSpeed *= this.constitution.cultivation;
+        }
+        
+        // 命格加成
+        const destinyEffects = this.getDestinyEffects();
+        if (destinyEffects.cultivation) {
+            baseSpeed *= destinyEffects.cultivation;
+        }
+        
+        // 天赋加成（天赋值转换为加成系数）
+        const talentBonus = 0.5 + (this.talent / 100); // 0.5-1.5的加成
+        baseSpeed *= talentBonus;
+        
+        return baseSpeed;
+    }
+    
+    // 计算战斗力（综合体质和命格加成）
+    getCombatPower() {
+        let basePower = this.talent; // 基础战斗力基于天赋
+        
+        // 体质加成
+        if (this.constitution && this.constitution.combat) {
+            basePower *= this.constitution.combat;
+        }
+        
+        // 命格加成
+        const destinyEffects = this.getDestinyEffects();
+        if (destinyEffects.combat) {
+            basePower *= destinyEffects.combat;
+        }
+        
+        return Math.floor(basePower);
+    }
+    
+    // 计算任务成功率
+    getTaskSuccessRate(taskDifficulty = 1.0) {
+        let baseRate = this.talent / 100; // 基础成功率基于天赋
+        
+        // 命格加成
+        const destinyEffects = this.getDestinyEffects();
+        if (destinyEffects.taskSuccess) {
+            baseRate *= destinyEffects.taskSuccess;
+        }
+        
+        // 考虑任务难度
+        baseRate /= taskDifficulty;
+        
+        return Math.min(0.95, Math.max(0.05, baseRate)); // 限制在5%-95%之间
     }
     
     // 生成特殊体质
@@ -241,17 +370,21 @@ export class Disciple {
     
     // 触发修炼事件
     triggerCultivationEvent() {
+        const cultivationSpeed = this.getCultivationSpeed();
+        const baseExperience = Math.floor(Math.random() * 5) + 1;
+        const enhancedExperience = Math.floor(baseExperience * cultivationSpeed);
+        
         const events = [
             {
                 type: 'cultivation',
                 message: `${this.name}正在专心修炼，修为有所提升。`,
-                reward: { experience: Math.floor(Math.random() * 5) + 1 },
+                reward: { experience: enhancedExperience },
                 discipleId: this.id
             },
             {
                 type: 'breakthrough',
                 message: `${this.name}修炼有所感悟，修为大进！`,
-                reward: { experience: Math.floor(Math.random() * 15) + 10 },
+                reward: { experience: Math.floor(enhancedExperience * 3) + 10 },
                 discipleId: this.id
             }
         ];
@@ -301,8 +434,8 @@ export class Disciple {
             return null;
         }
         
-        // 根据天赋和任务难度计算成功率
-        const successRate = Math.min(0.9, this.talent / 100 / this.currentTask.difficulty);
+        // 使用新的任务成功率计算
+        const successRate = this.getTaskSuccessRate(this.currentTask.difficulty);
         const success = Math.random() < successRate;
         
         this.onTask = false;
@@ -317,8 +450,11 @@ export class Disciple {
                 reward: task.reward
             };
         } else {
-            // 任务失败，可能受伤
-            if (Math.random() < 0.3) {
+            // 任务失败，可能受伤（考虑命格的影响）
+            const destinyEffects = this.getDestinyEffects();
+            const injuryChance = destinyEffects.injuryChance || 1.0;
+            
+            if (Math.random() < 0.3 * injuryChance) {
                 this.injured = true;
                 this.addPersonalLog(`[任务] 执行任务失败并受伤`, Date.now());
                 return {
