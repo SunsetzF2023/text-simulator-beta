@@ -2,6 +2,9 @@ import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFI
 
 // 更新主界面显示
 export function updateDisplay(gameState) {
+    console.log('=== updateDisplay 开始 ===');
+    console.log('gameState:', gameState);
+    
     // 强制迁移天赋词条数据
     gameState.disciples.forEach(disciple => {
         if (disciple.traits && disciple.traits.length > 0) {
@@ -13,9 +16,11 @@ export function updateDisplay(gameState) {
         }
     });
     
+    console.log('开始更新宗门架构');
     // 更新宗门架构
     updateOrganizationDisplay(gameState);
     
+    console.log('开始更新宗门信息');
     // 更新宗门信息
     const displaySectName = document.getElementById('displaySectName');
     const displayName = document.getElementById('displayName');
@@ -1330,6 +1335,8 @@ window.grantItemToDisciple = function(category, itemIndex) {
     const item = gameState.treasury[category][itemIndex];
     if (!item) return;
     
+    console.log('创建弟子选择弹窗，可用弟子:', gameState.disciples.filter(d => d.alive));
+    
     // 创建弟子选择弹窗
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
@@ -1346,6 +1353,7 @@ window.grantItemToDisciple = function(category, itemIndex) {
                         <div class="text-emerald-400 font-bold">${disciple.name}</div>
                         <div class="text-xs text-gray-400">境界: ${disciple.realm}</div>
                         <div class="text-xs text-gray-400">天赋: ${disciple.talent.toFixed(1)}</div>
+                        <div class="text-xs text-gray-500">ID: ${disciple.id}</div>
                     </button>
                 `).join('')}
             </div>
