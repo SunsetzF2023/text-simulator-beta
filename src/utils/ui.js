@@ -818,35 +818,39 @@ window.buyMarketItem = function(itemId) {
     }
 };
 
-// 应用物品效果
+// 应用物品效果（存入宝库）
 function applyItemEffect(item, gameState) {
-    switch (item.type) {
-        case 'pill':
-            if (item.name === '回血丹') {
-                // 治疗一个受伤的弟子
-                const injuredDisciples = gameState.disciples.filter(d => d.alive && d.injured);
-                if (injuredDisciples.length > 0) {
-                    const disciple = injuredDisciples[0];
-                    disciple.heal();
-                    addLog(`[丹药] ${disciple.name}服用了${item.name}，伤势恢复`, 'text-green-400');
-                }
-            } else if (item.name === '破障丹') {
-                gameState.breakthroughPills += 1;
-                addLog(`[丹药] 获得1枚破境丹`, 'text-purple-400');
-            }
-            break;
-        case 'resource':
-            if (item.name === '下品灵石') {
-                gameState.spiritStones += 10;
-            } else if (item.name === '中品灵石') {
-                gameState.spiritStones += 100;
-            } else if (item.name === '上品灵石') {
-                gameState.spiritStones += 1000;
-            }
-            break;
-        default:
-            // 其他物品暂时只记录日志
-            addLog(`[获得] ${item.name}已加入背包`, 'text-blue-400');
+    // 将物品存入宝库
+    const category = getCategoryByType(item.type);
+    
+    // 检查是否已有相同物品
+    const existingItem = gameState.treasury[category].find(i => i.name === item.name);
+    if (existingItem) {
+        existingItem.quantity = (existingItem.quantity || 1) + 1;
+    } else {
+        // 创建新物品
+        const newItem = {
+            id: Date.now() + Math.random(),
+            name: item.name,
+            type: item.type,
+            rarity: item.rarity || 'common',
+            description: item.description || '珍贵的物品',
+            quantity: 1,
+            obtainedFrom: item.obtainedFrom || '坊市购买'
+        };
+        gameState.treasury[category].push(newItem);
+    }
+    
+    addLog(`[宝库] ${item.name} 已存入宗门宝库`, 'text-yellow-400');
+}
+
+// 根据物品类型获取分类
+function getCategoryByType(itemType) {
+    switch (itemType) {
+        case 'pill': return 'pills';
+        case 'weapon': return 'weapons';
+        case 'material': return 'materials';
+        default: return 'other';
     }
 }
 
@@ -1205,9 +1209,339 @@ export function showTreasury(gameState) {
     const modal = document.getElementById('treasuryModal');
     if (modal) {
         modal.classList.remove('hidden');
-        // TODO: 实现宝库内容
-        console.log('显示宝库');
+        showTreasuryCategory('pills', gameState);
     }
+}
+
+// 显示宝库分类
+window.showTreasuryCategory = function(category, gameState) {
+    if (!gameState) gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const treasuryItems = document.getElementById('treasuryItems');
+    if (!treasuryItems) return;
+    
+    treasuryItems.innerHTML = '';
+    
+    const items = gameState.treasury[category] || [];
+    
+    if (items.length === 0) {
+        treasuryItems.innerHTML = `
+            <div class="col-span-3 text-center text-amber-300 py-8">
+                <p class="text-lg mb-2">该分类暂无物品</p>
+                <p class="text-sm">通过坊市购买或拍卖获得物品会自动存入宝库</p>
+            </div>
+        `;
+    } else {
+        items.forEach((item, index) => {
+            const itemCard = createTreasuryItemCard(item, category, index, gameState);
+            treasuryItems.appendChild(itemCard);
+        });
+    }
+    
+    // 更新分类按钮状态
+    updateTreasuryCategoryButtons(category);
+};
+
+// 更新宝库分类按钮状态
+function updateTreasuryCategoryButtons(activeCategory) {
+    const buttons = document.querySelectorAll('[onclick^="showTreasuryCategory"]');
+    buttons.forEach(button => {
+        const category = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+        if (category === activeCategory) {
+            button.className = button.className.replace('bg-blue-600', 'bg-blue-800').replace('hover:bg-blue-500', 'hover:bg-blue-700');
+        } else {
+            button.className = button.className.replace('bg-blue-800', 'bg-blue-600').replace('hover:bg-blue-700', 'hover:bg-blue-500');
+        }
+    });
+}
+
+// 创建宝库物品卡片
+function createTreasuryItemCard(item, category, index, gameState) {
+    const card = document.createElement('div');
+    const rarityColors = {
+        'common': 'text-gray-400',
+        'uncommon': 'text-green-400',
+        'rare': 'text-blue-400',
+        'epic': 'text-purple-400',
+        'legendary': 'text-yellow-400'
+    };
+    
+    const rarityColor = rarityColors[item.rarity] || 'text-gray-400';
+    
+    card.className = 'p-3 bg-slate-800 rounded ancient-border';
+    card.innerHTML = `
+        <div class="mb-2">
+            <div class="${rarityColor} font-bold text-sm">${item.name}</div>
+            <div class="text-xs text-gray-400">${item.description || '珍贵的物品'}</div>
+            <div class="text-xs text-amber-300">数量: ${item.quantity || 1}</div>
+            <div class="text-xs text-gray-500">来源: ${item.obtainedFrom || '未知'}</div>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="grantItemToDisciple('${category}', ${index})" 
+                    class="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded transition-colors">
+                赐予弟子
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+// 赐予物品给弟子
+window.grantItemToDisciple = function(category, itemIndex) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const item = gameState.treasury[category][itemIndex];
+    if (!item) return;
+    
+    // 创建弟子选择弹窗
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4">
+            <h2 class="text-xl font-bold text-amber-200 mb-4">选择弟子</h2>
+            <div class="mb-4">
+                <p class="text-sm text-amber-300">将《${item.name}》赐予哪位弟子？</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto mb-4">
+                ${gameState.disciples.filter(d => d.alive).map(disciple => `
+                    <button onclick="confirmGrantItem('${category}', ${itemIndex}, '${disciple.id}')" 
+                            class="p-2 bg-slate-800 hover:bg-slate-700 rounded text-left transition-colors">
+                        <div class="text-emerald-400 font-bold">${disciple.name}</div>
+                        <div class="text-xs text-gray-400">境界: ${disciple.realm}</div>
+                        <div class="text-xs text-gray-400">天赋: ${disciple.talent.toFixed(1)}</div>
+                    </button>
+                `).join('')}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded transition-colors">
+                取消
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+// 确认赐予物品
+window.confirmGrantItem = function(category, itemIndex, discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const item = gameState.treasury[category][itemIndex];
+    const disciple = gameState.disciples.find(d => d.id === discipleId);
+    
+    if (item && disciple) {
+        // 从宝库中移除物品
+        if (item.quantity > 1) {
+            item.quantity--;
+        } else {
+            gameState.treasury[category].splice(itemIndex, 1);
+        }
+        
+        // 应用物品效果到弟子
+        applyItemEffectToDisciple(item, disciple);
+        
+        // 增加忠诚度
+        disciple.loyalty = Math.min(100, disciple.loyalty + 5);
+        
+        addLog(`[宝库] 将《${item.name}》赐予${disciple.name}，忠诚度+5`, 'text-green-400');
+        
+        // 关闭弹窗
+        document.querySelector('.fixed').remove();
+        
+        // 刷新显示
+        showTreasuryCategory(category, gameState);
+        if (window.game) window.game.updateDisplay();
+    }
+};
+
+// 对弟子应用物品效果
+function applyItemEffectToDisciple(item, disciple) {
+    // 确保弟子有宝物数组
+    if (!disciple.treasuryItems) {
+        disciple.treasuryItems = [];
+    }
+    
+    // 将物品添加到弟子宝物中
+    const existingItem = disciple.treasuryItems.find(i => i.name === item.name);
+    if (existingItem) {
+        existingItem.quantity = (existingItem.quantity || 1) + 1;
+    } else {
+        disciple.treasuryItems.push({
+            ...item,
+            quantity: 1,
+            obtainedFrom: '宗主赐予',
+            obtainedTime: Date.now()
+        });
+    }
+    
+    // 应用具体效果
+    applyTreasureEffect(item, disciple);
+    
+    // 添加个人日志
+    disciple.addPersonalLog(`[赐予] 获得宗主赐予的《${item.name}》`, Date.now());
+}
+
+// 应用宝物效果
+function applyTreasureEffect(item, disciple) {
+    switch (item.type) {
+        case 'pill':
+            applyPillEffect(item, disciple);
+            break;
+        case 'weapon':
+            applyWeaponEffect(item, disciple);
+            break;
+        case 'material':
+            applyMaterialEffect(item, disciple);
+            break;
+        default:
+            applyOtherEffect(item, disciple);
+    }
+}
+
+// 应用丹药效果
+function applyPillEffect(item, disciple) {
+    switch (item.name) {
+        case '聚气丹':
+            disciple.cultivation += 20;
+            addLog(`[丹药] ${disciple.name}服用聚气丹，修为+20`, 'text-green-400');
+            break;
+        case '筑基丹':
+            disciple.cultivation += 50;
+            addLog(`[丹药] ${disciple.name}服用筑基丹，修为+50`, 'text-green-400');
+            break;
+        case '金丹丸':
+            disciple.cultivation += 100;
+            addLog(`[丹药] ${disciple.name}服用金丹丸，修为+100`, 'text-green-400');
+            break;
+        case '洗髓丹':
+            // 改善体质
+            if (disciple.talent < 90) {
+                disciple.talent = Math.min(90, disciple.talent + 10);
+                addLog(`[丹药] ${disciple.name}服用洗髓丹，天赋+10`, 'text-purple-400');
+            }
+            break;
+        case '换骨丹':
+            // 改善灵根
+            disciple.spiritRoot = upgradeSpiritRoot(disciple.spiritRoot);
+            addLog(`[丹药] ${disciple.name}服用换骨丹，灵根提升为${disciple.spiritRoot}`, 'text-blue-400');
+            break;
+        case '破障丹':
+            // 增加突破成功率
+            if (!disciple.breakthroughBonus) disciple.breakthroughBonus = 0;
+            disciple.breakthroughBonus += 0.2;
+            addLog(`[丹药] ${disciple.name}服用破障丹，突破成功率+20%`, 'text-yellow-400');
+            break;
+        case '回血丹':
+            if (disciple.injured) {
+                disciple.heal();
+                addLog(`[丹药] ${disciple.name}服用了回血丹，伤势恢复`, 'text-green-400');
+            }
+            break;
+        default:
+            // 通用丹药效果
+            disciple.cultivation += 10;
+            addLog(`[丹药] ${disciple.name}服用了${item.name}，修为+10`, 'text-green-400');
+    }
+}
+
+// 应用武器效果
+function applyWeaponEffect(item, disciple) {
+    // 为弟子添加武器属性
+    if (!disciple.weapon) disciple.weapon = {};
+    
+    disciple.weapon = {
+        name: item.name,
+        rarity: item.rarity,
+        combatBonus: getCombatBonusByRarity(item.rarity)
+    };
+    
+    const combatBonus = disciple.weapon.combatBonus;
+    addLog(`[武器] ${disciple.name}装备了${item.name}，战斗力+${combatBonus}`, 'text-red-400');
+}
+
+// 应用材料效果
+function applyMaterialEffect(item, disciple) {
+    switch (item.name) {
+        case '千年灵草':
+            disciple.cultivation += 30;
+            addLog(`[材料] ${disciple.name}使用了千年灵草，修为+30`, 'text-green-400');
+            break;
+        case '万年玄铁':
+            // 可以用来锻造武器，暂时增加战斗力
+            if (!disciple.temporaryBonus) disciple.temporaryBonus = {};
+            disciple.temporaryBonus.combat = (disciple.temporaryBonus.combat || 0) + 15;
+            addLog(`[材料] ${disciple.name}获得了万年玄铁，战斗力+15`, 'text-red-400');
+            break;
+        case '雷击木':
+            // 雷系修士加成
+            if (disciple.spiritRoot === '雷') {
+                disciple.cultivation += 40;
+                addLog(`[材料] ${disciple.name}使用雷击木，修为+40（雷系灵根加成）`, 'text-cyan-400');
+            } else {
+                disciple.cultivation += 20;
+                addLog(`[材料] ${disciple.name}使用了雷击木，修为+20`, 'text-green-400');
+            }
+            break;
+        default:
+            // 通用材料效果
+            disciple.cultivation += 15;
+            addLog(`[材料] ${disciple.name}使用了${item.name}，修为+15`, 'text-green-400');
+    }
+}
+
+// 应用其他物品效果
+function applyOtherEffect(item, disciple) {
+    switch (item.name) {
+        case '功法秘籍':
+            // 增加修炼速度
+            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
+            disciple.cultivationBonus += 0.1;
+            addLog(`[功法] ${disciple.name}学习了功法秘籍，修炼速度+10%`, 'text-purple-400');
+            break;
+        case '修炼心得':
+            disciple.cultivation += 25;
+            addLog(`[心得] ${disciple.name}研读修炼心得，修为+25`, 'text-green-400');
+            break;
+        case '护身符':
+            // 减少受伤概率
+            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
+            disciple.injuryReduction += 0.2;
+            addLog(`[护符] ${disciple.name}佩戴了护身符，受伤概率-20%`, 'text-blue-400');
+            break;
+        default:
+            // 通用效果
+            disciple.cultivation += 10;
+            addLog(`[宝物] ${disciple.name}获得了${item.name}，修为+10`, 'text-green-400');
+    }
+}
+
+// 升级灵根
+function upgradeSpiritRoot(currentRoot) {
+    const rootHierarchy = [
+        '凡人', '金', '木', '水', '火', '土', '雷', '风', '冰', '光', '暗', '五行', '阴阳', '大道'
+    ];
+    
+    const currentIndex = rootHierarchy.indexOf(currentRoot);
+    if (currentIndex < rootHierarchy.length - 1) {
+        return rootHierarchy[currentIndex + 1];
+    }
+    return currentRoot;
+}
+
+// 根据稀有度获取战斗力加成
+function getCombatBonusByRarity(rarity) {
+    const bonuses = {
+        'common': 5,
+        'uncommon': 10,
+        'rare': 20,
+        'epic': 35,
+        'legendary': 50
+    };
+    return bonuses[rarity] || 5;
 }
 
 // 显示往昔记录

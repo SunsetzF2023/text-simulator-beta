@@ -168,6 +168,11 @@ export class Disciple {
             baseSpeed *= destinyEffects.cultivation;
         }
         
+        // 修炼加成
+        if (this.cultivationBonus) {
+            baseSpeed *= (1 + this.cultivationBonus);
+        }
+        
         // 天赋加成（天赋值转换为加成系数）
         const talentBonus = 0.5 + (this.talent / 100); // 0.5-1.5的加成
         baseSpeed *= talentBonus;
@@ -188,6 +193,16 @@ export class Disciple {
         const destinyEffects = this.getDestinyEffects();
         if (destinyEffects.combat) {
             basePower *= destinyEffects.combat;
+        }
+        
+        // 武器加成
+        if (this.weapon && this.weapon.combatBonus) {
+            basePower += this.weapon.combatBonus;
+        }
+        
+        // 临时加成
+        if (this.temporaryBonus && this.temporaryBonus.combat) {
+            basePower += this.temporaryBonus.combat;
         }
         
         return Math.floor(basePower);
@@ -450,11 +465,15 @@ export class Disciple {
                 reward: task.reward
             };
         } else {
-            // 任务失败，可能受伤（考虑命格的影响）
+            // 任务失败，可能受伤（考虑命格和装备的影响）
             const destinyEffects = this.getDestinyEffects();
             const injuryChance = destinyEffects.injuryChance || 1.0;
             
-            if (Math.random() < 0.3 * injuryChance) {
+            // 考虑受伤减少效果
+            const injuryReduction = this.injuryReduction || 0;
+            const finalInjuryChance = 0.3 * injuryChance * (1 - injuryReduction);
+            
+            if (Math.random() < finalInjuryChance) {
                 this.injured = true;
                 this.addPersonalLog(`[任务] 执行任务失败并受伤`, Date.now());
                 return {
