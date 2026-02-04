@@ -832,13 +832,18 @@ window.buyMarketItem = function(itemId) {
 
 // 应用物品效果（存入宝库）
 function applyItemEffect(item, gameState) {
+    console.log('应用物品效果，物品:', item);
+    console.log('当前宝库:', gameState.treasury);
+    
     // 将物品存入宝库
     const category = getCategoryByType(item.type);
+    console.log('物品分类:', category);
     
     // 检查是否已有相同物品
     const existingItem = gameState.treasury[category].find(i => i.name === item.name);
     if (existingItem) {
         existingItem.quantity = (existingItem.quantity || 1) + 1;
+        console.log('更新现有物品数量:', existingItem);
     } else {
         // 创建新物品
         const newItem = {
@@ -851,8 +856,10 @@ function applyItemEffect(item, gameState) {
             obtainedFrom: item.obtainedFrom || '坊市购买'
         };
         gameState.treasury[category].push(newItem);
+        console.log('添加新物品到宝库:', newItem);
     }
     
+    console.log('更新后的宝库:', gameState.treasury);
     addLog(`[宝库] ${item.name} 已存入宗门宝库`, 'text-yellow-400');
 }
 
@@ -1227,15 +1234,26 @@ export function showTreasury(gameState) {
 
 // 显示宝库分类
 window.showTreasuryCategory = function(category) {
+    console.log('showTreasuryCategory被调用，分类:', category);
     const gameState = window.game ? window.game.gameState : null;
-    if (!gameState) return;
+    console.log('gameState:', gameState);
+    if (!gameState) {
+        console.log('gameState为空，返回');
+        return;
+    }
     
+    console.log('宝库数据:', gameState.treasury);
     const treasuryItems = document.getElementById('treasuryItems');
-    if (!treasuryItems) return;
+    if (!treasuryItems) {
+        console.log('找不到treasuryItems元素');
+        return;
+    }
     
     treasuryItems.innerHTML = '';
     
     const items = gameState.treasury[category] || [];
+    console.log(`${category}分类的物品:`, items);
+    console.log('物品数量:', items.length);
     
     if (items.length === 0) {
         treasuryItems.innerHTML = `
