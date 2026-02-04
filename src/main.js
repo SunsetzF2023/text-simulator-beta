@@ -200,6 +200,9 @@ class CultivationGame {
         gameState.gameTick++;
         gameState.gameTime++;
         
+        // 更新时间系统（每分钟算一个游戏时间单位）
+        this.updateTime();
+        
         // 自动增益
         this.processAutoGain();
         
@@ -219,6 +222,171 @@ class CultivationGame {
         if (gameState.gameTick % 10 === 0) {
             console.log(`游戏心跳: ${gameState.gameTick}, 灵石: ${gameState.spiritStones.toFixed(1)}`);
         }
+    }
+    
+    // 更新时间系统
+    updateTime() {
+        gameState.gameTime++;
+        
+        // 每30分钟算一天
+        if (gameState.gameTime % 30 === 0) {
+            gameState.currentDay++;
+            
+            // 每30天算一个月
+            if (gameState.currentDay > 30) {
+                gameState.currentDay = 1;
+                gameState.currentMonth++;
+                
+                // 每12个月算一年
+                if (gameState.currentMonth > 12) {
+                    gameState.currentMonth = 1;
+                    gameState.currentYear++;
+                    
+                    // 年度事件
+                    this.handleYearlyEvents();
+                }
+            }
+            
+            // 更新时间显示
+            this.updateTimeDisplay();
+        }
+    }
+    
+    // 处理年度事件
+    handleYearlyEvents() {
+        addLog(`[时间] ${gameState.currentYear}年开始了！`, 'text-yellow-400');
+        
+        // 年度招徒活动
+        if (gameState.currentYear > gameState.lastRecruitmentYear) {
+            this.annualRecruitment();
+            gameState.lastRecruitmentYear = gameState.currentYear;
+        }
+        
+        // 年度总结
+        this.annualSummary();
+    }
+    
+    // 年度招徒活动
+    annualRecruitment() {
+        addLog(`[招徒] 年度招徒活动开始！长老们外出寻找有缘人...`, 'text-green-400');
+        
+        // 获取所有长老
+        const elders = this.getAllElders();
+        
+        if (elders.length === 0) {
+            addLog(`[招徒] 宗门暂无长老，无法进行招徒活动`, 'text-red-400');
+            return;
+        }
+        
+        let recruitedCount = 0;
+        const maxRecruits = 2; // 最多招募2人
+        
+        elders.forEach(elder => {
+            if (recruitedCount >= maxRecruits) return;
+            
+            // 长老招徒成功率（基于长老境界）
+            const successRate = this.getRecruitmentSuccessRate(elder);
+            
+            if (Math.random() < successRate) {
+                const newDisciple = this.recruitNewDisciple(elder);
+                if (newDisciple) {
+                    recruitedCount++;
+                    addLog(`[招徒] ${elder.name}成功招募了${newDisciple.name}！天赋: ${newDisciple.talent.toFixed(1)}`, 'text-green-400');
+                }
+            } else {
+                addLog(`[招徒] ${elder.name}外出寻徒，但未能找到合适的人选`, 'text-gray-400');
+            }
+        });
+        
+        if (recruitedCount > 0) {
+            addLog(`[招徒] 年度招徒活动结束，共招募${recruitedCount}名新弟子`, 'text-green-400');
+        } else {
+            addLog(`[招徒] 年度招徒活动结束，未能招募到新弟子`, 'text-orange-400');
+        }
+    }
+    
+    // 获取所有长老
+    getAllElders() {
+        const elders = [];
+        const positions = gameState.organization.positions;
+        
+        // 收集所有长老职位的人
+        Object.entries(positions).forEach(([key, pos]) => {
+            if (key.includes('Elder')) {
+                pos.current.forEach(member => {
+                    const disciple = gameState.disciples.find(d => d.id == member.id);
+                    if (disciple && disciple.alive) {
+                        elders.push(disciple);
+                    }
+                });
+            }
+        });
+        
+        return elders;
+    }
+    
+    // 获取招徒成功率
+    getRecruitmentSuccessRate(elder) {
+        const realmIndex = this.getRealmIndex(elder.realm);
+        
+        // 基础成功率
+        let baseRate = 0.3; // 30%基础成功率
+        
+        // 根据长老境界调整
+        if (realmIndex >= 6) { // 炼虚期及以上
+            baseRate = 0.6; // 60%成功率
+        } else if (realmIndex >= 4) { // 元婴期及以上
+            baseRate = 0.45; // 45%成功率
+        } else if (realmIndex >= 2) { // 筑基期及以上
+            baseRate = 0.35; // 35%成功率
+        }
+        
+        return baseRate;
+    }
+    
+    // 招募新弟子
+    recruitNewDisciple(elder) {
+        // 有概率招募到高天赋弟子
+        const isHighTalent = Math.random() < 0.2; // 20%概率高天赋
+        
+        const newDisciple = new Disciple(false);
+        
+        if (isHighTalent) {
+            // 高天赋弟子
+            newDisciple.talent = 70 + Math.random() * 25; // 70-95天赋
+            newDisciple.cultivation = Math.random() * 50; // 额外修为
+            newDisciple.loyalty = 80 + Math.random() * 15; // 初始忠诚度更高
+        }
+        
+        // 添加到弟子列表
+        gameState.disciples.push(newDisciple);
+        
+        return newDisciple;
+    }
+    
+    // 年度总结
+    annualSummary() {
+        const totalDisciples = gameState.disciples.length;
+        const aliveDisciples = gameState.disciples.filter(d => d.alive).length;
+        const elders = this.getAllElders().length;
+        
+        addLog(`[年度] ${gameState.currentYear}年总结：`, 'text-yellow-400');
+        addLog(`[年度] 宗门共有弟子${totalDisciples}人，其中存活${aliveDisciples}人`, 'text-yellow-400');
+        addLog(`[年度] 长老${elders}人，灵石${Math.floor(gameState.spiritStones)}枚`, 'text-yellow-400');
+    }
+    
+    // 更新时间显示
+    updateTimeDisplay() {
+        const timeDisplay = document.getElementById('timeDisplay');
+        if (timeDisplay) {
+            timeDisplay.textContent = `${gameState.currentYear}年${gameState.currentMonth}月${gameState.currentDay}日`;
+        }
+    }
+    
+    // 获取境界索引
+    getRealmIndex(realm) {
+        const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
+        return realms.indexOf(realm);
     }
     
     // 处理自动增益

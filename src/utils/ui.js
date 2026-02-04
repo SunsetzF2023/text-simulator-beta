@@ -2357,11 +2357,11 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     switch (hierarchyType) {
         case 'outerDisciple':
             newHierarchy = 'innerDisciple';
-            requiredRealm = '金丹期';
+            requiredRealm = '筑基期'; // 降低要求：筑基期即可
             break;
         case 'innerDisciple':
             newHierarchy = 'personalDisciple';
-            requiredRealm = '化神期';
+            requiredRealm = '金丹期'; // 降低要求：金丹期即可
             break;
         case 'personalDisciple':
             alert('亲传弟子已是最高层级');
@@ -2474,11 +2474,14 @@ function isDiscipleInPosition(disciple, org) {
 // 获取职位最低境界要求
 function getPositionMinRealm(positionKey) {
     const requirements = {
-        outerManager: 2, // 筑基期
-        innerManager: 3, // 金丹期
-        outerElder: 4,   // 元婴期
-        innerElder: 5,   // 化神期
-        grandElder: 6    // 炼虚期
+        outerManager: 1, // 炼气期（降低要求）
+        innerManager: 2, // 筑基期（降低要求）
+        teachingElder: 3, // 金丹期（新增）
+        outerElder: 3,   // 金丹期（降低要求）
+        innerElder: 4,   // 元婴期（降低要求）
+        grandElder: 5,   // 化神期（降低要求）
+        enforcementElder: 4, // 元婴期（新增）
+        resourceElder: 3   // 金丹期（新增）
     };
     return requirements[positionKey] || 0;
 }

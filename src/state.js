@@ -82,6 +82,14 @@ export const gameState = {
     activeEvents: [], // 当前事件
     eventHistory: [], // 历史事件
     
+    // 时间系统
+    gameTime: 0, // 游戏时间（分钟）
+    currentYear: 1, // 当前年份
+    currentMonth: 1, // 当前月份 (1-12)
+    currentDay: 1, // 当前日期 (1-30)
+    lastRecruitmentYear: 0, // 上次招徒年份
+    recruitmentCooldown: 0, // 招徒冷却时间
+    
     // 宗门架构
     organization: {
         // 宗主：玩家自己
@@ -102,11 +110,14 @@ export const gameState = {
         personalDisciples: [], // 亲传弟子
         // 职位配置
         positions: {
-            outerManager: { name: '外门执事', count: 0, maxCount: 2, current: [] },
-            innerManager: { name: '内门执事', count: 0, maxCount: 3, current: [] },
-            outerElder: { name: '外门长老', count: 0, maxCount: 1, current: [] },
-            innerElder: { name: '内门长老', count: 0, maxCount: 2, current: [] },
-            grandElder: { name: '太上长老', count: 0, maxCount: 1, current: [] }
+            outerManager: { name: '外门执事', count: 0, maxCount: 3, current: [] }, // 增加到3人
+            innerManager: { name: '内门执事', count: 0, maxCount: 4, current: [] }, // 增加到4人
+            teachingElder: { name: '传功长老', count: 0, maxCount: 2, current: [] }, // 新增
+            outerElder: { name: '外门长老', count: 0, maxCount: 2, current: [] }, // 增加到2人
+            innerElder: { name: '内门长老', count: 0, maxCount: 3, current: [] }, // 增加到3人
+            grandElder: { name: '太上长老', count: 0, maxCount: 2, current: [] }, // 增加到2人
+            enforcementElder: { name: '执法长老', count: 0, maxCount: 1, current: [] }, // 新增
+            resourceElder: { name: '资源长老', count: 0, maxCount: 1, current: [] }  // 新增
         }
     }
 };
