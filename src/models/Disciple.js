@@ -270,10 +270,10 @@ export class Disciple {
         const traitCount = Math.floor(Math.random() * 3) + 1; // 1-3个词条
         
         for (let i = 0; i < traitCount; i++) {
-            const availableTraits = TRAITS.filter(t => !traits.includes(t));
+            const availableTraits = TRAITS.filter(t => !traits.includes(t.name));
             if (availableTraits.length > 0) {
                 const trait = availableTraits[Math.floor(Math.random() * availableTraits.length)];
-                traits.push(trait);
+                traits.push(trait.name); // 只存储名称
             }
         }
         
