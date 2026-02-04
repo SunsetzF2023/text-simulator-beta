@@ -619,7 +619,12 @@ export function showGameContainer() {
     const gameContainer = document.getElementById('gameContainer');
     
     if (initModal) initModal.classList.add('hidden');
-    if (gameContainer) gameContainer.classList.remove('hidden');
+    if (gameContainer) {
+        gameContainer.classList.remove('hidden');
+        // 强制设置flex布局
+        gameContainer.style.display = 'flex';
+        gameContainer.style.minHeight = '100vh';
+    }
 }
 
 export function showInitModal() {
