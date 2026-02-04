@@ -987,12 +987,12 @@ window.placeBid = function(itemId, bidAmount) {
     item.bidder = gameState.playerName;
     item.bidCount++;
     
-    // 最后30秒有新出价，延长拍卖时间
-    const timeLeft = gameState.auctionEndTime - Date.now();
-    if (timeLeft < 30000) {
-        gameState.auctionEndTime += AUCTION_CONFIG.EXTENSION_TIME;
-        addLog('[拍卖会] 竞争激烈，拍卖时间延长10秒！', 'text-yellow-400');
-    }
+    // 移除延时机制，让拍卖更紧凑
+    // const timeLeft = gameState.auctionEndTime - Date.now();
+    // if (timeLeft < 30000) {
+    //     gameState.auctionEndTime += AUCTION_CONFIG.EXTENSION_TIME;
+    //     addLog('[拍卖会] 竞争激烈，拍卖时间延长10秒！', 'text-yellow-400');
+    // }
     
     addLog(`[拍卖会] ${gameState.playerName}对${item.name}出价${bidAmount}灵石`, 'text-yellow-400');
     
@@ -1016,6 +1016,55 @@ function updateAuctionTimer(gameState) {
         const minutes = Math.floor(timeLeft / 60000);
         const seconds = Math.floor((timeLeft % 60000) / 1000);
         timerElement.textContent = `剩余时间: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // NPC竞拍活动 - 随机让NPC参与竞拍
+        if (Math.random() < 0.15) { // 15%概率触发NPC竞拍
+            simulateNPCBidding(gameState);
+        }
+    }
+}
+
+// NPC竞拍模拟
+function simulateNPCBidding(gameState) {
+    if (gameState.auctionItems.length === 0) return;
+    
+    // 随机选择一个物品进行竞拍
+    const item = gameState.auctionItems[Math.floor(Math.random() * gameState.auctionItems.length)];
+    
+    // NPC名字池
+    const npcNames = [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君',
+        '逍遥散人', '红尘剑客', '白云禅师', '青莲剑仙', '紫虚真人'
+    ];
+    
+    const npcName = npcNames[Math.floor(Math.random() * npcNames.length)];
+    
+    // 计算NPC出价策略
+    const minBid = item.currentBid + AUCTION_CONFIG.MIN_BID_INCREMENT;
+    const maxBid = item.currentBid + Math.floor(item.value * 0.3); // 最多出到物品价值的30%
+    
+    if (minBid <= maxBid && Math.random() < 0.7) { // 70%概率出价
+        const bidAmount = Math.floor(Math.random() * (maxBid - minBid + 1)) + minBid;
+        
+        item.currentBid = bidAmount;
+        item.bidder = npcName;
+        item.bidCount++;
+        
+        // 根据NPC类型添加不同的竞拍消息
+        const messages = [
+            `[宗门见闻] ${npcName}对${item.name}出价${bidAmount}灵石，神情志在必得`,
+            `[宗门见闻] ${npcName}冷静地举起号牌，${item.name}价格升至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}微微一笑，${item.name}被抬价至${bidAmount}灵石`,
+            `[宗门见闻] ${npcName}毫不犹豫地出价${bidAmount}灵石竞拍${item.name}`,
+            `[宗门见闻] ${npcName}眼中精光一闪，${item.name}价格飙升至${bidAmount}灵石`
+        ];
+        
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        addLog(message, 'text-cyan-400');
+        
+        // 刷新拍卖会显示
+        showAuction(gameState);
     }
 }
 
@@ -1025,16 +1074,26 @@ function endAuction(gameState) {
         if (item.bidder === gameState.playerName) {
             // 玩家赢得了拍卖
             applyItemEffect(item, gameState);
-            addLog(`[拍卖会] 恭喜！您以${item.currentBid}灵石获得了${item.name}`, 'text-green-400');
+            addLog(`[拍卖会] 🎉 恭喜！您以${item.currentBid}灵石成功拍得${item.name}`, 'text-green-400 font-bold');
         } else if (item.bidder) {
-            // 其他人赢得了拍卖
-            addLog(`[拍卖会] ${item.name}被${item.bidder}以${item.currentBid}灵石拍得`, 'text-blue-400');
+            // 其他人赢得了拍卖，添加更多趣味描述
+            const winMessages = [
+                `[拍卖会] ${item.name}最终被${item.bidder}以${item.currentBid}灵石收入囊中`,
+                `[拍卖会] 💰 ${item.bidder}豪掷${item.currentBid}灵石，将${item.name}拍下`,
+                `[拍卖会] ${item.bidder}志在必得，${item.name}以${item.currentBid}灵石成交`,
+                `[拍卖会] 经过激烈竞拍，${item.name}被${item.bidder}以${item.currentBid}灵石获得`
+            ];
+            const message = winMessages[Math.floor(Math.random() * winMessages.length)];
+            addLog(message, 'text-blue-400');
+        } else {
+            // 流拍
+            addLog(`[拍卖会] ${item.name}无人问津，遗憾流拍`, 'text-gray-400');
         }
         
         // 退还未中标的玩家的出价
         if (gameState.playerBids[item.id] && item.bidder !== gameState.playerName) {
             gameState.spiritStones += gameState.playerBids[item.id];
-            addLog(`[拍卖会] 退还${item.name}的出价${gameState.playerBids[item.id]}灵石`, 'text-green-400');
+            addLog(`[拍卖会] 💰 退还${item.name}的出价${gameState.playerBids[item.id]}灵石`, 'text-green-400');
         }
     });
     
