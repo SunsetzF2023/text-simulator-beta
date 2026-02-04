@@ -125,6 +125,17 @@ class CultivationGame {
             return disciple;
         });
         
+        // 数据迁移 - 修复天赋词条格式
+        gameState.disciples.forEach(disciple => {
+            if (disciple.traits && disciple.traits.length > 0) {
+                // 检查是否是旧格式（对象）
+                if (typeof disciple.traits[0] === 'object' && disciple.traits[0].name) {
+                    disciple.traits = disciple.traits.map(trait => trait.name);
+                    console.log(`迁移弟子 ${disciple.name} 的天赋词条数据`);
+                }
+            }
+        });
+        
         // 显示游戏界面
         showGameContainer();
         
@@ -780,6 +791,17 @@ CultivationGame.prototype.checkCollectiveEvents = function() {
 
 // 显示集体事件对话框
 CultivationGame.prototype.showCollectiveEventDialog = function(event) {
+    // 计算成功率
+    const baseSuccessRate = event.difficulty === 'easy' ? 0.8 : 
+                           event.difficulty === 'medium' ? 0.6 : 0.4;
+    
+    // 宗门实力加成
+    const sectStrength = this.calculateSectStrength();
+    const strengthBonus = Math.min(sectStrength / 1000, 0.3); // 最多30%加成
+    
+    const successRate = baseSuccessRate + strengthBonus;
+    const successPercentage = Math.min(95, Math.floor(successRate * 100)); // 限制最高95%
+    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
     modal.innerHTML = `
@@ -789,12 +811,13 @@ CultivationGame.prototype.showCollectiveEventDialog = function(event) {
                 <h3 class="text-lg font-bold text-yellow-400">${event.name}</h3>
                 <p class="text-sm text-gray-300 mb-3">${event.description}</p>
                 <div class="text-xs text-amber-300 mb-2">难度: ${event.difficulty}</div>
+                <div class="text-xs text-cyan-400 mb-2 font-bold">成功概率: ${successPercentage}%</div>
                 <div class="text-xs text-green-400 mb-2">奖励: ${this.formatEventReward(event.reward)}</div>
                 <div class="text-xs text-red-400">失败惩罚: ${this.formatEventPenalty(event.penalty)}</div>
             </div>
             <div class="flex space-x-2">
                 <button id="acceptEvent" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded transition-colors">
-                    接受挑战
+                    接受挑战 (${successPercentage}%)
                 </button>
                 <button id="ignoreEvent" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded transition-colors">
                     忽略事件

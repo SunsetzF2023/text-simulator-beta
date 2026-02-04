@@ -645,17 +645,17 @@ export const RARITY_CONFIG = {
 // 特殊体质配置
 export const SPECIAL_CONSTITUTIONS = [
     { name: '凡体', rarity: 'common', description: '普通人的体质，无特殊效果', combat: 1.0, cultivation: 1.0 },
-    { name: '灵体', rarity: 'uncommon', description: '天生亲近灵气，修炼速度提升', combat: 1.1, cultivation: 1.3 },
-    { name: '剑体', rarity: 'uncommon', description: '天生适合剑道，剑法威力提升', combat: 1.3, cultivation: 1.1 },
-    { name: '丹体', rarity: 'uncommon', description: '炼丹天赋异禀，丹药效果提升', combat: 0.9, cultivation: 1.2 },
-    { name: '雷体', rarity: 'rare', description: '掌控雷电之力，雷系功法威力大增', combat: 1.4, cultivation: 1.1 },
-    { name: '冰体', rarity: 'rare', description: '寒冰体质，冰系功法效果翻倍', combat: 1.3, cultivation: 1.1 },
-    { name: '火体', rarity: 'rare', description: '纯阳之体，火系功法威力惊人', combat: 1.3, cultivation: 1.1 },
-    { name: '毒体', rarity: 'rare', description: '万毒不侵，毒系功法威力大增', combat: 1.2, cultivation: 1.0 },
-    { name: '战体', rarity: 'epic', description: '为战斗而生，战斗力极其恐怖', combat: 1.5, cultivation: 0.9 },
-    { name: '道体', rarity: 'epic', description: '先天道体，修炼速度极快', combat: 1.2, cultivation: 1.5 },
-    { name: '圣体', rarity: 'epic', description: '万古罕见的圣人之体', combat: 1.4, cultivation: 1.4 },
-    { name: '仙体', rarity: 'legendary', description: '传说中的仙人体质', combat: 1.6, cultivation: 1.6 }
+    { name: '灵体', rarity: 'uncommon', description: '天生亲近灵气，修炼速度大幅提升', combat: 1.1, cultivation: 1.6 },
+    { name: '剑体', rarity: 'uncommon', description: '天生适合剑道，剑法威力提升', combat: 1.4, cultivation: 1.2 },
+    { name: '丹体', rarity: 'uncommon', description: '炼丹天赋异禀，丹药效果提升', combat: 0.9, cultivation: 1.4 },
+    { name: '雷体', rarity: 'rare', description: '掌控雷电之力，雷系功法威力大增', combat: 1.5, cultivation: 1.3 },
+    { name: '冰体', rarity: 'rare', description: '寒冰体质，冰系功法效果翻倍', combat: 1.4, cultivation: 1.3 },
+    { name: '火体', rarity: 'rare', description: '纯阳之体，火系功法威力惊人', combat: 1.4, cultivation: 1.3 },
+    { name: '毒体', rarity: 'rare', description: '万毒不侵，毒系功法威力大增', combat: 1.3, cultivation: 1.2 },
+    { name: '战体', rarity: 'epic', description: '为战斗而生，战斗力极其恐怖', combat: 1.8, cultivation: 1.1 },
+    { name: '道体', rarity: 'epic', description: '先天道体，修炼速度极快', combat: 1.3, cultivation: 2.0 },
+    { name: '圣体', rarity: 'epic', description: '万古罕见的圣人之体', combat: 1.6, cultivation: 1.8 },
+    { name: '仙体', rarity: 'legendary', description: '传说中的仙人体质', combat: 2.0, cultivation: 2.2 }
 ];
 
 // 家世背景配置
@@ -795,3 +795,6 @@ export const COLLECTIVE_EVENTS = [
         penalty: { disciples: 1 }
     }
 ];
+
+// 导入命格系统
+export { DESTINIES } from './destinies.js';
