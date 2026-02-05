@@ -60,9 +60,16 @@ export const gameState = {
     
     // 功法系统
     techniqueFragments: [], // 功法残本
-    sectLevel: 1, // 宗门等级
     unlockedBuildings: [], // 解锁的建筑
     techniqueHall: [], // 功法堂 - 存储已购买的功法
+    
+    // 实力至上系统
+    totalPower: 0, // 宗门总战力
+    playerPower: 0, // 宗主战力
+    sectAura: 1.0, // 宗主光环加成
+    currentRegion: null, // 当前地区
+    nearbySects: [], // 周边宗门
+    lastRegionUpdate: 0, // 上次地区更新时间
     
     // 全局增益效果
     globalEffects: {

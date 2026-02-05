@@ -43,6 +43,329 @@ class CultivationGame {
         this.isRunning = false;
     }
     
+    // 🏛️ 实力至上系统核心函数
+    
+    // 获取宗门层级（基于宗主境界）
+    getSectTier() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        
+        if (realmIndex === 0) return '隐世草庐'; // 凡人
+        if (realmIndex <= 10) return '修仙家族'; // 炼气期
+        if (realmIndex <= 20) return '不入流宗门'; // 筑基期
+        if (realmIndex <= 30) return '三流宗门'; // 金丹期
+        if (realmIndex <= 40) return '二流宗门'; // 元婴期
+        if (realmIndex <= 50) return '一流宗门'; // 化神期
+        return '顶级宗门'; // 化神期以上
+    }
+    
+    // 计算宗主战力
+    calculatePlayerPower() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        let basePower = 100; // 基础战力
+        
+        // 境界加成（主要战力来源）
+        if (realmIndex > 0) {
+            basePower += realmIndex * 80; // 每个境界层级80点战力
+        }
+        
+        // 灵根加成
+        const spiritRootBonus = this.getSpiritRootBonus(gameState.spiritRoot);
+        basePower *= spiritRootBonus;
+        
+        // 宗门风格加成
+        const styleBonus = this.getSectStyleBonus(gameState.sectStyle);
+        basePower *= styleBonus;
+        
+        gameState.playerPower = Math.floor(basePower);
+        return gameState.playerPower;
+    }
+    
+    // 计算宗门总战力
+    calculateTotalPower() {
+        const playerPower = this.calculatePlayerPower();
+        
+        // 计算所有弟子的战力之和
+        let disciplePowerSum = 0;
+        gameState.disciples.forEach(disciple => {
+            if (disciple.alive && !disciple.injured) {
+                disciplePowerSum += disciple.getCombatPower();
+            }
+        });
+        
+        // 宗门总战力 = 宗主战力 * 权威系数 + 弟子战力之和
+        const authorityMultiplier = 2.0 + (REALMS.indexOf(gameState.playerRealm) * 0.1); // 境界越高权威越大
+        const totalPower = Math.floor(playerPower * authorityMultiplier + disciplePowerSum);
+        
+        gameState.totalPower = totalPower;
+        return totalPower;
+    }
+    
+    // 更新宗主光环加成
+    updateSectAura() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        let aura = 1.0;
+        
+        // 境界越高，光环加成越高
+        if (realmIndex <= 10) aura = 1.0; // 炼气期：无光环
+        else if (realmIndex <= 20) aura = 1.1; // 筑基期：10%加成
+        else if (realmIndex <= 30) aura = 1.3; // 金丹期：30%加成
+        else if (realmIndex <= 40) aura = 1.6; // 元婴期：60%加成
+        else if (realmIndex <= 50) aura = 2.0; // 化神期：100%加成
+        else aura = 2.5; // 化神期以上：150%加成
+        
+        gameState.sectAura = aura;
+        return aura;
+    }
+    
+    // 获取灵根加成
+    getSpiritRootBonus(spiritRoot) {
+        const bonuses = {
+            '金': 1.0, '木': 1.1, '水': 1.1, '火': 1.2, '土': 1.0,
+            '雷': 1.3, '风': 1.2, '冰': 1.2, '光': 1.4, '暗': 1.3
+        };
+        return bonuses[spiritRoot] || 1.0;
+    }
+    
+    // 获取宗门风格加成
+    getSectStyleBonus(sectStyle) {
+        const bonuses = {
+            '剑修': 1.3, '法修': 1.1, '魔道': 1.4, '长生': 0.9,
+            '刀修': 1.35, '符修': 1.0, '丹修': 0.8, '阵修': 1.2,
+            '邪修': 1.25, '劫修': 1.45, '采补': 0.9
+        };
+        return bonuses[sectStyle] || 1.0;
+    }
+    
+    // 声望与战力动态反馈
+    checkReputationPowerBalance() {
+        const powerThreshold = gameState.totalPower * 0.8; // 战力的80%作为声望阈值
+        const reputationRatio = gameState.reputation / powerThreshold;
+        
+        if (reputationRatio > 1.5) {
+            // 声望远超战力：被视为"肥羊"
+            return 'fat_sheep';
+        } else if (reputationRatio < 0.5) {
+            // 战力远超声望：被视为"隐世魔头"
+            return 'hidden_demon';
+        } else {
+            // 平衡状态
+            return 'balanced';
+        }
+    }
+    
+    // 🗺️ 地区系统
+    
+    // 初始化地区
+    initializeRegion() {
+        if (!gameState.currentRegion) {
+            gameState.currentRegion = {
+                name: this.generateRegionName(),
+                level: this.calculateRegionLevel(),
+                sects: [],
+                lastUpdate: Date.now()
+            };
+        }
+        this.updateNearbySects();
+    }
+    
+    // 生成地区名称
+    generateRegionName() {
+        const prefixes = ['青云', '紫霞', '天剑', '玄火', '冰霜', '雷音', '丹鼎', '万兽'];
+        const suffixes = ['山脉', '平原', '河谷', '森林', '盆地', '丘陵', '峡谷', '沼泽'];
+        return prefixes[Math.floor(Math.random() * prefixes.length)] + 
+               suffixes[Math.floor(Math.random() * suffixes.length)];
+    }
+    
+    // 计算地区等级（基于玩家实力）
+    calculateRegionLevel() {
+        const playerPower = this.calculatePlayerPower();
+        if (playerPower < 500) return 1; // 新手村
+        if (playerPower < 2000) return 2; // 普通地区
+        if (playerPower < 5000) return 3; // 危险地区
+        if (playerPower < 10000) return 4; // 高级地区
+        return 5; // 顶级地区
+    }
+    
+    // 更新周边宗门
+    updateNearbySects() {
+        const now = Date.now();
+        // 每5分钟更新一次
+        if (now - gameState.lastRegionUpdate < 300000) return;
+        
+        gameState.lastRegionUpdate = now;
+        gameState.nearbySects = this.generateNearbySects();
+        
+        addLog(`[地区] ${gameState.currentRegion.name}的势力格局发生变化`, 'text-blue-400');
+    }
+    
+    // 生成周边宗门
+    generateNearbySects() {
+        const sects = [];
+        const playerPower = this.calculatePlayerPower();
+        const sectCount = 5 + Math.floor(Math.random() * 5); // 5-9个宗门
+        
+        for (let i = 0; i < sectCount; i++) {
+            const sect = this.generateNPCSect(playerPower);
+            sects.push(sect);
+        }
+        
+        // 按战力排序
+        sects.sort((a, b) => b.totalPower - a.totalPower);
+        
+        return sects;
+    }
+    
+    // 生成NPC宗门
+    generateNPCSect(playerPower) {
+        const powerVariation = 0.3 + Math.random() * 0.4; // 30%-70%的浮动
+        const targetPower = playerPower * powerVariation;
+        
+        // 随机选择宗门类型
+        const sectTypes = ['剑修', '法修', '魔道', '长生', '刀修', '符修', '丹修', '阵修'];
+        const type = sectTypes[Math.floor(Math.random() * sectTypes.length)];
+        
+        // 生成宗主
+        const masterRealm = this.getRandomRealmForPower(targetPower * 0.6); // 宗主占60%战力
+        const master = {
+            name: this.generateNPCName(),
+            realm: masterRealm,
+            power: this.calculateNPCPower(masterRealm, type),
+            type: type
+        };
+        
+        // 生成弟子
+        const discipleCount = 3 + Math.floor(Math.random() * 12); // 3-15个弟子
+        const disciples = [];
+        for (let i = 0; i < discipleCount; i++) {
+            const disciple = this.generateNPCDisciple(masterRealm, targetPower * 0.4 / discipleCount);
+            disciples.push(disciple);
+        }
+        
+        // 计算总战力
+        const disciplePower = disciples.reduce((sum, d) => sum + d.power, 0);
+        const totalPower = Math.floor(master.power * 2.0 + disciplePower); // 宗主权威系数2.0
+        
+        return {
+            name: this.generateSectName(type),
+            type: type,
+            tier: this.getSectTierByRealm(masterRealm),
+            master: master,
+            disciples: disciples,
+            totalPower: totalPower,
+            reputation: Math.floor(totalPower * (0.5 + Math.random() * 0.5)), // 声望在战力的50%-100%之间
+            attitude: this.generateAttitude(playerPower, totalPower), // 对玩家的态度
+            lastUpdate: Date.now()
+        };
+    }
+    
+    // 生成NPC姓名
+    generateNPCName() {
+        const surnames = ['李', '王', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴'];
+        const names = ['明', '华', '强', '芳', '军', '敏', '静', '丽', '勇', '艳'];
+        return surnames[Math.floor(Math.random() * surnames.length)] + 
+               names[Math.floor(Math.random() * names.length)];
+    }
+    
+    // 生成宗门名称
+    generateSectName(type) {
+        const prefixes = {
+            '剑修': ['剑', '锋', '刃', '鞘'],
+            '法修': ['法', '术', '符', '咒'],
+            '魔道': ['魔', '血', '魂', '鬼'],
+            '长生': ['长', '生', '寿', '命'],
+            '刀修': ['刀', '斩', '劈', '砍'],
+            '符修': ['符', '印', '阵', '图'],
+            '丹修': ['丹', '药', '鼎', '炉'],
+            '阵修': ['阵', '图', '局', '界']
+        };
+        
+        const suffixes = ['宗', '门', '派', '阁', '宫', '府', '庄', '山'];
+        const prefixList = prefixes[type] || ['玄', '天', '地', '人'];
+        
+        const prefix = prefixList[Math.floor(Math.random() * prefixList.length)];
+        const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+        
+        return prefix + suffix;
+    }
+    
+    // 根据战力获取随机境界
+    getRandomRealmForPower(targetPower) {
+        const realmPowers = REALMS.map((realm, index) => ({
+            realm: realm,
+            power: this.calculateNPCPower(realm, '剑修') // 简化计算
+        }));
+        
+        // 找到最接近的境界
+        let closestRealm = '凡人';
+        let minDiff = Infinity;
+        
+        realmPowers.forEach(rp => {
+            const diff = Math.abs(rp.power - targetPower);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestRealm = rp.realm;
+            }
+        });
+        
+        return closestRealm;
+    }
+    
+    // 计算NPC战力
+    calculateNPCPower(realm, type) {
+        const realmIndex = REALMS.indexOf(realm);
+        let basePower = 100;
+        
+        if (realmIndex > 0) {
+            basePower += realmIndex * 80;
+        }
+        
+        // 类型加成
+        const typeBonus = this.getSectStyleBonus(type);
+        basePower *= typeBonus;
+        
+        return Math.floor(basePower);
+    }
+    
+    // 生成NPC弟子
+    generateNPCDisciple(masterRealm, targetPower) {
+        const realmVariation = -5 + Math.random() * 10; // ±5个境界浮动
+        const masterIndex = REALMS.indexOf(masterRealm);
+        const discipleIndex = Math.max(0, Math.min(REALMS.length - 1, masterIndex + realmVariation));
+        const discipleRealm = REALMS[discipleIndex];
+        
+        return {
+            name: this.generateNPCName(),
+            realm: discipleRealm,
+            power: this.calculateNPCPower(discipleRealm, '普通'),
+            talent: 70 + Math.random() * 30, // 70-100天赋
+            loyalty: 80 + Math.random() * 20 // 80-100忠诚度
+        };
+    }
+    
+    // 根据境界获取宗门层级
+    getSectTierByRealm(realm) {
+        const realmIndex = REALMS.indexOf(realm);
+        
+        if (realmIndex === 0) return '隐世草庐';
+        if (realmIndex <= 10) return '修仙家族';
+        if (realmIndex <= 20) return '不入流宗门';
+        if (realmIndex <= 30) return '三流宗门';
+        if (realmIndex <= 40) return '二流宗门';
+        if (realmIndex <= 50) return '一流宗门';
+        return '顶级宗门';
+    }
+    
+    // 生成对玩家的态度
+    generateAttitude(playerPower, sectPower) {
+        const powerRatio = playerPower / sectPower;
+        
+        if (powerRatio > 2.0) return 'fearful'; // 恐惧
+        if (powerRatio > 1.5) return 'respectful'; // 尊敬
+        if (powerRatio > 0.8) return 'neutral'; // 中立
+        if (powerRatio > 0.5) return 'disdainful'; // 轻视
+        return 'hostile'; // 敌对
+    }
+    
     // 初始化游戏
     async init() {
         console.log('初始化游戏...');
@@ -109,6 +432,14 @@ class CultivationGame {
         addLog(`[系统] ${gameState.playerName} 创立了 ${gameState.sectName}，修仙之路自此开启。`, 'text-amber-200');
         addLog(`[系统] 天降3名弟子加入宗门，愿与宗门共修仙道。`, 'text-blue-400');
         
+        // 🏛️ 初始化实力至上系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        this.initializeRegion();
+        
+        const sectTier = this.getSectTier();
+        addLog(`[宗门] ${gameState.sectName}被认定为${sectTier}，总战力：${gameState.totalPower}`, 'text-purple-400');
+        
         // 启动游戏循环
         this.startGameLoop();
         
@@ -147,11 +478,12 @@ class CultivationGame {
         // 更新显示
         updateDisplay(gameState);
         
-        // 添加加载日志
-        addLog('[系统] 游戏存档已加载。', 'text-amber-200');
+        // 🏛️ 初始化实力至上系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        this.initializeRegion();
         
-        // 启动游戏循环
-        this.startGameLoop();
+        addLog('[系统] 游戏存档已加载。', 'text-amber-200');
         
         console.log('存档加载完成');
     }
@@ -736,6 +1068,7 @@ class CultivationGame {
     // 处理突破境界
     handleBreakthrough() {
         const currentIndex = REALMS.indexOf(gameState.playerRealm);
+        const oldRealm = gameState.playerRealm;
         
         if (currentIndex >= REALMS.length - 1) {
             addLog('[突破] 已达最高境界，无法继续突破。', 'text-red-400');
@@ -750,23 +1083,164 @@ class CultivationGame {
                 gameState.playerRealm = REALMS[currentIndex + 1];
                 updateDisplay(gameState);
                 addLog(`[突破] ${gameState.playerName} 服用破境丹，成功突破至${gameState.playerRealm}！`, 'text-purple-400');
+                
+                // 触发区域震动事件
+                this.triggerRegionShock(oldRealm, gameState.playerRealm);
             } else {
                 addLog('[突破] 需要破境丹和50灵石才能突破到大境界！', 'text-red-400');
             }
         } else {
-            // 小境界突破
+            // 普通突破
             const cost = (Math.floor(currentIndex / 9) + 1) * GAME_CONFIG.BREAKTHROUGH_BASE_COST;
             if (gameState.spiritStones >= cost) {
                 gameState.spiritStones -= cost;
                 gameState.playerRealm = REALMS[currentIndex + 1];
                 updateDisplay(gameState);
                 addLog(`[突破] ${gameState.playerName} 消耗${cost}灵石，突破至${gameState.playerRealm}！`, 'text-purple-400');
+                
+                // 触发区域震动事件（小境界突破概率较低）
+                if (Math.random() < 0.3) { // 30%概率触发
+                    this.triggerRegionShock(oldRealm, gameState.playerRealm);
+                }
             } else {
                 addLog(`[突破] 灵石不足，需要${cost}灵石才能突破。`, 'text-red-400');
             }
         }
         
         console.log(`突破尝试: ${gameState.playerRealm}`);
+    }
+    
+    // 🌋 区域震动事件
+    triggerRegionShock(oldRealm, newRealm) {
+        const isMajorBreakthrough = REALMS.indexOf(newRealm) % 9 === 8;
+        
+        addLog(`[震动] ${gameState.playerName}突破至${newRealm}，引发区域灵气震荡！`, 'text-yellow-400 font-bold');
+        
+        // 更新地区势力格局
+        this.updateNearbySects();
+        
+        // 随机触发事件
+        const eventType = Math.random();
+        
+        if (eventType < 0.4) {
+            // 40%概率：贺礼
+            this.triggerCongratulatoryGifts(newRealm);
+        } else if (eventType < 0.7) {
+            // 30%概率：强敌挑战
+            this.triggerStrongEnemyChallenge(newRealm);
+        } else if (eventType < 0.9) {
+            // 20%概率：弟子倒戈
+            this.triggerDiscipleDefection(newRealm);
+        } else {
+            // 10%概率：特殊奇遇
+            this.triggerSpecialEncounter(newRealm);
+        }
+    }
+    
+    // 贺礼事件
+    triggerCongratulatoryGifts(newRealm) {
+        const gifts = [
+            { spiritStones: Math.floor(100 + Math.random() * 400), message: '贺礼灵石' },
+            { breakthroughPills: Math.floor(1 + Math.random() * 3), message: '贺礼破境丹' },
+            { reputation: Math.floor(50 + Math.random() * 150), message: '声望贺礼' }
+        ];
+        
+        const gift = gifts[Math.floor(Math.random() * gifts.length)];
+        
+        if (gift.spiritStones) {
+            gameState.spiritStones += gift.spiritStones;
+            addLog(`[贺礼] 周边宗门听闻${gameState.playerName}突破至${newRealm}，送来${gift.spiritStones}枚灵石作为贺礼！`, 'text-green-400');
+        }
+        if (gift.breakthroughPills) {
+            gameState.breakthroughPills += gift.breakthroughPills;
+            addLog(`[贺礼] 友好宗门赠送${gift.breakthroughPills}枚破境丹作为突破贺礼！`, 'text-green-400');
+        }
+        if (gift.reputation) {
+            gameState.reputation += gift.reputation;
+            addLog(`[贺礼] ${gameState.sectName}声望提升${gift.reputation}点！`, 'text-green-400');
+        }
+    }
+    
+    // 强敌挑战事件
+    triggerStrongEnemyChallenge(newRealm) {
+        const playerPower = this.calculatePlayerPower();
+        const enemyPower = playerPower * (1.2 + Math.random() * 0.3); // 120%-150%的战力
+        
+        const enemy = this.generateNPCSect(enemyPower);
+        addLog(`[挑战] ${enemy.name}宗主${enemy.master.name}听闻${gameState.playerName}突破，前来挑战！`, 'text-red-400 font-bold');
+        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower}`, 'text-red-400');
+        
+        // 简化的战斗结果
+        const winChance = gameState.totalPower / enemy.totalPower;
+        const victory = Math.random() < winChance;
+        
+        if (victory) {
+            const reputationGain = Math.floor(enemy.reputation * 0.3);
+            gameState.reputation += reputationGain;
+            addLog(`[胜利] ${gameState.playerName}击败了${enemy.master.name}，获得${reputationGain}点声望！`, 'text-green-400 font-bold');
+        } else {
+            const reputationLoss = Math.floor(gameState.reputation * 0.2);
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.3);
+            gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
+            gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
+            addLog(`[战败] ${gameState.playerName}败给${enemy.master.name}，损失${reputationLoss}声望和${spiritStonesLoss}灵石！`, 'text-red-400 font-bold');
+        }
+    }
+    
+    // 弟子倒戈事件
+    triggerDiscipleDefection(newRealm) {
+        const eligibleDisciples = gameState.disciples.filter(d => d.alive && d.loyalty < 85);
+        
+        if (eligibleDisciples.length === 0) {
+            addLog(`[道心] ${gameState.playerName}突破引发道心考验，弟子们忠诚坚定，无人动摇！`, 'text-blue-400');
+            return;
+        }
+        
+        const defector = eligibleDisciples[Math.floor(Math.random() * eligibleDisciples.length)];
+        const defectorIndex = gameState.disciples.findIndex(d => d.id === defector.id);
+        
+        gameState.disciples.splice(defectorIndex, 1);
+        
+        addLog(`[倒戈] ${defector.name}在${gameState.playerName}突破时道心崩碎，叛出宗门！`, 'text-red-400');
+        addLog(`[损失] 宗门失去一名弟子，当前弟子数：${gameState.disciples.length}`, 'text-red-400');
+        
+        // 重新计算战力
+        this.calculateTotalPower();
+    }
+    
+    // 特殊奇遇事件
+    triggerSpecialEncounter(newRealm) {
+        const encounters = [
+            {
+                message: `在${gameState.playerName}突破时，天降祥瑞，宗门灵气浓度大幅提升！`,
+                effect: () => {
+                    gameState.globalEffects.cultivationBonus *= 1.5;
+                    setTimeout(() => {
+                        gameState.globalEffects.cultivationBonus /= 1.5;
+                        addLog(`[祥瑞] 天降祥瑞效果结束`, 'text-blue-400');
+                    }, 300000); // 5分钟
+                }
+            },
+            {
+                message: `突破时引来上古传承感悟，${gameState.playerName}修为大进！`,
+                effect: () => {
+                    // 可以添加特殊效果
+                }
+            },
+            {
+                message: `突破震动唤醒了沉睡的灵脉，宗门资源产出增加！`,
+                effect: () => {
+                    // 可以增加资源产出
+                }
+            }
+        ];
+        
+        const encounter = encounters[Math.floor(Math.random() * encounters.length)];
+        addLog(`[奇遇] ${encounter.message}`, 'text-purple-400 font-bold');
+        
+        if (encounter.effect) {
+            encounter.effect();
+        }
     }
     
     // 处理修改名称
