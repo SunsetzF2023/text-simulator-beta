@@ -62,6 +62,7 @@ export const gameState = {
     techniqueFragments: [], // 功法残本
     sectLevel: 1, // 宗门等级
     unlockedBuildings: [], // 解锁的建筑
+    techniqueHall: [], // 功法堂 - 存储已购买的功法
     
     // 宗门宝库
     treasury: {
@@ -190,6 +191,7 @@ export function resetGame() {
     gameState.activeTasks = [];
     gameState.completedTasks = [];
     gameState.events = [];
+    gameState.techniqueHall = []; // 重置功法堂
     
     // 恢复玩家信息
     Object.assign(gameState, playerInfo);

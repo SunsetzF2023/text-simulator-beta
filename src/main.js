@@ -395,13 +395,47 @@ class CultivationGame {
         if (aliveDisciples.length > 0) {
             const gain = aliveDisciples.length * GAME_CONFIG.AUTO_GAIN_PER_DISCIPLE;
             gameState.spiritStones += gain;
-            updateDisplay(gameState);
-            
-            // 每分钟显示一次自动增益日志
-            if (Math.floor(Date.now() / 60000) !== Math.floor((Date.now() - 1000) / 60000)) {
-                addLog(`[自动] 弟子们为您带来了 ${gain.toFixed(1)} 枚灵石。`, 'text-amber-300');
-            }
+            console.log(`采集灵石: +${gain}`);
         }
+        
+        // 自动治疗受伤弟子
+        this.autoHealInjuredDisciples();
+    }
+    
+    // 自动治疗受伤弟子
+    autoHealInjuredDisciples() {
+        const injuredDisciples = gameState.disciples.filter(d => d.alive && d.injured);
+        injuredDisciples.forEach(disciple => {
+            // 根据受伤程度决定治疗成本
+            const injuryLevel = Math.random(); // 0-1随机受伤程度
+            let healCost = 0;
+            let injuryType = '';
+            
+            if (injuryLevel < 0.3) {
+                // 轻伤
+                healCost = 3;
+                injuryType = '轻伤';
+            } else if (injuryLevel < 0.7) {
+                // 中伤
+                healCost = 8;
+                injuryType = '中伤';
+            } else {
+                // 重伤
+                healCost = 15;
+                injuryType = '重伤';
+            }
+            
+            // 检查是否有足够灵石治疗
+            if (gameState.spiritStones >= healCost) {
+                gameState.spiritStones -= healCost;
+                disciple.injured = false;
+                disciple.addPersonalLog(`[自动治疗] ${injuryType}已治愈，消耗${healCost}灵石`, Date.now());
+                addLog(`[治疗] ${disciple.name}的${injuryType}已治愈，消耗${healCost}灵石`, 'text-green-400');
+            } else {
+                // 灵石不足，记录无法治疗
+                disciple.addPersonalLog(`[治疗] ${injuryType}需要${healCost}灵石治疗，但宗门灵石不足`, Date.now());
+            }
+        });
     }
     
     // 启动弟子事件系统
@@ -477,17 +511,24 @@ class CultivationGame {
                     experienceGain = Math.floor(experienceGain * totalBonus);
                     
                     // 应用修为
-                    disciple.cultivation = Math.min(100, disciple.cultivation + experienceGain);
+                    disciple.cultivation = Math.max(0, Math.min(100, disciple.cultivation + experienceGain));
                     
                     // 检查突破
                     if (disciple.cultivation >= 100) {
                         this.checkBreakthrough(disciple);
                     }
                     
-                    if (totalBonus > 1.5) {
-                        addLog(`[修炼] ${disciple.name}修炼神速，获得${experienceGain}点修为！`, 'text-purple-400');
-                    } else if (totalBonus > 1.0) {
-                        addLog(`[修炼] ${disciple.name}修炼顺利，获得${experienceGain}点修为`, 'text-green-400');
+                    // 显示修炼消息（只有正数才显示修炼相关消息）
+                    if (experienceGain > 0) {
+                        if (totalBonus > 1.5) {
+                            addLog(`[修炼] ${disciple.name}修炼神速，获得${experienceGain}点修为！`, 'text-purple-400');
+                        } else if (totalBonus > 1.0) {
+                            addLog(`[修炼] ${disciple.name}修炼顺利，获得${experienceGain}点修为`, 'text-green-400');
+                        } else {
+                            addLog(`[修炼] ${disciple.name}获得${experienceGain}点修为`, 'text-blue-400');
+                        }
+                    } else if (experienceGain < 0) {
+                        addLog(`[冲突] ${disciple.name}修为受损，减少${Math.abs(experienceGain)}点修为`, 'text-red-400');
                     }
                 }
             }

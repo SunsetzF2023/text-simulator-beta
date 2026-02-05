@@ -910,8 +910,28 @@ window.buyMarketItem = function(itemId) {
         
         addLog(`[坊市] 购买了${item.name}，消耗${item.price}灵石`, 'text-green-400');
         
-        // 如果是功法，需要选择弟子学习
+        // 如果是功法，存入功法堂
         if (item.type === 'technique') {
+            // 检查功法堂是否已有此功法
+            const existingTechnique = gameState.techniqueHall.find(t => t.name === item.name);
+            if (existingTechnique) {
+                existingTechnique.stock++;
+                addLog(`[坊市] ${item.name}库存+1，当前库存：${existingTechnique.stock}`, 'text-blue-400');
+            } else {
+                // 从BASE_TECHNIQUES中查找功法数据
+                const techniqueData = BASE_TECHNIQUES.find(t => t.name === item.name);
+                if (techniqueData) {
+                    gameState.techniqueHall.push({
+                        ...techniqueData,
+                        stock: 1,
+                        obtainedFrom: '坊市购买',
+                        purchaseDate: Date.now()
+                    });
+                    addLog(`[坊市] ${item.name}已存入功法堂`, 'text-purple-400');
+                }
+            }
+            
+            // 显示学习对话框
             showTechniqueLearningDialog(item, gameState);
         } else {
             // 应用物品效果
@@ -931,12 +951,17 @@ window.buyMarketItem = function(itemId) {
 
 // 显示功法学习对话框
 function showTechniqueLearningDialog(techniqueItem, gameState) {
+    // 检查功法堂中的功法
+    const hallTechnique = gameState.techniqueHall.find(t => t.name === techniqueItem.name);
+    const stock = hallTechnique ? hallTechnique.stock : 0;
+    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
         <div class="bg-slate-800 p-6 rounded-lg max-w-md w-full mx-4 border border-amber-400">
             <h3 class="text-xl font-bold text-amber-200 mb-4">📚 选择学习弟子</h3>
-            <p class="text-gray-300 mb-4">购买的是 <span class="text-purple-400 font-bold">${techniqueItem.name}</span></p>
+            <p class="text-gray-300 mb-2">购买的是 <span class="text-purple-400 font-bold">${techniqueItem.name}</span></p>
+            <p class="text-gray-300 mb-4">功法堂库存：<span class="text-green-400 font-bold">${stock}</span> 本</p>
             <p class="text-gray-300 mb-4">请选择要学习的弟子：</p>
             <div class="max-h-60 overflow-y-auto mb-4">
                 ${gameState.disciples.filter(d => d.alive && !d.onTask).map(disciple => `
@@ -973,8 +998,25 @@ window.selectDiscipleForTechnique = function(discipleId, techniqueName) {
     const techniqueData = BASE_TECHNIQUES.find(t => t.name === techniqueName);
     if (!techniqueData) return;
     
+    // 检查功法堂中是否有此功法
+    const hallTechnique = gameState.techniqueHall.find(t => t.name === techniqueName);
+    if (!hallTechnique) {
+        addLog(`[功法] 功法堂中没有${techniqueName}，请先购买`, 'text-red-400');
+        return;
+    }
+    
     if (disciple.learnTechnique(techniqueData)) {
-        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+        // 减少功法堂库存
+        hallTechnique.stock--;
+        if (hallTechnique.stock <= 0) {
+            // 如果库存为0，从功法堂移除
+            const index = gameState.techniqueHall.findIndex(t => t.name === techniqueName);
+            if (index > -1) {
+                gameState.techniqueHall.splice(index, 1);
+            }
+        }
+        
+        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！剩余库存：${hallTechnique.stock}`, 'text-purple-400');
     } else {
         addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
     }
