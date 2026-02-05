@@ -206,6 +206,12 @@ class CultivationGame {
         
         for (let i = 0; i < sectCount; i++) {
             const sect = this.generateNPCSect(playerPower);
+            
+            // 添加额外属性
+            sect.id = `sect_${Date.now()}_${i}`;
+            sect.attitude = this.generateAttitude(playerPower, sect.totalPower);
+            sect.scouted = false; // 是否已侦查
+            
             sects.push(sect);
         }
         
@@ -359,11 +365,19 @@ class CultivationGame {
     generateAttitude(playerPower, sectPower) {
         const powerRatio = playerPower / sectPower;
         
-        if (powerRatio > 2.0) return 'fearful'; // 恐惧
-        if (powerRatio > 1.5) return 'respectful'; // 尊敬
-        if (powerRatio > 0.8) return 'neutral'; // 中立
-        if (powerRatio > 0.5) return 'disdainful'; // 轻视
-        return 'hostile'; // 敌对
+        if (powerRatio > 2) {
+            // 玩家战力远超对方，对方倾向于友好
+            return Math.random() < 0.7 ? 'friendly' : 'neutral';
+        } else if (powerRatio > 1.5) {
+            // 玩家战力较强
+            return Math.random() < 0.5 ? 'friendly' : 'neutral';
+        } else if (powerRatio > 0.8) {
+            // 实力相当
+            return Math.random() < 0.3 ? 'friendly' : (Math.random() < 0.6 ? 'neutral' : 'hostile');
+        } else {
+            // 玩家战力较弱
+            return Math.random() < 0.2 ? 'friendly' : (Math.random() < 0.5 ? 'neutral' : 'hostile');
+        }
     }
     
     // 初始化游戏
@@ -1457,10 +1471,294 @@ class CultivationGame {
     // 显示地区模态框
     showRegionModal() {
         const modal = document.getElementById('regionModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            console.log('显示地区查看');
+        const regionMap = document.getElementById('regionMap');
+        
+        if (!modal || !regionMap) return;
+        
+        // 更新周边宗门信息
+        this.updateNearbySects();
+        
+        // 清空并重新生成地区内容
+        regionMap.innerHTML = '';
+        
+        // 当前地区信息
+        const currentRegionDiv = document.createElement('div');
+        currentRegionDiv.className = 'col-span-2 bg-slate-800 p-4 rounded ancient-border';
+        currentRegionDiv.innerHTML = `
+            <h3 class="text-xl font-bold text-amber-200 mb-3">🏰 当前地区</h3>
+            <div class="space-y-2 text-amber-300">
+                <p><strong>地区名称：</strong>${gameState.currentRegion.name}</p>
+                <p><strong>地区等级：</strong>${gameState.currentRegion.level}级</p>
+                <p><strong>我方宗门：</strong>${gameState.sectName}</p>
+                <p><strong>宗门战力：</strong>${gameState.totalPower}</p>
+                <p><strong>影响力：</strong>${this.getInfluenceLevel().name}</p>
+            </div>
+        `;
+        regionMap.appendChild(currentRegionDiv);
+        
+        // 周边势力列表
+        if (gameState.nearbySects && gameState.nearbySects.length > 0) {
+            const nearbySectsDiv = document.createElement('div');
+            nearbySectsDiv.className = 'col-span-2 bg-slate-800 p-4 rounded ancient-border';
+            nearbySectsDiv.innerHTML = `
+                <h3 class="text-xl font-bold text-amber-200 mb-3">⚔️ 周边势力</h3>
+                <div class="space-y-3 max-h-80 overflow-y-auto">
+                    ${gameState.nearbySects.map(sect => this.generateSectCard(sect)).join('')}
+                </div>
+            `;
+            regionMap.appendChild(nearbySectsDiv);
+        } else {
+            const noSectsDiv = document.createElement('div');
+            noSectsDiv.className = 'col-span-2 bg-slate-800 p-4 rounded ancient-border';
+            noSectsDiv.innerHTML = `
+                <h3 class="text-xl font-bold text-amber-200 mb-3">⚔️ 周边势力</h3>
+                <p class="text-gray-400">暂无其他势力，正在探索中...</p>
+            `;
+            regionMap.appendChild(noSectsDiv);
         }
+        
+        modal.classList.remove('hidden');
+        console.log('显示地区查看');
+        
+        // 绑定势力卡片事件
+        this.bindSectEvents();
+    }
+    
+    // 生成势力卡片
+    generateSectCard(sect) {
+        const attitudeColor = {
+            friendly: 'text-green-400',
+            neutral: 'text-yellow-400',
+            hostile: 'text-red-400'
+        }[sect.attitude] || 'text-gray-400';
+        
+        const attitudeText = {
+            friendly: '友好',
+            neutral: '中立',
+            hostile: '敌对'
+        }[sect.attitude] || '未知';
+        
+        return `
+            <div class="sect-card bg-slate-700 p-3 rounded border border-gray-600" data-sect-id="${sect.id}">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="text-lg font-bold text-amber-200">${sect.name}</h4>
+                    <span class="text-sm ${attitudeColor}">${attitudeText}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm text-gray-300 mb-3">
+                    <p><strong>宗主：</strong>${sect.master.name}</p>
+                    <p><strong>境界：</strong>${sect.master.realm}</p>
+                    <p><strong>类型：</strong>${sect.type}</p>
+                    <p><strong>战力：</strong>${sect.totalPower}</p>
+                    <p><strong>弟子：</strong>${sect.disciples.length}人</p>
+                    <p><strong>声望：</strong>${sect.reputation}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="sect-challenge-btn px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded" data-sect-id="${sect.id}">
+                        ⚔️ 挑战
+                    </button>
+                    <button class="sect-diplomacy-btn px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded" data-sect-id="${sect.id}">
+                        🤝 外交
+                    </button>
+                    <button class="sect-spy-btn px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded" data-sect-id="${sect.id}">
+                        🕵️ 侦查
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 绑定势力事件
+    bindSectEvents() {
+        // 挑战按钮
+        document.querySelectorAll('.sect-challenge-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const sectId = e.target.dataset.sectId;
+                this.handleSectChallenge(sectId);
+            };
+        });
+        
+        // 外交按钮
+        document.querySelectorAll('.sect-diplomacy-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const sectId = e.target.dataset.sectId;
+                this.handleSectDiplomacy(sectId);
+            };
+        });
+        
+        // 侦查按钮
+        document.querySelectorAll('.sect-spy-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const sectId = e.target.dataset.sectId;
+                this.handleSectSpy(sectId);
+            };
+        });
+    }
+    
+    // 处理势力挑战
+    handleSectChallenge(sectId) {
+        const sect = gameState.nearbySects.find(s => s.id == sectId);
+        if (!sect) return;
+        
+        // 显示挑战确认对话框
+        const challengeDiv = document.createElement('div');
+        challengeDiv.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+        challengeDiv.innerHTML = `
+            <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold text-amber-200 mb-4">⚔️ 挑战确认</h3>
+                <div class="space-y-3 text-gray-300 mb-6">
+                    <p><strong>挑战对象：</strong>${sect.name}</p>
+                    <p><strong>对方宗主：</strong>${sect.master.name} (${sect.master.realm})</p>
+                    <p><strong>对方战力：</strong>${sect.totalPower}</p>
+                    <p><strong>我方战力：</strong>${gameState.totalPower}</p>
+                    <p><strong>胜利概率：</strong>${this.calculateChallengeWinChance(sect).toFixed(1)}%</p>
+                    <p class="text-red-400">⚠️ 挑战失败将损失声望和灵石！</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="confirmChallenge" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded">
+                        确认挑战
+                    </button>
+                    <button id="cancelChallenge" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded">
+                        取消
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(challengeDiv);
+        
+        // 绑定事件
+        document.getElementById('confirmChallenge').onclick = () => {
+            this.executeSectChallenge(sect);
+            document.body.removeChild(challengeDiv);
+        };
+        
+        document.getElementById('cancelChallenge').onclick = () => {
+            document.body.removeChild(challengeDiv);
+        };
+    }
+    
+    // 执行势力挑战
+    executeSectChallenge(sect) {
+        const winChance = this.calculateChallengeWinChance(sect) / 100;
+        const victory = Math.random() < winChance;
+        
+        if (victory) {
+            const reputationGain = Math.floor(sect.reputation * 0.2);
+            const spiritStonesGain = Math.floor(sect.totalPower * 0.1);
+            
+            gameState.reputation += reputationGain;
+            gameState.spiritStones += spiritStonesGain;
+            
+            addLog(`[胜利] ${gameState.sectName}击败了${sect.name}，获得${reputationGain}声望和${spiritStonesGain}灵石！`, 'text-green-400 font-bold');
+            
+            // 移除被击败的宗门
+            const index = gameState.nearbySects.findIndex(s => s.id === sect.id);
+            if (index > -1) {
+                gameState.nearbySects.splice(index, 1);
+            }
+        } else {
+            const reputationLoss = Math.floor(gameState.reputation * 0.15);
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.2);
+            
+            gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
+            gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
+            
+            addLog(`[战败] ${gameState.sectName}败给了${sect.name}，损失${reputationLoss}声望和${spiritStonesLoss}灵石！`, 'text-red-400 font-bold');
+            
+            // 可能有弟子受伤
+            const healthyDisciples = gameState.disciples.filter(d => d.alive && !d.injured);
+            if (healthyDisciples.length > 0 && Math.random() < 0.3) {
+                const injuredDisciple = healthyDisciples[Math.floor(Math.random() * healthyDisciples.length)];
+                injuredDisciple.injured = true;
+                addLog(`[伤亡] ${injuredDisciple.name}在挑战中受伤`, 'text-orange-400');
+            }
+        }
+        
+        // 刷新地区显示
+        this.showRegionModal();
+        updateDisplay(gameState);
+    }
+    
+    // 计算挑战胜利概率
+    calculateChallengeWinChance(sect) {
+        const powerRatio = gameState.totalPower / sect.totalPower;
+        const baseChance = Math.min(Math.max(powerRatio * 50, 10), 90); // 10%-90%
+        
+        // 境界压制加成
+        const realmAdvantage = this.calculateRealmAdvantage(gameState.playerRealm, sect.master.realm);
+        return Math.min(baseChance * realmAdvantage, 95);
+    }
+    
+    // 处理势力外交
+    handleSectDiplomacy(sectId) {
+        const sect = gameState.nearbySects.find(s => s.id == sectId);
+        if (!sect) return;
+        
+        const diplomacyCost = Math.floor(sect.reputation * 0.1);
+        
+        if (gameState.spiritStones < diplomacyCost) {
+            addLog(`[外交] 灵石不足，需要${diplomacyCost}灵石进行外交`, 'text-red-400');
+            return;
+        }
+        
+        // 根据态度决定外交结果
+        let result;
+        if (sect.attitude === 'hostile') {
+            result = Math.random() < 0.3; // 30%概率改善关系
+        } else if (sect.attitude === 'neutral') {
+            result = Math.random() < 0.7; // 70%概率建立友好关系
+        } else {
+            result = Math.random() < 0.9; // 90%概率巩固关系
+        }
+        
+        gameState.spiritStones -= diplomacyCost;
+        
+        if (result) {
+            sect.attitude = sect.attitude === 'hostile' ? 'neutral' : 'friendly';
+            addLog(`[外交] 与${sect.name}的外交活动成功，关系改善为${sect.attitude === 'friendly' ? '友好' : '中立'}！`, 'text-green-400');
+        } else {
+            addLog(`[外交] 与${sect.name}的外交活动失败`, 'text-red-400');
+        }
+        
+        this.showRegionModal();
+        updateDisplay(gameState);
+    }
+    
+    // 处理势力侦查
+    handleSectSpy(sectId) {
+        const sect = gameState.nearbySects.find(s => s.id == sectId);
+        if (!sect) return;
+        
+        const spyCost = 50;
+        
+        if (gameState.spiritStones < spyCost) {
+            addLog(`[侦查] 灵石不足，需要${spyCost}灵石进行侦查`, 'text-red-400');
+            return;
+        }
+        
+        gameState.spiritStones -= spyCost;
+        
+        // 侦查成功率
+        const successRate = sect.attitude === 'hostile' ? 0.6 : 0.8;
+        const success = Math.random() < successRate;
+        
+        if (success) {
+            addLog(`[侦查] 成功获取${sect.name}的详细信息：`, 'text-purple-400');
+            addLog(`[情报] 宗主${sect.master.name}，境界${sect.master.realm}，擅长${sect.type}，总战力${sect.totalPower}`, 'text-purple-300');
+            
+            // 更新侦查到的信息
+            sect.scouted = true;
+        } else {
+            addLog(`[侦查] 侦查${sect.name}失败，被发现！关系恶化`, 'text-red-400');
+            if (sect.attitude === 'friendly') {
+                sect.attitude = 'neutral';
+            } else if (sect.attitude === 'neutral') {
+                sect.attitude = 'hostile';
+            }
+        }
+        
+        this.showRegionModal();
+        updateDisplay(gameState);
     }
     
     // 生成事件
