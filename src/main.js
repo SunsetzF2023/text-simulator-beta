@@ -1185,15 +1185,34 @@ class CultivationGame {
     // 强敌挑战事件
     triggerStrongEnemyChallenge(newRealm) {
         const playerPower = this.calculatePlayerPower();
-        const enemyPower = playerPower * (1.2 + Math.random() * 0.3); // 120%-150%的战力
+        const realmIndex = REALMS.indexOf(newRealm);
+        
+        // 根据境界计算难度系数
+        let difficultyMultiplier;
+        if (realmIndex < 10) {
+            // 炼气期：150%-200%
+            difficultyMultiplier = 1.5 + Math.random() * 0.5;
+        } else if (realmIndex < 20) {
+            // 筑基期：180%-250%
+            difficultyMultiplier = 1.8 + Math.random() * 0.7;
+        } else if (realmIndex < 30) {
+            // 金丹期：220%-300%
+            difficultyMultiplier = 2.2 + Math.random() * 0.8;
+        } else {
+            // 元婴期及以上：250%-350%
+            difficultyMultiplier = 2.5 + Math.random() * 1.0;
+        }
+        
+        const enemyPower = playerPower * difficultyMultiplier;
         
         const enemy = this.generateNPCSect(enemyPower);
-        addLog(`[挑战] ${enemy.name}宗主${enemy.master.name}听闻${gameState.playerName}突破，前来挑战！`, 'text-red-400 font-bold');
-        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower}`, 'text-red-400');
+        addLog(`[挑战] ${enemy.name}宗主${enemy.master.name}听闻${gameState.playerName}突破至${newRealm}，前来挑战！`, 'text-red-400 font-bold');
+        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower} (难度系数: ${(difficultyMultiplier * 100).toFixed(0)}%)`, 'text-red-400');
         
-        // 简化的战斗结果
-        const winChance = gameState.totalPower / enemy.totalPower;
-        const victory = Math.random() < winChance;
+        // 战斗结果计算（考虑境界压制）
+        const realmAdvantage = this.calculateRealmAdvantage(newRealm, enemy.master.realm);
+        const adjustedWinChance = (gameState.totalPower * realmAdvantage) / enemy.totalPower;
+        const victory = Math.random() < adjustedWinChance;
         
         if (victory) {
             const reputationGain = Math.floor(enemy.reputation * 0.3);
@@ -1205,6 +1224,30 @@ class CultivationGame {
             gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
             gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
             addLog(`[战败] ${gameState.playerName}败给${enemy.master.name}，损失${reputationLoss}声望和${spiritStonesLoss}灵石！`, 'text-red-400 font-bold');
+        }
+    }
+    
+    // 计算境界压制优势
+    calculateRealmAdvantage(playerRealm, enemyRealm) {
+        const playerIndex = REALMS.indexOf(playerRealm);
+        const enemyIndex = REALMS.indexOf(enemyRealm);
+        const realmGap = playerIndex - enemyIndex;
+        
+        // 境界压制系数
+        if (realmGap >= 10) {
+            return 1.5; // 大境界压制，50%战力加成
+        } else if (realmGap >= 5) {
+            return 1.3; // 中等境界压制，30%战力加成
+        } else if (realmGap >= 2) {
+            return 1.15; // 小境界压制，15%战力加成
+        } else if (realmGap <= -10) {
+            return 0.7; // 被大境界压制，30%战力削减
+        } else if (realmGap <= -5) {
+            return 0.8; // 被中等境界压制，20%战力削减
+        } else if (realmGap <= -2) {
+            return 0.9; // 被小境界压制，10%战力削减
+        } else {
+            return 1.0; // 境界相近，无压制效果
         }
     }
     
@@ -1855,7 +1898,40 @@ CultivationGame.prototype.checkInvasion = function(gameTick) {
 
 // 触发踢馆事件
 CultivationGame.prototype.triggerInvasion = function() {
-    const invadingSect = INVADING_SECTS[Math.floor(Math.random() * INVADING_SECTS.length)];
+    // 根据玩家境界选择合适的挑战者
+    const playerRealmIndex = REALMS.indexOf(gameState.playerRealm);
+    let availableSects;
+    
+    if (playerRealmIndex < 10) {
+        // 炼气期：较弱对手
+        availableSects = INVADING_SECTS.filter(s => s.strength <= 0.6);
+    } else if (playerRealmIndex < 20) {
+        // 筑基期：中等对手
+        availableSects = INVADING_SECTS.filter(s => s.strength <= 0.8);
+    } else {
+        // 金丹期及以上：所有对手都可能
+        availableSects = INVADING_SECTS;
+    }
+    
+    // 增加特殊强敌概率
+    let invadingSect;
+    if (Math.random() < 0.2 && playerRealmIndex >= 20) {
+        // 20%概率遇到特殊强敌（金丹期及以上）
+        invadingSect = {
+            name: "天魔宗",
+            strength: 1.2 + Math.random() * 0.5, // 1.2-1.7强度
+            description: "来自魔域的强大宗门，专门挑战各路高手",
+            specialty: "天魔功"
+        };
+    } else {
+        invadingSect = availableSects[Math.floor(Math.random() * availableSects.length)];
+        // 根据玩家境界增强对手
+        const enhancement = Math.min(playerRealmIndex / 30, 0.5); // 最多增强50%
+        invadingSect = {
+            ...invadingSect,
+            strength: invadingSect.strength * (1 + enhancement)
+        };
+    }
     
     addLog(`[踢馆] 警报！${invadingSect.name}前来踢馆！`, 'text-red-400');
     addLog(`[踢馆] ${invadingSect.description}，擅长${invadingSect.specialty}`, 'text-yellow-400');
