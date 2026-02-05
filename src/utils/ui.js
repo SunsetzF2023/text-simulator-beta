@@ -2736,6 +2736,14 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     const realmIndex = getRealmIndex(disciple.realm);
     const requiredIndex = getRealmIndex(requiredRealm);
     
+    console.log('境界检查:', {
+        discipleRealm: disciple.realm,
+        requiredRealm: requiredRealm,
+        realmIndex: realmIndex,
+        requiredIndex: requiredIndex,
+        canPromote: realmIndex >= requiredIndex
+    });
+    
     if (realmIndex < requiredIndex) {
         alert(`${disciple.name}境界不足，需要达到${requiredRealm}才能提升`);
         return;
