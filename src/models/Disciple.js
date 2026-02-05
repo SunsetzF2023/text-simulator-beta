@@ -201,9 +201,22 @@ export class Disciple {
         return baseSpeed;
     }
     
-    // 计算战斗力（综合体质、命格、武器和灵兽加成）
+    // 计算战斗力（综合境界、体质、命格、武器和灵兽加成）
     getCombatPower() {
-        let basePower = this.talent; // 基础战斗力基于天赋
+        // 基础战斗力基于天赋
+        let basePower = this.talent;
+        
+        // 境界加成 - 主要战力来源
+        const realmIndex = REALMS.indexOf(this.realm);
+        if (realmIndex > 0) {
+            // 每个境界层级提供大量战力加成
+            basePower += realmIndex * 50;
+        }
+        
+        // 修炼进度加成
+        if (this.cultivation) {
+            basePower += Math.floor(this.cultivation * 2); // 最多200点
+        }
         
         // 体质加成
         if (this.constitution && this.constitution.combat) {
@@ -215,6 +228,10 @@ export class Disciple {
         if (destinyEffects.combat) {
             basePower *= destinyEffects.combat;
         }
+        
+        // 功法加成
+        const techniqueBonus = this.getTechniquePowerBonus();
+        basePower += techniqueBonus;
         
         // 武器加成
         if (this.weapon && this.weapon.combatBonus) {
