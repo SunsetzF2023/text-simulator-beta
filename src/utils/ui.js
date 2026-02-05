@@ -2215,8 +2215,9 @@ function updateDiscipleHierarchy(gameState) {
     org.outerDisciples = [];
     org.innerDisciples = [];
     org.personalDisciples = [];
+    org.disciples = []; // 新增弟子层级
     
-    // 根据弟子境界和职位进行分层
+    // 根据弟子境界和职位进行// 重新分配弟子
     gameState.disciples.forEach(disciple => {
         if (!disciple.alive) return;
         
@@ -2231,15 +2232,8 @@ function updateDiscipleHierarchy(gameState) {
                 org.managers.push({ ...disciple, position });
             }
         } else {
-            // 没有职位的弟子根据境界分层
-            const realmIndex = getRealmIndex(disciple.realm);
-            if (realmIndex <= 10) { // 炼气期 (1-10)
-                org.outerDisciples.push(disciple);
-            } else if (realmIndex <= 20) { // 筑基期 (11-20)
-                org.innerDisciples.push(disciple);
-            } else { // 金丹期及以上 (21+)
-                org.personalDisciples.push(disciple);
-            }
+            // 所有没有职位的弟子都放在弟子层级
+            org.disciples.push(disciple);
         }
     });
 }
@@ -2343,59 +2337,40 @@ function showDiscipleHierarchy(gameState) {
                 </div>
             </div>
             
-            <!-- 亲传弟子 -->
+            <!-- 长老 -->
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-purple-400 font-bold">🌟 亲传弟子 (${org.personalDisciples.length})</h3>
-                    <button onclick="managePosition('personalDisciples')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
+                    <h3 class="text-purple-400 font-bold">🏛️ 长老 (${org.elders.length})</h3>
+                    <button onclick="managePosition('elders')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
                 <div class="space-y-1">
-                    ${org.personalDisciples.length > 0 ? 
-                        org.personalDisciples.map(d => `
+                    ${org.elders.length > 0 ? 
+                        org.elders.map(d => `
                             <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
                                 <span class="text-white">${d.name}</span>
-                                <span class="text-gray-400">${d.realm}</span>
+                                <span class="text-gray-400">${d.realm} (${d.position.name})</span>
                             </div>
                         `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无亲传弟子</div>'
+                        '<div class="text-gray-500 text-sm">暂无长老</div>'
                     }
                 </div>
             </div>
             
-            <!-- 内门弟子 -->
+            <!-- 弟子 -->
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-blue-400 font-bold">🔵 内门弟子 (${org.innerDisciples.length})</h3>
-                    <button onclick="managePosition('innerDisciples')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
+                    <h3 class="text-blue-400 font-bold">👥 弟子 (${org.disciples.length})</h3>
+                    <button onclick="managePosition('disciples')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
-                <div class="space-y-1">
-                    ${org.innerDisciples.length > 0 ? 
-                        org.innerDisciples.map(d => `
+                <div class="space-y-1 max-h-48 overflow-y-auto">
+                    ${org.disciples.length > 0 ? 
+                        org.disciples.map(d => `
                             <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
                                 <span class="text-white">${d.name}</span>
                                 <span class="text-gray-400">${d.realm}</span>
                             </div>
                         `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无内门弟子</div>'
-                    }
-                </div>
-            </div>
-            
-            <!-- 外门弟子 -->
-            <div class="bg-slate-800 p-3 rounded">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-green-400 font-bold">🟢 外门弟子 (${org.outerDisciples.length})</h3>
-                    <button onclick="managePosition('outerDisciples')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">管理</button>
-                </div>
-                <div class="space-y-1 max-h-32 overflow-y-auto">
-                    ${org.outerDisciples.length > 0 ? 
-                        org.outerDisciples.map(d => `
-                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
-                                <span class="text-white">${d.name}</span>
-                                <span class="text-gray-400">${d.realm}</span>
-                            </div>
-                        `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无外门弟子</div>'
+                        '<div class="text-gray-500 text-sm">暂无弟子</div>'
                     }
                 </div>
             </div>
