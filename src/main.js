@@ -1458,7 +1458,22 @@ class CultivationGame {
         console.log('打开集体事件');
     }
     
-    // 处理地区查看
+    // 获取影响力等级
+    getInfluenceLevel() {
+        const reputation = gameState.reputation;
+        
+        // 从高到低查找对应的影响力等级
+        for (let i = INFLUENCE_LEVELS.length - 1; i >= 0; i--) {
+            if (reputation >= INFLUENCE_LEVELS[i].reputation) {
+                return INFLUENCE_LEVELS[i];
+            }
+        }
+        
+        // 如果声望为负或很低，返回最低等级
+        return INFLUENCE_LEVELS[0];
+    }
+    
+    // 处理地区管理查看
     handleRegion() {
         this.showRegionModal();
         console.log('打开地区查看');
