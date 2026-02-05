@@ -708,29 +708,31 @@ class CultivationGame {
         battleLog.push(`[战斗] 我方参战弟子：${ourDisciples.length}人，总战力：${ourTotalPower}`);
         battleLog.push(`[战斗] 敌方参战单位：${enemyDisciples.length}个，总战力：${enemyTotalPower}`);
         
-        // 计算战斗结果
-        const powerRatio = ourTotalPower / enemyTotalPower;
-        const winChance = Math.min(0.95, Math.max(0.05, powerRatio * 0.8 + 0.2)); // 基础20%胜利概率
-        const victory = Math.random() < winChance;
+        // 个体化战斗系统
+        const battleResult = this.simulateIndividualBattles(ourDisciples, enemyDisciples, battleLog);
+        
+        // 处理战斗结果
+        const ourSurvivors = battleResult.ourSurvivors;
+        const ourCasualties = battleResult.ourCasualties;
+        const enemySurvivors = battleResult.enemySurvivors;
+        const enemyCasualties = battleResult.enemyCasualties;
+        
+        // 判断胜负
+        const victory = ourSurvivors.length > 0 && (enemySurvivors.length === 0 || ourSurvivors.length > enemySurvivors.length);
         
         if (victory) {
-            // 胜利情况
             battleLog.push(`[胜利] 我方成功击退${invasionType}！`);
             
-            // 随机损失少量弟子
-            const casualtyRate = 0.05 + Math.random() * 0.1; // 5%-15%损失率
-            const casualties = this.calculateCasualties(ourDisciples, casualtyRate);
+            // 移除牺牲的弟子
+            ourCasualties.forEach(casualty => {
+                const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                if (index > -1) {
+                    gameState.disciples.splice(index, 1);
+                }
+            });
             
-            if (casualties.length > 0) {
-                battleLog.push(`[损失] 不幸牺牲${casualties.length}名弟子：${casualties.map(d => d.name).join('、')}`);
-                
-                // 移除牺牲的弟子
-                casualties.forEach(casualty => {
-                    const index = gameState.disciples.findIndex(d => d.id === casualty.id);
-                    if (index > -1) {
-                        gameState.disciples.splice(index, 1);
-                    }
-                });
+            if (ourCasualties.length > 0) {
+                battleLog.push(`[损失] 不幸牺牲${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
             }
             
             // 获得奖励
@@ -743,26 +745,21 @@ class CultivationGame {
             battleLog.push(`[奖励] 获得${spiritStonesReward}灵石，${reputationReward}声望`);
             
         } else {
-            // 失败情况
             battleLog.push(`[战败] 我方败给了${invasionType}...`);
             
-            // 大量弟子损失
-            const casualtyRate = 0.2 + Math.random() * 0.3; // 20%-50%损失率
-            const casualties = this.calculateCasualties(ourDisciples, casualtyRate);
-            
-            battleLog.push(`[损失] 损失${casualties.length}名弟子：${casualties.map(d => d.name).join('、')}`);
-            
             // 移除牺牲的弟子
-            casualties.forEach(casualty => {
+            ourCasualties.forEach(casualty => {
                 const index = gameState.disciples.findIndex(d => d.id === casualty.id);
                 if (index > -1) {
                     gameState.disciples.splice(index, 1);
                 }
             });
             
+            battleLog.push(`[损失] 损失${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
+            
             // 损失资源
-            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.3);
-            const reputationLoss = Math.floor(gameState.reputation * 0.2);
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.2);
+            const reputationLoss = Math.floor(gameState.reputation * 0.1);
             
             gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
             gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
@@ -775,6 +772,67 @@ class CultivationGame {
         
         // 重新计算战力
         this.calculateTotalPower();
+    }
+    
+    // 模拟个体化战斗
+    simulateIndividualBattles(ourDisciples, enemyDisciples, battleLog) {
+        const ourSurvivors = [...ourDisciples];
+        const ourCasualties = [];
+        const enemySurvivors = [...enemyDisciples];
+        const enemyCasualties = [];
+        
+        battleLog.push(`[对决] 开始个体对决：`);
+        
+        // 随机配对战斗
+        const maxRounds = Math.max(ourDisciples.length, enemyDisciples.length);
+        
+        for (let round = 1; round <= maxRounds; round++) {
+            // 如果一方已经全部阵亡，战斗结束
+            if (ourSurvivors.length === 0 || enemySurvivors.length === 0) break;
+            
+            // 随机选择我方和敌方单位
+            const ourFighter = ourSurvivors[Math.floor(Math.random() * ourSurvivors.length)];
+            const enemyFighter = enemySurvivors[Math.floor(Math.random() * enemySurvivors.length)];
+            
+            const ourPower = ourFighter.getCombatPower();
+            const enemyPower = enemyFighter.power;
+            
+            // 计算个体战斗结果
+            const ourWinChance = ourPower / (ourPower + enemyPower);
+            const ourWins = Math.random() < ourWinChance;
+            
+            if (ourWins) {
+                // 我方胜利，敌方单位阵亡
+                battleLog.push(`[对决] 第${round}回合：${ourFighter.name}(${ourFighter.realm}) VS ${enemyFighter.name}(${enemyFighter.realm}) - 我方胜利！`);
+                
+                const enemyIndex = enemySurvivors.indexOf(enemyFighter);
+                if (enemyIndex > -1) {
+                    enemySurvivors.splice(enemyIndex, 1);
+                    enemyCasualties.push(enemyFighter);
+                }
+            } else {
+                // 敌方胜利，我方弟子阵亡
+                battleLog.push(`[对决] 第${round}回合：${ourFighter.name}(${ourFighter.realm}) VS ${enemyFighter.name}(${enemyFighter.realm}) - 我方弟子阵亡！`);
+                
+                const ourIndex = ourSurvivors.indexOf(ourFighter);
+                if (ourIndex > -1) {
+                    ourSurvivors.splice(ourIndex, 1);
+                    ourCasualties.push(ourFighter);
+                }
+            }
+            
+            // 避免无限循环
+            if (round > 20) break;
+        }
+        
+        battleLog.push(`[对决] 战斗结束：我方存活${ourSurvivors.length}人，敌方存活${enemySurvivors.length}个`);
+        
+        return {
+            ourSurvivors,
+            ourCasualties,
+            enemySurvivors,
+            enemyCasualties
+        };
     }
     
     // 计算伤亡
