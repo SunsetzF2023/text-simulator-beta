@@ -1198,30 +1198,35 @@ class CultivationGame {
     
     // 强敌挑战事件
     triggerStrongEnemyChallenge(newRealm) {
-        const playerPower = this.calculatePlayerPower();
         const realmIndex = REALMS.indexOf(newRealm);
         
-        // 根据境界计算难度系数
+        // 基于宗门总战力计算难度系数，让挑战更有挑战性
         let difficultyMultiplier;
         if (realmIndex < 10) {
-            // 炼气期：150%-200%
-            difficultyMultiplier = 1.5 + Math.random() * 0.5;
+            // 炼气期：80%-120%总战力
+            difficultyMultiplier = 0.8 + Math.random() * 0.4;
         } else if (realmIndex < 20) {
-            // 筑基期：180%-250%
-            difficultyMultiplier = 1.8 + Math.random() * 0.7;
+            // 筑基期：90%-140%总战力
+            difficultyMultiplier = 0.9 + Math.random() * 0.5;
         } else if (realmIndex < 30) {
-            // 金丹期：220%-300%
-            difficultyMultiplier = 2.2 + Math.random() * 0.8;
+            // 金丹期：100%-160%总战力
+            difficultyMultiplier = 1.0 + Math.random() * 0.6;
         } else {
-            // 元婴期及以上：250%-350%
-            difficultyMultiplier = 2.5 + Math.random() * 1.0;
+            // 元婴期及以上：120%-200%总战力
+            difficultyMultiplier = 1.2 + Math.random() * 0.8;
         }
         
-        const enemyPower = playerPower * difficultyMultiplier;
+        // 使用宗门总战力作为基准
+        const enemyPower = gameState.totalPower * difficultyMultiplier;
         
         const enemy = this.generateNPCSect(enemyPower);
+        
+        // 计算实际的难度系数
+        const actualDifficultyRatio = enemy.totalPower / gameState.totalPower;
+        const actualDifficultyPercent = (actualDifficultyRatio * 100).toFixed(0);
+        
         addLog(`[挑战] ${enemy.name}宗主${enemy.master.name}听闻${gameState.playerName}突破至${newRealm}，前来挑战！`, 'text-red-400 font-bold');
-        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower} (难度系数: ${(difficultyMultiplier * 100).toFixed(0)}%)`, 'text-red-400');
+        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower} (实际难度: ${actualDifficultyPercent}%)`, 'text-red-400');
         
         // 战斗结果计算（考虑境界压制）
         const realmAdvantage = this.calculateRealmAdvantage(newRealm, enemy.master.realm);
