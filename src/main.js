@@ -1256,9 +1256,8 @@ class CultivationGame {
     updateDisplay() {
         updateDisplay(gameState);
     }
-}
-
-// 根据弟子境界获取合适的功法
+    
+    // 根据弟子境界获取合适的功法
     getRandomTechniqueForDisciple(disciple) {
         const realmIndex = REALMS.indexOf(disciple.realm);
         let availableTechniques = BASE_TECHNIQUES;
@@ -1280,6 +1279,7 @@ class CultivationGame {
         
         return availableTechniques[Math.floor(Math.random() * availableTechniques.length)];
     }
+}
 
 // 生成功法残本的辅助函数
 function generateTechniqueFragment(isAdvanced = false) {
