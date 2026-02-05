@@ -1,4 +1,4 @@
-import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES } from '../data/constants.js';
+import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES, TECHNIQUE_TYPE_BONUS, ELEMENT_COUNTERS } from '../data/constants.js';
 import { advancedAI } from '../ai/AdvancedAI.js';
 
 // 数据迁移函数 - 修复旧格式的天赋词条
@@ -981,21 +981,57 @@ export class Disciple {
         return result;
     }
     
-    // 获取功法战力加成
+    // 获取功法战力加成（多维度计算）
     getTechniquePowerBonus() {
         let totalBonus = 0;
         
         for (const technique of this.techniques) {
-            const progress = this.techniqueProgress[technique.name] || 0;
-            const level = this.getTechniqueLevel(technique.name);
+            if (!technique) continue;
+            
             const quality = TECHNIQUE_QUALITIES[technique.quality];
+            const level = this.getTechniqueLevel(technique.name);
+            const typeBonus = TECHNIQUE_TYPE_BONUS[technique.type];
             const matchBonus = this.getTechniqueMatchBonus(technique);
             
-            const powerBonus = technique.basePower * quality.multiplier * level.powerBonus * matchBonus;
-            totalBonus += powerBonus;
+            // 多维度战力计算
+            // 基础战力 × 品质倍数 × 等级倍数 × 类型倍数 × 匹配倍数
+            const baseCombatPower = technique.combatBonus || 1.0;
+            const qualityMultiplier = quality.combatMultiplier || 1.0;
+            const levelMultiplier = level.combatBonus || 1.0;
+            const typeMultiplier = typeBonus.combatBonus || 1.0;
+            
+            let techniquePower = baseCombatPower * qualityMultiplier * levelMultiplier * typeMultiplier * matchBonus;
+            
+            // 属性相克加成（基于弟子灵根）
+            if (technique.attribute && this.spiritRoot) {
+                const elementBonus = this.getElementBonus(technique.attribute, this.spiritRoot);
+                techniquePower *= elementBonus;
+            }
+            
+            totalBonus += Math.floor(techniquePower);
         }
         
-        return Math.floor(totalBonus);
+        return totalBonus;
+    }
+    
+    // 获取属性相克加成
+    getElementBonus(techniqueAttribute, discipleSpiritRoot) {
+        if (techniqueAttribute === '无属性' || discipleSpiritRoot === '无属性') {
+            return 1.0;
+        }
+        
+        // 灵根与功法属性匹配时获得加成
+        if (techniqueAttribute === discipleSpiritRoot) {
+            return 1.3; // 30%加成
+        }
+        
+        // 检查相克关系
+        const elementInfo = ELEMENT_COUNTERS[techniqueAttribute];
+        if (elementInfo && elementInfo.counters.includes(discipleSpiritRoot)) {
+            return elementInfo.bonus; // 1.2或1.3倍加成
+        }
+        
+        return 1.0; // 无额外加成
     }
     
     // 切换修炼功法
