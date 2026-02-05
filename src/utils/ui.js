@@ -2233,11 +2233,11 @@ function updateDiscipleHierarchy(gameState) {
         } else {
             // 没有职位的弟子根据境界分层
             const realmIndex = getRealmIndex(disciple.realm);
-            if (realmIndex <= 2) { // 凡人、炼气期、筑基期
+            if (realmIndex <= 10) { // 炼气期 (1-10)
                 org.outerDisciples.push(disciple);
-            } else if (realmIndex <= 4) { // 金丹期、元婴期
+            } else if (realmIndex <= 20) { // 筑基期 (11-20)
                 org.innerDisciples.push(disciple);
-            } else { // 化神期及以上
+            } else { // 金丹期及以上 (21+)
                 org.personalDisciples.push(disciple);
             }
         }
