@@ -203,16 +203,28 @@ class CultivationGame {
     // 生成周边宗门
     generateNearbySects() {
         const sects = [];
-        const playerPower = this.calculatePlayerPower();
+        const playerPower = gameState.totalPower; // 使用宗门总战力而不是玩家个人战力
         const sectCount = 5 + Math.floor(Math.random() * 5); // 5-9个宗门
         
-        for (let i = 0; i < sectCount; i++) {
+        // 添加特殊宗门（有概率出现）
+        if (Math.random() < 0.3) { // 30%概率出现特殊宗门
+            const specialSect = this.generateSpecialSect(playerPower);
+            if (specialSect) {
+                sects.push(specialSect);
+            }
+        }
+        
+        // 生成普通宗门
+        const normalSectCount = sectCount - sects.length;
+        for (let i = 0; i < normalSectCount; i++) {
             const sect = this.generateNPCSect(playerPower);
             
             // 添加额外属性
             sect.id = `sect_${Date.now()}_${i}`;
             sect.attitude = this.generateAttitude(playerPower, sect.totalPower);
             sect.scouted = false; // 是否已侦查
+            sect.challengeCount = 0; // 挑战次数
+            sect.lastChallengeTime = 0; // 上次挑战时间
             
             sects.push(sect);
         }
@@ -221,6 +233,121 @@ class CultivationGame {
         sects.sort((a, b) => b.totalPower - a.totalPower);
         
         return sects;
+    }
+    
+    // 生成特殊宗门
+    generateSpecialSect(playerPower) {
+        const specialSects = [
+            {
+                name: '紫霄剑宗',
+                type: '剑修',
+                description: '上古剑修大派，剑道通神',
+                powerMultiplier: 1.5 + Math.random() * 0.5, // 150%-200%战力
+                masterRealm: '化神后期',
+                specialRewards: { spiritStones: 5000, reputation: 2000, technique: '紫霄剑诀' }
+            },
+            {
+                name: '万魔殿',
+                type: '魔道',
+                description: '魔道至高殿堂，魔威滔天',
+                powerMultiplier: 1.6 + Math.random() * 0.4, // 160%-200%战力
+                masterRealm: '返虚中期',
+                specialRewards: { spiritStones: 8000, reputation: 3000, technique: '万魔心经' }
+            },
+            {
+                name: '天机阁',
+                type: '阵修',
+                description: '精通天机之术，阵法无双',
+                powerMultiplier: 1.4 + Math.random() * 0.3, // 140%-170%战力
+                masterRealm: '化神中期',
+                specialRewards: { spiritStones: 6000, reputation: 2500, technique: '天机阵图' }
+            },
+            {
+                name: '长生谷',
+                type: '长生',
+                description: '追求长生不老，寿元悠长',
+                powerMultiplier: 1.3 + Math.random() * 0.4, // 130%-170%战力
+                masterRealm: '化神初期',
+                specialRewards: { spiritStones: 4000, reputation: 1500, technique: '长生诀' }
+            },
+            {
+                name: '血刀门',
+                type: '刀修',
+                description: '血刀霸道天下，杀戮成性',
+                powerMultiplier: 1.45 + Math.random() * 0.35, // 145%-180%战力
+                masterRealm: '化神后期',
+                specialRewards: { spiritStones: 7000, reputation: 2800, technique: '血刀大法' }
+            }
+        ];
+        
+        const selectedSect = specialSects[Math.floor(Math.random() * specialSects.length)];
+        const targetPower = playerPower * selectedSect.powerMultiplier;
+        
+        // 生成特殊宗门宗主
+        const master = {
+            name: this.generateSpecialNPCName(selectedSect.type),
+            realm: selectedSect.masterRealm,
+            power: this.calculateNPCPower(selectedSect.masterRealm, selectedSect.type),
+            type: selectedSect.type
+        };
+        
+        // 生成精英弟子
+        const discipleCount = 8 + Math.floor(Math.random() * 12); // 8-20个精英弟子
+        const disciples = [];
+        for (let i = 0; i < discipleCount; i++) {
+            const disciple = this.generateEliteDisciple(selectedSect.masterRealm, targetPower * 0.5 / discipleCount);
+            disciples.push(disciple);
+        }
+        
+        // 计算总战力
+        const disciplePower = disciples.reduce((sum, d) => sum + d.power, 0);
+        const totalPower = Math.floor(master.power * 2.5 + disciplePower); // 特殊宗门权威系数2.5
+        
+        return {
+            ...selectedSect,
+            id: `special_sect_${Date.now()}`,
+            master: master,
+            disciples: disciples,
+            totalPower: totalPower,
+            reputation: Math.floor(totalPower * (0.8 + Math.random() * 0.4)), // 特殊宗门声望更高
+            attitude: 'hostile', // 特殊宗门默认敌对
+            scouted: false,
+            challengeCount: 0,
+            lastChallengeTime: 0,
+            isSpecial: true // 标记为特殊宗门
+        };
+    }
+    
+    // 生成特殊NPC姓名
+    generateSpecialNPCName(type) {
+        const specialNames = {
+            '剑修': ['剑无尘', '剑心通明', '剑破苍穹', '剑绝天下'],
+            '魔道': ['魔天尊', '魔无极', '魔噬乾坤', '魔霸九天'],
+            '阵修': ['阵法天师', '阵通玄机', '阵破万法', '阵御天地'],
+            '长生': ['长生真人', '寿元无尽', '不死仙尊', '永恒道君'],
+            '刀修': ['刀霸天下', '刀破山河', '刀绝九幽', '刀噬神魔']
+        };
+        
+        const names = specialNames[type] || ['玄天道人', '神秘高人', '无敌剑仙', '绝世魔尊'];
+        return names[Math.floor(Math.random() * names.length)];
+    }
+    
+    // 生成精英弟子
+    generateEliteDisciple(masterRealm, targetPower) {
+        const discipleRealm = this.getEliteDiscipleRealm(masterRealm);
+        return {
+            name: this.generateSpecialNPCName('剑修'), // 精英弟子都用酷炫名字
+            realm: discipleRealm,
+            power: this.calculateNPCPower(discipleRealm, '精英'),
+            type: '精英弟子'
+        };
+    }
+    
+    // 获取精英弟子境界
+    getEliteDiscipleRealm(masterRealm) {
+        const masterIndex = REALMS.indexOf(masterRealm);
+        const eliteIndex = Math.max(0, masterIndex - 3 + Math.floor(Math.random() * 3)); // 比宗主低3-5级
+        return REALMS[eliteIndex] || '筑基期';
     }
     
     // 生成NPC宗门
@@ -2137,9 +2264,39 @@ class CultivationGame {
         const winChance = this.calculateChallengeWinChance(sect) / 100;
         const victory = Math.random() < winChance;
         
+        // 更新挑战信息
+        sect.challengeCount = (sect.challengeCount || 0) + 1;
+        sect.lastChallengeTime = Date.now();
+        
         if (victory) {
-            const reputationGain = Math.floor(sect.reputation * 0.2);
-            const spiritStonesGain = Math.floor(sect.totalPower * 0.1);
+            let reputationGain = Math.floor(sect.reputation * 0.2);
+            let spiritStonesGain = Math.floor(sect.totalPower * 0.1);
+            
+            // 特殊宗门有额外奖励
+            if (sect.isSpecial && sect.specialRewards) {
+                reputationGain += sect.specialRewards.reputation;
+                spiritStonesGain += sect.specialRewards.spiritStones;
+                
+                // 获得特殊功法
+                if (sect.specialRewards.technique) {
+                    const techniqueData = {
+                        name: sect.specialRewards.technique,
+                        quality: '天阶',
+                        attribute: '无属性',
+                        type: 'special',
+                        basePower: 500,
+                        description: `击败${sect.name}获得的绝世功法`,
+                        stock: 1,
+                        obtainedFrom: `击败${sect.name}`,
+                        purchaseDate: Date.now()
+                    };
+                    
+                    gameState.techniqueHall.push(techniqueData);
+                    addLog(`[奇遇] 获得绝世功法《${sect.specialRewards.technique}》！`, 'text-purple-400 font-bold');
+                }
+                
+                addLog(`[史诗] 击败传奇宗门${sect.name}，获得史诗级奖励！`, 'text-yellow-400 font-bold');
+            }
             
             gameState.reputation += reputationGain;
             gameState.spiritStones += spiritStonesGain;
@@ -2152,22 +2309,74 @@ class CultivationGame {
                 gameState.nearbySects.splice(index, 1);
             }
         } else {
-            const reputationLoss = Math.floor(gameState.reputation * 0.15);
-            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.2);
+            // 挑战失败 - 损失资源和弟子
+            const reputationLoss = Math.floor(gameState.reputation * 0.1); // 降低到10%损失
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.15); // 降低到15%损失
             
             gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
             gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
             
             addLog(`[战败] ${gameState.sectName}败给了${sect.name}，损失${reputationLoss}声望和${spiritStonesLoss}灵石！`, 'text-red-400 font-bold');
             
-            // 可能有弟子受伤
-            const healthyDisciples = gameState.disciples.filter(d => d.alive && !d.injured);
-            if (healthyDisciples.length > 0 && Math.random() < 0.3) {
-                const injuredDisciple = healthyDisciples[Math.floor(Math.random() * healthyDisciples.length)];
-                injuredDisciple.injured = true;
-                addLog(`[伤亡] ${injuredDisciple.name}在挑战中受伤`, 'text-orange-400');
+            // 弟子伤亡机制
+            const aliveDisciples = gameState.disciples.filter(d => d.alive);
+            if (aliveDisciples.length > 0) {
+                // 按战力排序，优先移除弱小弟子
+                const sortedDisciples = [...aliveDisciples].sort((a, b) => a.getCombatPower() - b.getCombatPower());
+                
+                // 计算伤亡数量
+                let casualtyCount = 0;
+                if (sect.isSpecial) {
+                    // 特殊宗门挑战失败，伤亡更重
+                    casualtyCount = Math.min(3, Math.floor(sortedDisciples.length * 0.2)); // 最多3个，或20%
+                } else {
+                    // 普通宗门挑战失败
+                    casualtyCount = Math.min(2, Math.floor(sortedDisciples.length * 0.1)); // 最多2个，或10%
+                }
+                
+                // 移除伤亡弟子
+                const casualties = sortedDisciples.slice(0, casualtyCount);
+                casualties.forEach(casualty => {
+                    const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                    if (index > -1) return;
+                    
+                    // 生成死亡描述
+                    const deathDescriptions = [
+                        `${casualty.name}在激战中被${sect.master.name}重创，不治身亡！`,
+                        `${casualty.name}为保护宗门，与敌人同归于尽！`,
+                        `${casualty.name}被${sect.name}的绝技击中，当场阵亡！`,
+                        `${casualty.name}力战不敌，被${sect.master.name}一击毙命！`,
+                        `${casualty.name}在撤退时被截杀，英勇牺牲！`
+                    ];
+                    
+                    const deathDesc = deathDescriptions[Math.floor(Math.random() * deathDescriptions.length)];
+                    addLog(`[牺牲] ${deathDesc}`, 'text-red-500');
+                    
+                    gameState.disciples.splice(index, 1);
+                });
+                
+                if (casualties.length > 0) {
+                    addLog(`[伤亡] 此次挑战损失${casualties.length}名弟子：${casualties.map(d => d.name).join('、')}`, 'text-red-600 font-bold');
+                }
+                
+                // 剩余弟子可能有受伤
+                const remainingDisciples = gameState.disciples.filter(d => d.alive);
+                if (remainingDisciples.length > 0 && Math.random() < 0.4) {
+                    const injuredCount = Math.min(2, Math.floor(remainingDisciples.length * 0.15));
+                    const injuredDisciples = remainingDisciples.slice(0, injuredCount);
+                    
+                    injuredDisciples.forEach(injured => {
+                        injured.injured = true;
+                        injured.injuryTime = Date.now();
+                    });
+                    
+                    addLog(`[受伤] ${injuredDisciples.map(d => d.name).join('、')}在战斗中受伤，需要休养！`, 'text-orange-400');
+                }
             }
         }
+        
+        // 重新计算战力
+        this.calculateTotalPower();
         
         // 刷新地区显示
         this.showRegionModal();
