@@ -155,7 +155,10 @@ export function updateDiscipleList(gameState) {
     
     discipleList.innerHTML = '';
     
-    gameState.disciples.forEach(disciple => {
+    // 只显示活着的弟子
+    const aliveDisciples = gameState.disciples.filter(disciple => disciple.alive);
+    
+    aliveDisciples.forEach(disciple => {
         const discipleCard = createDiscipleCard(disciple, gameState);
         discipleList.appendChild(discipleCard);
     });
