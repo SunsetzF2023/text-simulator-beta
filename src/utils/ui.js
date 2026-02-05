@@ -1891,23 +1891,23 @@ function applyMaterialEffect(item, disciple) {
 
 // 检查弟子境界是否满足要求
 function checkRealmRequirement(disciple, requiredRealm) {
-    const realmHierarchy = [
-        '凡人', '炼气期', '筑基期', '金丹期', '元婴期', 
-        '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'
+    // 使用完整的REALMS数组
+    const REALMS = [
+        '凡人',
+        '炼气一层', '炼气二层', '炼气三层', '炼气四层', '炼气五层',
+        '炼气六层', '炼气七层', '炼气八层', '炼气九层', '炼气大圆满',
+        '筑基一层', '筑基二层', '筑基三层', '筑基四层', '筑基五层',
+        '筑基六层', '筑基七层', '筑基八层', '筑基九层', '筑基大圆满',
+        '金丹一层', '金丹二层', '金丹三层', '金丹四层', '金丹五层',
+        '金丹六层', '金丹七层', '金丹八层', '金丹九层', '金丹大圆满',
+        '元婴一层', '元婴二层', '元婴三层', '元婴四层', '元婴五层',
+        '元婴六层', '元婴七层', '元婴八层', '元婴九层', '元婴大圆满',
+        '化神一层', '化神二层', '化神三层', '化神四层', '化神五层',
+        '化神六层', '化神七层', '化神八层', '化神九层', '化神大圆满'
     ];
     
-    // 处理弟子的详细层级名称
-    let discipleRealm = disciple.realm;
-    if (disciple.realm.includes('一层') || disciple.realm.includes('二层') || disciple.realm.includes('三层') || 
-        disciple.realm.includes('四层') || disciple.realm.includes('五层') || disciple.realm.includes('六层') || 
-        disciple.realm.includes('七层') || disciple.realm.includes('八层') || disciple.realm.includes('九层') || 
-        disciple.realm.includes('大圆满')) {
-        // 提取基础境界名称 - 修复正则表达式
-        discipleRealm = disciple.realm.replace(/(一|二|三|四|五|六|七|八|九|十)层|大圆满/g, '期');
-    }
-    
-    const discipleIndex = realmHierarchy.indexOf(discipleRealm);
-    const requiredIndex = realmHierarchy.indexOf(requiredRealm);
+    const discipleIndex = REALMS.indexOf(disciple.realm);
+    const requiredIndex = REALMS.indexOf(requiredRealm);
     
     return discipleIndex >= requiredIndex;
 }
@@ -2261,18 +2261,22 @@ function getDisciplePosition(disciple, org) {
 
 // 获取境界索引
 function getRealmIndex(realm) {
-    // 处理详细层级名称（如"筑基二层"）到基础境界（如"筑基期"）的转换
-    let baseRealm = realm;
-    if (realm.includes('一层') || realm.includes('二层') || realm.includes('三层') || 
-        realm.includes('四层') || realm.includes('五层') || realm.includes('六层') || 
-        realm.includes('七层') || realm.includes('八层') || realm.includes('九层') || 
-        realm.includes('大圆满')) {
-        // 提取基础境界名称 - 修复正则表达式
-        baseRealm = realm.replace(/(一|二|三|四|五|六|七|八|九|十)层|大圆满/g, '期');
-    }
+    // 使用完整的REALMS数组，而不是简化的境界数组
+    const REALMS = [
+        '凡人',
+        '炼气一层', '炼气二层', '炼气三层', '炼气四层', '炼气五层',
+        '炼气六层', '炼气七层', '炼气八层', '炼气九层', '炼气大圆满',
+        '筑基一层', '筑基二层', '筑基三层', '筑基四层', '筑基五层',
+        '筑基六层', '筑基七层', '筑基八层', '筑基九层', '筑基大圆满',
+        '金丹一层', '金丹二层', '金丹三层', '金丹四层', '金丹五层',
+        '金丹六层', '金丹七层', '金丹八层', '金丹九层', '金丹大圆满',
+        '元婴一层', '元婴二层', '元婴三层', '元婴四层', '元婴五层',
+        '元婴六层', '元婴七层', '元婴八层', '元婴九层', '元婴大圆满',
+        '化神一层', '化神二层', '化神三层', '化神四层', '化神五层',
+        '化神六层', '化神七层', '化神八层', '化神九层', '化神大圆满'
+    ];
     
-    const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
-    return realms.indexOf(baseRealm);
+    return REALMS.indexOf(realm);
 }
 
 // 显示组织架构标签页
@@ -2713,16 +2717,16 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     }
     
     let newHierarchy = '';
-    let requiredRealm = '';
+    let requiredRealmIndex = 0;
     
     switch (hierarchyType) {
         case 'outerDisciples':
             newHierarchy = 'innerDisciples';
-            requiredRealm = '筑基期'; // 降低要求：筑基期即可
+            requiredRealmIndex = 11; // 筑基一层
             break;
         case 'innerDisciples':
             newHierarchy = 'personalDisciples';
-            requiredRealm = '金丹期'; // 降低要求：金丹期即可
+            requiredRealmIndex = 21; // 金丹一层
             break;
         case 'personalDisciples':
             alert('亲传弟子已是最高层级');
@@ -2733,19 +2737,17 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     }
     
     // 检查境界要求
-    const realmIndex = getRealmIndex(disciple.realm);
-    const requiredIndex = getRealmIndex(requiredRealm);
+    const discipleRealmIndex = getRealmIndex(disciple.realm);
     
     console.log('境界检查:', {
         discipleRealm: disciple.realm,
-        requiredRealm: requiredRealm,
-        realmIndex: realmIndex,
-        requiredIndex: requiredIndex,
-        canPromote: realmIndex >= requiredIndex
+        requiredRealmIndex: requiredRealmIndex,
+        discipleRealmIndex: discipleRealmIndex,
+        canPromote: discipleRealmIndex >= requiredRealmIndex
     });
     
-    if (realmIndex < requiredIndex) {
-        alert(`${disciple.name}境界不足，需要达到${requiredRealm}才能提升`);
+    if (discipleRealmIndex < requiredRealmIndex) {
+        alert(`${disciple.name}境界不足，需要达到筑基期才能提升`);
         return;
     }
     
