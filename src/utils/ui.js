@@ -343,6 +343,11 @@ export function showDiscipleDetails(disciple, gameState) {
                         💊 治疗 (消耗5灵石)
                     </button>
                 ` : ''}
+                ${disciple.cultivation >= 100 ? `
+                    <button id="breakthroughBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded transition-colors">
+                        ⚡ 帮助突破
+                    </button>
+                ` : ''}
                 <button id="arrangeMarriageBtn" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded transition-colors">
                     💑 安排道侣
                 </button>
@@ -384,6 +389,18 @@ function setupDiscipleModalEvents(disciple, gameState) {
                 addLog(`[治疗] 为${disciple.name}治疗伤势，消耗5灵石`, 'text-green-400');
             } else {
                 addLog('[治疗] 灵石不足，需要5灵石才能治疗', 'text-red-400');
+            }
+        };
+    }
+    
+    // 突破按钮
+    const breakthroughBtn = document.getElementById('breakthroughBtn');
+    if (breakthroughBtn && disciple.cultivation >= 100) {
+        breakthroughBtn.onclick = () => {
+            // 调用游戏的突破检查函数
+            if (window.game && window.game.checkBreakthrough) {
+                window.game.checkBreakthrough(disciple);
+                showDiscipleDetails(disciple, gameState); // 刷新详情
             }
         };
     }

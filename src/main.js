@@ -522,10 +522,36 @@ class CultivationGame {
         if (disciple.cultivation >= 100) {
             const currentRealmIndex = REALMS.indexOf(disciple.realm);
             if (currentRealmIndex < REALMS.length - 1) {
-                // 突破成功
-                disciple.realm = REALMS[currentRealmIndex + 1];
-                disciple.cultivation = 0;
-                addLog(`[突破] ${disciple.name}成功突破到${disciple.realm}！`, 'text-yellow-400 font-bold');
+                // 计算突破成本（与玩家一致）
+                const isMajorBreakthrough = currentRealmIndex % 9 === 8;
+                const spiritStoneCost = (Math.floor(currentRealmIndex / 9) + 1) * GAME_CONFIG.BREAKTHROUGH_BASE_COST;
+                const needsBreakthroughPill = isMajorBreakthrough;
+                
+                // 检查资源是否足够
+                if (gameState.spiritStones >= spiritStoneCost && (!needsBreakthroughPill || gameState.breakthroughPills >= 1)) {
+                    // 消耗资源
+                    gameState.spiritStones -= spiritStoneCost;
+                    if (needsBreakthroughPill) {
+                        gameState.breakthroughPills -= 1;
+                        addLog(`[突破] ${disciple.name}消耗${spiritStoneCost}灵石和1枚破境丹，成功突破到${REALMS[currentRealmIndex + 1]}！`, 'text-purple-400 font-bold');
+                    } else {
+                        addLog(`[突破] ${disciple.name}消耗${spiritStoneCost}灵石，成功突破到${REALMS[currentRealmIndex + 1]}！`, 'text-yellow-400 font-bold');
+                    }
+                    
+                    // 执行突破
+                    disciple.realm = REALMS[currentRealmIndex + 1];
+                    disciple.cultivation = 0;
+                    
+                    // 刷新显示
+                    updateDisplay(gameState);
+                } else {
+                    // 资源不足
+                    if (needsBreakthroughPill && gameState.breakthroughPills < 1) {
+                        addLog(`[突破] ${disciple.name}需要${spiritStoneCost}灵石和1枚破境丹才能突破到大境界！`, 'text-red-400');
+                    } else {
+                        addLog(`[突破] ${disciple.name}需要${spiritStoneCost}灵石才能突破！`, 'text-red-400');
+                    }
+                }
             } else {
                 // 已达最高境界
                 disciple.cultivation = 100;
