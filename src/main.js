@@ -5,11 +5,16 @@ import {
     GAME_CONFIG, 
     TASK_TEMPLATES, 
     MARKET_ITEMS, 
-    INFLUENCE_LEVELS,
+    AUCTION_CONFIG, 
+    RARITY_CONFIG, 
+    INFLUENCE_LEVELS, 
+    VISIT_EVENTS, 
+    COLLECTIVE_EVENTS,
+    REGION_CONFIG, 
+    BASE_TECHNIQUES,
     INVASION_CONFIG,
     INVADING_SECTS,
     SECT_UPGRADE_REQUIREMENTS,
-    COLLECTIVE_EVENTS,
     EVIL_TASKS,
     DEMON_ARTS,
     DISCIPLE_CONFLICTS
@@ -36,6 +41,329 @@ class CultivationGame {
         this.gameLoop = null;
         this.autoSaveInterval = null;
         this.isRunning = false;
+    }
+    
+    // 🏛️ 实力至上系统核心函数
+    
+    // 获取宗门层级（基于宗主境界）
+    getSectTier() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        
+        if (realmIndex === 0) return '隐世草庐'; // 凡人
+        if (realmIndex <= 10) return '修仙家族'; // 炼气期
+        if (realmIndex <= 20) return '不入流宗门'; // 筑基期
+        if (realmIndex <= 30) return '三流宗门'; // 金丹期
+        if (realmIndex <= 40) return '二流宗门'; // 元婴期
+        if (realmIndex <= 50) return '一流宗门'; // 化神期
+        return '顶级宗门'; // 化神期以上
+    }
+    
+    // 计算宗主战力
+    calculatePlayerPower() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        let basePower = 100; // 基础战力
+        
+        // 境界加成（主要战力来源）
+        if (realmIndex > 0) {
+            basePower += realmIndex * 80; // 每个境界层级80点战力
+        }
+        
+        // 灵根加成
+        const spiritRootBonus = this.getSpiritRootBonus(gameState.spiritRoot);
+        basePower *= spiritRootBonus;
+        
+        // 宗门风格加成
+        const styleBonus = this.getSectStyleBonus(gameState.sectStyle);
+        basePower *= styleBonus;
+        
+        gameState.playerPower = Math.floor(basePower);
+        return gameState.playerPower;
+    }
+    
+    // 计算宗门总战力
+    calculateTotalPower() {
+        const playerPower = this.calculatePlayerPower();
+        
+        // 计算所有弟子的战力之和
+        let disciplePowerSum = 0;
+        gameState.disciples.forEach(disciple => {
+            if (disciple.alive && !disciple.injured) {
+                disciplePowerSum += disciple.getCombatPower();
+            }
+        });
+        
+        // 宗门总战力 = 宗主战力 * 权威系数 + 弟子战力之和
+        const authorityMultiplier = 2.0 + (REALMS.indexOf(gameState.playerRealm) * 0.1); // 境界越高权威越大
+        const totalPower = Math.floor(playerPower * authorityMultiplier + disciplePowerSum);
+        
+        gameState.totalPower = totalPower;
+        return totalPower;
+    }
+    
+    // 更新宗主光环加成
+    updateSectAura() {
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        let aura = 1.0;
+        
+        // 境界越高，光环加成越高
+        if (realmIndex <= 10) aura = 1.0; // 炼气期：无光环
+        else if (realmIndex <= 20) aura = 1.1; // 筑基期：10%加成
+        else if (realmIndex <= 30) aura = 1.3; // 金丹期：30%加成
+        else if (realmIndex <= 40) aura = 1.6; // 元婴期：60%加成
+        else if (realmIndex <= 50) aura = 2.0; // 化神期：100%加成
+        else aura = 2.5; // 化神期以上：150%加成
+        
+        gameState.sectAura = aura;
+        return aura;
+    }
+    
+    // 获取灵根加成
+    getSpiritRootBonus(spiritRoot) {
+        const bonuses = {
+            '金': 1.0, '木': 1.1, '水': 1.1, '火': 1.2, '土': 1.0,
+            '雷': 1.3, '风': 1.2, '冰': 1.2, '光': 1.4, '暗': 1.3
+        };
+        return bonuses[spiritRoot] || 1.0;
+    }
+    
+    // 获取宗门风格加成
+    getSectStyleBonus(sectStyle) {
+        const bonuses = {
+            '剑修': 1.3, '法修': 1.1, '魔道': 1.4, '长生': 0.9,
+            '刀修': 1.35, '符修': 1.0, '丹修': 0.8, '阵修': 1.2,
+            '邪修': 1.25, '劫修': 1.45, '采补': 0.9
+        };
+        return bonuses[sectStyle] || 1.0;
+    }
+    
+    // 声望与战力动态反馈
+    checkReputationPowerBalance() {
+        const powerThreshold = gameState.totalPower * 0.8; // 战力的80%作为声望阈值
+        const reputationRatio = gameState.reputation / powerThreshold;
+        
+        if (reputationRatio > 1.5) {
+            // 声望远超战力：被视为"肥羊"
+            return 'fat_sheep';
+        } else if (reputationRatio < 0.5) {
+            // 战力远超声望：被视为"隐世魔头"
+            return 'hidden_demon';
+        } else {
+            // 平衡状态
+            return 'balanced';
+        }
+    }
+    
+    // 🗺️ 地区系统
+    
+    // 初始化地区
+    initializeRegion() {
+        if (!gameState.currentRegion) {
+            gameState.currentRegion = {
+                name: this.generateRegionName(),
+                level: this.calculateRegionLevel(),
+                sects: [],
+                lastUpdate: Date.now()
+            };
+        }
+        this.updateNearbySects();
+    }
+    
+    // 生成地区名称
+    generateRegionName() {
+        const prefixes = ['青云', '紫霞', '天剑', '玄火', '冰霜', '雷音', '丹鼎', '万兽'];
+        const suffixes = ['山脉', '平原', '河谷', '森林', '盆地', '丘陵', '峡谷', '沼泽'];
+        return prefixes[Math.floor(Math.random() * prefixes.length)] + 
+               suffixes[Math.floor(Math.random() * suffixes.length)];
+    }
+    
+    // 计算地区等级（基于玩家实力）
+    calculateRegionLevel() {
+        const playerPower = this.calculatePlayerPower();
+        if (playerPower < 500) return 1; // 新手村
+        if (playerPower < 2000) return 2; // 普通地区
+        if (playerPower < 5000) return 3; // 危险地区
+        if (playerPower < 10000) return 4; // 高级地区
+        return 5; // 顶级地区
+    }
+    
+    // 更新周边宗门
+    updateNearbySects() {
+        const now = Date.now();
+        // 每5分钟更新一次
+        if (now - gameState.lastRegionUpdate < 300000) return;
+        
+        gameState.lastRegionUpdate = now;
+        gameState.nearbySects = this.generateNearbySects();
+        
+        addLog(`[地区] ${gameState.currentRegion.name}的势力格局发生变化`, 'text-blue-400');
+    }
+    
+    // 生成周边宗门
+    generateNearbySects() {
+        const sects = [];
+        const playerPower = this.calculatePlayerPower();
+        const sectCount = 5 + Math.floor(Math.random() * 5); // 5-9个宗门
+        
+        for (let i = 0; i < sectCount; i++) {
+            const sect = this.generateNPCSect(playerPower);
+            sects.push(sect);
+        }
+        
+        // 按战力排序
+        sects.sort((a, b) => b.totalPower - a.totalPower);
+        
+        return sects;
+    }
+    
+    // 生成NPC宗门
+    generateNPCSect(playerPower) {
+        const powerVariation = 0.3 + Math.random() * 0.4; // 30%-70%的浮动
+        const targetPower = playerPower * powerVariation;
+        
+        // 随机选择宗门类型
+        const sectTypes = ['剑修', '法修', '魔道', '长生', '刀修', '符修', '丹修', '阵修'];
+        const type = sectTypes[Math.floor(Math.random() * sectTypes.length)];
+        
+        // 生成宗主
+        const masterRealm = this.getRandomRealmForPower(targetPower * 0.6); // 宗主占60%战力
+        const master = {
+            name: this.generateNPCName(),
+            realm: masterRealm,
+            power: this.calculateNPCPower(masterRealm, type),
+            type: type
+        };
+        
+        // 生成弟子
+        const discipleCount = 3 + Math.floor(Math.random() * 12); // 3-15个弟子
+        const disciples = [];
+        for (let i = 0; i < discipleCount; i++) {
+            const disciple = this.generateNPCDisciple(masterRealm, targetPower * 0.4 / discipleCount);
+            disciples.push(disciple);
+        }
+        
+        // 计算总战力
+        const disciplePower = disciples.reduce((sum, d) => sum + d.power, 0);
+        const totalPower = Math.floor(master.power * 2.0 + disciplePower); // 宗主权威系数2.0
+        
+        return {
+            name: this.generateSectName(type),
+            type: type,
+            tier: this.getSectTierByRealm(masterRealm),
+            master: master,
+            disciples: disciples,
+            totalPower: totalPower,
+            reputation: Math.floor(totalPower * (0.5 + Math.random() * 0.5)), // 声望在战力的50%-100%之间
+            attitude: this.generateAttitude(playerPower, totalPower), // 对玩家的态度
+            lastUpdate: Date.now()
+        };
+    }
+    
+    // 生成NPC姓名
+    generateNPCName() {
+        const surnames = ['李', '王', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴'];
+        const names = ['明', '华', '强', '芳', '军', '敏', '静', '丽', '勇', '艳'];
+        return surnames[Math.floor(Math.random() * surnames.length)] + 
+               names[Math.floor(Math.random() * names.length)];
+    }
+    
+    // 生成宗门名称
+    generateSectName(type) {
+        const prefixes = {
+            '剑修': ['剑', '锋', '刃', '鞘'],
+            '法修': ['法', '术', '符', '咒'],
+            '魔道': ['魔', '血', '魂', '鬼'],
+            '长生': ['长', '生', '寿', '命'],
+            '刀修': ['刀', '斩', '劈', '砍'],
+            '符修': ['符', '印', '阵', '图'],
+            '丹修': ['丹', '药', '鼎', '炉'],
+            '阵修': ['阵', '图', '局', '界']
+        };
+        
+        const suffixes = ['宗', '门', '派', '阁', '宫', '府', '庄', '山'];
+        const prefixList = prefixes[type] || ['玄', '天', '地', '人'];
+        
+        const prefix = prefixList[Math.floor(Math.random() * prefixList.length)];
+        const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+        
+        return prefix + suffix;
+    }
+    
+    // 根据战力获取随机境界
+    getRandomRealmForPower(targetPower) {
+        const realmPowers = REALMS.map((realm, index) => ({
+            realm: realm,
+            power: this.calculateNPCPower(realm, '剑修') // 简化计算
+        }));
+        
+        // 找到最接近的境界
+        let closestRealm = '凡人';
+        let minDiff = Infinity;
+        
+        realmPowers.forEach(rp => {
+            const diff = Math.abs(rp.power - targetPower);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestRealm = rp.realm;
+            }
+        });
+        
+        return closestRealm;
+    }
+    
+    // 计算NPC战力
+    calculateNPCPower(realm, type) {
+        const realmIndex = REALMS.indexOf(realm);
+        let basePower = 100;
+        
+        if (realmIndex > 0) {
+            basePower += realmIndex * 80;
+        }
+        
+        // 类型加成
+        const typeBonus = this.getSectStyleBonus(type);
+        basePower *= typeBonus;
+        
+        return Math.floor(basePower);
+    }
+    
+    // 生成NPC弟子
+    generateNPCDisciple(masterRealm, targetPower) {
+        const realmVariation = -5 + Math.random() * 10; // ±5个境界浮动
+        const masterIndex = REALMS.indexOf(masterRealm);
+        const discipleIndex = Math.max(0, Math.min(REALMS.length - 1, masterIndex + realmVariation));
+        const discipleRealm = REALMS[discipleIndex];
+        
+        return {
+            name: this.generateNPCName(),
+            realm: discipleRealm,
+            power: this.calculateNPCPower(discipleRealm, '普通'),
+            talent: 70 + Math.random() * 30, // 70-100天赋
+            loyalty: 80 + Math.random() * 20 // 80-100忠诚度
+        };
+    }
+    
+    // 根据境界获取宗门层级
+    getSectTierByRealm(realm) {
+        const realmIndex = REALMS.indexOf(realm);
+        
+        if (realmIndex === 0) return '隐世草庐';
+        if (realmIndex <= 10) return '修仙家族';
+        if (realmIndex <= 20) return '不入流宗门';
+        if (realmIndex <= 30) return '三流宗门';
+        if (realmIndex <= 40) return '二流宗门';
+        if (realmIndex <= 50) return '一流宗门';
+        return '顶级宗门';
+    }
+    
+    // 生成对玩家的态度
+    generateAttitude(playerPower, sectPower) {
+        const powerRatio = playerPower / sectPower;
+        
+        if (powerRatio > 2.0) return 'fearful'; // 恐惧
+        if (powerRatio > 1.5) return 'respectful'; // 尊敬
+        if (powerRatio > 0.8) return 'neutral'; // 中立
+        if (powerRatio > 0.5) return 'disdainful'; // 轻视
+        return 'hostile'; // 敌对
     }
     
     // 初始化游戏
@@ -104,6 +432,14 @@ class CultivationGame {
         addLog(`[系统] ${gameState.playerName} 创立了 ${gameState.sectName}，修仙之路自此开启。`, 'text-amber-200');
         addLog(`[系统] 天降3名弟子加入宗门，愿与宗门共修仙道。`, 'text-blue-400');
         
+        // 🏛️ 初始化实力至上系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        this.initializeRegion();
+        
+        const sectTier = this.getSectTier();
+        addLog(`[宗门] ${gameState.sectName}被认定为${sectTier}，总战力：${gameState.totalPower}`, 'text-purple-400');
+        
         // 启动游戏循环
         this.startGameLoop();
         
@@ -142,7 +478,11 @@ class CultivationGame {
         // 更新显示
         updateDisplay(gameState);
         
-        // 添加加载日志
+        // 🏛️ 初始化实力至上系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        this.initializeRegion();
+        
         addLog('[系统] 游戏存档已加载。', 'text-amber-200');
         
         // 启动游戏循环
@@ -393,15 +733,76 @@ class CultivationGame {
     processAutoGain() {
         const aliveDisciples = gameState.disciples.filter(d => d.alive && !d.injured);
         if (aliveDisciples.length > 0) {
-            const gain = aliveDisciples.length * GAME_CONFIG.AUTO_GAIN_PER_DISCIPLE;
-            gameState.spiritStones += gain;
-            updateDisplay(gameState);
+            let totalGain = 0;
             
-            // 每分钟显示一次自动增益日志
-            if (Math.floor(Date.now() / 60000) !== Math.floor((Date.now() - 1000) / 60000)) {
-                addLog(`[自动] 弟子们为您带来了 ${gain.toFixed(1)} 枚灵石。`, 'text-amber-300');
-            }
+            aliveDisciples.forEach(disciple => {
+                // 基础采集量
+                let baseGain = GAME_CONFIG.AUTO_GAIN_PER_DISCIPLE;
+                
+                // 境界加成
+                const realmIndex = this.getRealmIndex(disciple.realm);
+                let realmBonus = 1.0;
+                
+                if (realmIndex >= 1) realmBonus = 1.2;      // 炼气期
+                if (realmIndex >= 2) realmBonus = 1.5;      // 筑基期  
+                if (realmIndex >= 3) realmBonus = 2.0;      // 金丹期
+                if (realmIndex >= 4) realmBonus = 3.0;      // 元婴期
+                if (realmIndex >= 5) realmBonus = 5.0;      // 化神期及以上
+                
+                // 天赋加成
+                const talentBonus = 0.5 + (disciple.talent / 100); // 0.5-1.5倍
+                
+                // 计算单个弟子的贡献
+                const discipleGain = Math.floor(baseGain * realmBonus * talentBonus * 10) / 10; // 保留一位小数
+                totalGain += discipleGain;
+            });
+            
+            // 弟子数量加成（鼓励多招收弟子）
+            const discipleCountBonus = Math.min(2.0, 1.0 + (aliveDisciples.length - 1) * 0.1); // 最多2倍
+            totalGain = Math.floor(totalGain * discipleCountBonus * 10) / 10; // 保留一位小数
+            
+            gameState.spiritStones += totalGain;
+            console.log(`采集灵石: +${totalGain} (弟子数:${aliveDisciples.length}, 加成:${discipleCountBonus.toFixed(1)}x)`);
         }
+        
+        // 自动治疗受伤弟子
+        this.autoHealInjuredDisciples();
+    }
+    
+    // 自动治疗受伤弟子
+    autoHealInjuredDisciples() {
+        const injuredDisciples = gameState.disciples.filter(d => d.alive && d.injured);
+        injuredDisciples.forEach(disciple => {
+            // 根据受伤程度决定治疗成本
+            const injuryLevel = Math.random(); // 0-1随机受伤程度
+            let healCost = 0;
+            let injuryType = '';
+            
+            if (injuryLevel < 0.3) {
+                // 轻伤
+                healCost = 3;
+                injuryType = '轻伤';
+            } else if (injuryLevel < 0.7) {
+                // 中伤
+                healCost = 8;
+                injuryType = '中伤';
+            } else {
+                // 重伤
+                healCost = 15;
+                injuryType = '重伤';
+            }
+            
+            // 检查是否有足够灵石治疗
+            if (gameState.spiritStones >= healCost) {
+                gameState.spiritStones -= healCost;
+                disciple.injured = false;
+                disciple.addPersonalLog(`[自动治疗] ${injuryType}已治愈，消耗${healCost}灵石`, Date.now());
+                addLog(`[治疗] ${disciple.name}的${injuryType}已治愈，消耗${healCost}灵石`, 'text-green-400');
+            } else {
+                // 灵石不足，记录无法治疗
+                disciple.addPersonalLog(`[治疗] ${injuryType}需要${healCost}灵石治疗，但宗门灵石不足`, Date.now());
+            }
+        });
     }
     
     // 启动弟子事件系统
@@ -433,6 +834,10 @@ class CultivationGame {
             colorClass = 'text-green-400';
         } else if (event.type === 'technique_fragment') {
             colorClass = 'text-purple-400';
+        } else if (event.type === 'expedition') {
+            colorClass = 'text-blue-400';
+        } else if (event.type === 'expedition_negative') {
+            colorClass = 'text-red-400';
         } else if (event.type === 'pill' || event.type === 'treasure' || event.type === 'weapon') {
             colorClass = 'text-yellow-400';
         }
@@ -457,6 +862,16 @@ class CultivationGame {
                 gameState.techniqueFragments.push(fragment);
                 addLog(`[奇遇] 获得了《${fragment.name}》残本！`, 'text-purple-400');
             }
+            if (event.reward.technique) {
+                // 完整功法获得
+                const disciple = gameState.disciples.find(d => d.id === event.discipleId);
+                if (disciple) {
+                    // 根据弟子境界选择合适的功法
+                    const technique = this.getRandomTechniqueForDisciple(disciple);
+                    disciple.learnTechnique(technique);
+                    addLog(`[奇遇] ${disciple.name}获得了完整功法《${technique.name}》！`, 'text-purple-400 font-bold');
+                }
+            }
             if (event.reward.experience) {
                 // 计算修炼速度加成
                 const disciple = gameState.disciples.find(d => d.id === event.discipleId);
@@ -472,28 +887,55 @@ class CultivationGame {
                     // 基于天赋的加成
                     const talentBonus = 0.5 + (disciple.talent / 100); // 0.5-1.5倍
                     
+                    // 全局效果加成
+                    const globalBonus = gameState.globalEffects.cultivationBonus / gameState.globalEffects.cultivationPenalty;
+                    
                     // 总加成
-                    const totalBonus = spiritRootBonus * constitutionBonus * talentBonus;
+                    const totalBonus = spiritRootBonus * constitutionBonus * talentBonus * globalBonus;
                     experienceGain = Math.floor(experienceGain * totalBonus);
                     
                     // 应用修为
-                    disciple.cultivation = Math.min(100, disciple.cultivation + experienceGain);
+                    disciple.cultivation = Math.max(0, Math.min(100, disciple.cultivation + experienceGain));
                     
                     // 检查突破
                     if (disciple.cultivation >= 100) {
                         this.checkBreakthrough(disciple);
                     }
                     
-                    if (totalBonus > 1.5) {
-                        addLog(`[修炼] ${disciple.name}修炼神速，获得${experienceGain}点修为！`, 'text-purple-400');
-                    } else if (totalBonus > 1.0) {
-                        addLog(`[修炼] ${disciple.name}修炼顺利，获得${experienceGain}点修为`, 'text-green-400');
+                    // 显示修炼消息（只有正数才显示修炼相关消息）
+                    if (experienceGain > 0) {
+                        if (totalBonus > 1.5) {
+                            addLog(`[修炼] ${disciple.name}修炼神速，获得${experienceGain}点修为！`, 'text-purple-400');
+                        } else if (totalBonus > 1.0) {
+                            addLog(`[修炼] ${disciple.name}修炼顺利，获得${experienceGain}点修为`, 'text-green-400');
+                        } else {
+                            addLog(`[修炼] ${disciple.name}获得${experienceGain}点修为`, 'text-blue-400');
+                        }
+                    } else if (experienceGain < 0) {
+                        addLog(`[冲突] ${disciple.name}修为受损，减少${Math.abs(experienceGain)}点修为`, 'text-red-400');
                     }
                 }
             }
             if (event.reward.consumeItem) {
                 // 消耗宝库物品
                 this.consumeTreasuryItem(event.reward.itemType);
+            }
+        }
+        
+        // 应用惩罚
+        if (event.penalty) {
+            if (event.penalty.spiritStones) {
+                gameState.spiritStones = Math.max(0, gameState.spiritStones - event.penalty.spiritStones);
+            }
+            if (event.penalty.reputation) {
+                gameState.reputation = Math.max(0, gameState.reputation + event.penalty.reputation);
+            }
+            if (event.penalty.injured) {
+                const disciple = gameState.disciples.find(d => d.id === event.discipleId);
+                if (disciple) {
+                    disciple.injured = true;
+                    disciple.injuryTime = Date.now();
+                }
             }
         }
         
@@ -522,10 +964,36 @@ class CultivationGame {
         if (disciple.cultivation >= 100) {
             const currentRealmIndex = REALMS.indexOf(disciple.realm);
             if (currentRealmIndex < REALMS.length - 1) {
-                // 突破成功
-                disciple.realm = REALMS[currentRealmIndex + 1];
-                disciple.cultivation = 0;
-                addLog(`[突破] ${disciple.name}成功突破到${disciple.realm}！`, 'text-yellow-400 font-bold');
+                // 计算突破成本（与玩家一致）
+                const isMajorBreakthrough = currentRealmIndex % 9 === 8;
+                const spiritStoneCost = (Math.floor(currentRealmIndex / 9) + 1) * GAME_CONFIG.BREAKTHROUGH_BASE_COST;
+                const needsBreakthroughPill = isMajorBreakthrough;
+                
+                // 检查资源是否足够
+                if (gameState.spiritStones >= spiritStoneCost && (!needsBreakthroughPill || gameState.breakthroughPills >= 1)) {
+                    // 消耗资源
+                    gameState.spiritStones -= spiritStoneCost;
+                    if (needsBreakthroughPill) {
+                        gameState.breakthroughPills -= 1;
+                        addLog(`[突破] ${disciple.name}消耗${spiritStoneCost}灵石和1枚破境丹，成功突破到${REALMS[currentRealmIndex + 1]}！`, 'text-purple-400 font-bold');
+                    } else {
+                        addLog(`[突破] ${disciple.name}消耗${spiritStoneCost}灵石，成功突破到${REALMS[currentRealmIndex + 1]}！`, 'text-yellow-400 font-bold');
+                    }
+                    
+                    // 执行突破
+                    disciple.realm = REALMS[currentRealmIndex + 1];
+                    disciple.cultivation = 0;
+                    
+                    // 刷新显示
+                    updateDisplay(gameState);
+                } else {
+                    // 资源不足
+                    if (needsBreakthroughPill && gameState.breakthroughPills < 1) {
+                        addLog(`[突破] ${disciple.name}需要${spiritStoneCost}灵石和1枚破境丹才能突破到大境界！`, 'text-red-400');
+                    } else {
+                        addLog(`[突破] ${disciple.name}需要${spiritStoneCost}灵石才能突破！`, 'text-red-400');
+                    }
+                }
             } else {
                 // 已达最高境界
                 disciple.cultivation = 100;
@@ -571,37 +1039,50 @@ class CultivationGame {
     
     // 设置游戏按钮事件
     setupGameButtons() {
-        setupButtonListeners({
-            onCollect: () => this.handleCollect(),
-            onBreakthrough: () => this.handleBreakthrough(),
-            onRecruit: () => this.handleRecruit(),
-            onTaskHall: () => this.handleTaskHall(),
-            onMarket: () => this.handleMarket(),
-            onAuction: () => this.handleAuction(),
-            onTechniqueHall: () => this.handleTechniqueHall(),
-            onTreasury: () => this.handleTreasury(),
-            onPastRecords: () => this.handlePastRecords(),
-            onEvents: () => this.handleEvents(),
-            onRegion: () => this.handleRegion()
-        });
+        try {
+            console.log('设置游戏按钮事件...');
+            setupButtonListeners({
+                onCollect: () => this.handleCollect(),
+                onBreakthrough: () => this.handleBreakthrough(),
+                onRecruit: () => this.handleRecruit(),
+                onTaskHall: () => this.handleTaskHall(),
+                onMarket: () => this.handleMarket(),
+                onAuction: () => this.handleAuction(),
+                onTechniqueHall: () => this.handleTechniqueHall(),
+                onTreasury: () => this.handleTreasury(),
+                onPastRecords: () => this.handlePastRecords(),
+                onEvents: () => this.handleEvents(),
+                onRegion: () => this.handleRegion(),
+                onChangeName: () => this.handleChangeName()
+            });
+            console.log('游戏按钮事件设置完成');
+        } catch (error) {
+            console.error('设置按钮事件时出错:', error);
+        }
     }
     
     // 处理采集灵石
     handleCollect() {
-        const realmIndex = REALMS.indexOf(gameState.playerRealm);
-        const efficiency = Math.pow(1.5, Math.floor(realmIndex / 9));
-        const gain = Math.floor(efficiency);
-        
-        gameState.spiritStones += gain;
-        updateDisplay(gameState);
-        addLog(`[采集] ${gameState.playerName} 采集了${gain}枚灵石。`, 'text-emerald-400');
-        
-        console.log(`采集灵石: +${gain}`);
+        try {
+            console.log('处理采集灵石...');
+            const realmIndex = REALMS.indexOf(gameState.playerRealm);
+            const efficiency = Math.pow(1.5, Math.floor(realmIndex / 9));
+            const gain = Math.floor(efficiency);
+            
+            gameState.spiritStones += gain;
+            updateDisplay(gameState);
+            addLog(`[采集] ${gameState.playerName} 采集了${gain}枚灵石。`, 'text-emerald-400');
+            
+            console.log(`采集灵石: +${gain}`);
+        } catch (error) {
+            console.error('采集灵石时出错:', error);
+        }
     }
     
     // 处理突破境界
     handleBreakthrough() {
         const currentIndex = REALMS.indexOf(gameState.playerRealm);
+        const oldRealm = gameState.playerRealm;
         
         if (currentIndex >= REALMS.length - 1) {
             addLog('[突破] 已达最高境界，无法继续突破。', 'text-red-400');
@@ -616,23 +1097,246 @@ class CultivationGame {
                 gameState.playerRealm = REALMS[currentIndex + 1];
                 updateDisplay(gameState);
                 addLog(`[突破] ${gameState.playerName} 服用破境丹，成功突破至${gameState.playerRealm}！`, 'text-purple-400');
+                
+                // 触发区域震动事件
+                this.triggerRegionShock(oldRealm, gameState.playerRealm);
             } else {
                 addLog('[突破] 需要破境丹和50灵石才能突破到大境界！', 'text-red-400');
             }
         } else {
-            // 小境界突破
+            // 普通突破
             const cost = (Math.floor(currentIndex / 9) + 1) * GAME_CONFIG.BREAKTHROUGH_BASE_COST;
             if (gameState.spiritStones >= cost) {
                 gameState.spiritStones -= cost;
                 gameState.playerRealm = REALMS[currentIndex + 1];
                 updateDisplay(gameState);
                 addLog(`[突破] ${gameState.playerName} 消耗${cost}灵石，突破至${gameState.playerRealm}！`, 'text-purple-400');
+                
+                // 触发区域震动事件（小境界突破概率较低）
+                if (Math.random() < 0.3) { // 30%概率触发
+                    this.triggerRegionShock(oldRealm, gameState.playerRealm);
+                }
             } else {
                 addLog(`[突破] 灵石不足，需要${cost}灵石才能突破。`, 'text-red-400');
             }
         }
         
+        // 更新实力系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        
+        const newSectTier = this.getSectTier();
+        addLog(`[宗门] ${gameState.sectName}晋升为${newSectTier}，总战力：${gameState.totalPower}`, 'text-purple-400');
+        
         console.log(`突破尝试: ${gameState.playerRealm}`);
+    }
+    
+    // 🌋 区域震动事件
+    triggerRegionShock(oldRealm, newRealm) {
+        const isMajorBreakthrough = REALMS.indexOf(newRealm) % 9 === 8;
+        
+        addLog(`[震动] ${gameState.playerName}突破至${newRealm}，引发区域灵气震荡！`, 'text-yellow-400 font-bold');
+        
+        // 更新地区势力格局
+        this.updateNearbySects();
+        
+        // 随机触发事件
+        const eventType = Math.random();
+        
+        if (eventType < 0.4) {
+            // 40%概率：贺礼
+            this.triggerCongratulatoryGifts(newRealm);
+        } else if (eventType < 0.7) {
+            // 30%概率：强敌挑战
+            this.triggerStrongEnemyChallenge(newRealm);
+        } else if (eventType < 0.9) {
+            // 20%概率：弟子倒戈
+            this.triggerDiscipleDefection(newRealm);
+        } else {
+            // 10%概率：特殊奇遇
+            this.triggerSpecialEncounter(newRealm);
+        }
+    }
+    
+    // 贺礼事件
+    triggerCongratulatoryGifts(newRealm) {
+        const gifts = [
+            { spiritStones: Math.floor(100 + Math.random() * 400), message: '贺礼灵石' },
+            { breakthroughPills: Math.floor(1 + Math.random() * 3), message: '贺礼破境丹' },
+            { reputation: Math.floor(50 + Math.random() * 150), message: '声望贺礼' }
+        ];
+        
+        const gift = gifts[Math.floor(Math.random() * gifts.length)];
+        
+        if (gift.spiritStones) {
+            gameState.spiritStones += gift.spiritStones;
+            addLog(`[贺礼] 周边宗门听闻${gameState.playerName}突破至${newRealm}，送来${gift.spiritStones}枚灵石作为贺礼！`, 'text-green-400');
+        }
+        if (gift.breakthroughPills) {
+            gameState.breakthroughPills += gift.breakthroughPills;
+            addLog(`[贺礼] 友好宗门赠送${gift.breakthroughPills}枚破境丹作为突破贺礼！`, 'text-green-400');
+        }
+        if (gift.reputation) {
+            gameState.reputation += gift.reputation;
+            addLog(`[贺礼] ${gameState.sectName}声望提升${gift.reputation}点！`, 'text-green-400');
+        }
+    }
+    
+    // 强敌挑战事件
+    triggerStrongEnemyChallenge(newRealm) {
+        const playerPower = this.calculatePlayerPower();
+        const enemyPower = playerPower * (1.2 + Math.random() * 0.3); // 120%-150%的战力
+        
+        const enemy = this.generateNPCSect(enemyPower);
+        addLog(`[挑战] ${enemy.name}宗主${enemy.master.name}听闻${gameState.playerName}突破，前来挑战！`, 'text-red-400 font-bold');
+        addLog(`[挑战] 敌方战力：${enemy.totalPower}，我方战力：${gameState.totalPower}`, 'text-red-400');
+        
+        // 简化的战斗结果
+        const winChance = gameState.totalPower / enemy.totalPower;
+        const victory = Math.random() < winChance;
+        
+        if (victory) {
+            const reputationGain = Math.floor(enemy.reputation * 0.3);
+            gameState.reputation += reputationGain;
+            addLog(`[胜利] ${gameState.playerName}击败了${enemy.master.name}，获得${reputationGain}点声望！`, 'text-green-400 font-bold');
+        } else {
+            const reputationLoss = Math.floor(gameState.reputation * 0.2);
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.3);
+            gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
+            gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
+            addLog(`[战败] ${gameState.playerName}败给${enemy.master.name}，损失${reputationLoss}声望和${spiritStonesLoss}灵石！`, 'text-red-400 font-bold');
+        }
+    }
+    
+    // 弟子倒戈事件
+    triggerDiscipleDefection(newRealm) {
+        const eligibleDisciples = gameState.disciples.filter(d => d.alive && d.loyalty < 85);
+        
+        if (eligibleDisciples.length === 0) {
+            addLog(`[道心] ${gameState.playerName}突破引发道心考验，弟子们忠诚坚定，无人动摇！`, 'text-blue-400');
+            return;
+        }
+        
+        const defector = eligibleDisciples[Math.floor(Math.random() * eligibleDisciples.length)];
+        const defectorIndex = gameState.disciples.findIndex(d => d.id === defector.id);
+        
+        gameState.disciples.splice(defectorIndex, 1);
+        
+        addLog(`[倒戈] ${defector.name}在${gameState.playerName}突破时道心崩碎，叛出宗门！`, 'text-red-400');
+        addLog(`[损失] 宗门失去一名弟子，当前弟子数：${gameState.disciples.length}`, 'text-red-400');
+        
+        // 重新计算战力
+        this.calculateTotalPower();
+    }
+    
+    // 特殊奇遇事件
+    triggerSpecialEncounter(newRealm) {
+        const encounters = [
+            {
+                message: `在${gameState.playerName}突破时，天降祥瑞，宗门灵气浓度大幅提升！`,
+                effect: () => {
+                    gameState.globalEffects.cultivationBonus *= 1.5;
+                    setTimeout(() => {
+                        gameState.globalEffects.cultivationBonus /= 1.5;
+                        addLog(`[祥瑞] 天降祥瑞效果结束`, 'text-blue-400');
+                    }, 300000); // 5分钟
+                }
+            },
+            {
+                message: `突破时引来上古传承感悟，${gameState.playerName}修为大进！`,
+                effect: () => {
+                    // 可以添加特殊效果
+                }
+            },
+            {
+                message: `突破震动唤醒了沉睡的灵脉，宗门资源产出增加！`,
+                effect: () => {
+                    // 可以增加资源产出
+                }
+            }
+        ];
+        
+        const encounter = encounters[Math.floor(Math.random() * encounters.length)];
+        addLog(`[奇遇] ${encounter.message}`, 'text-purple-400 font-bold');
+        
+        if (encounter.effect) {
+            encounter.effect();
+        }
+    }
+    
+    // 处理修改名称
+    handleChangeName() {
+        const modal = document.getElementById('changeNameModal');
+        const newSectNameInput = document.getElementById('newSectName');
+        const newPlayerNameInput = document.getElementById('newPlayerName');
+        
+        // 预填充当前名称
+        newSectNameInput.value = gameState.sectName;
+        newPlayerNameInput.value = gameState.playerName;
+        
+        // 显示模态框
+        modal.classList.remove('hidden');
+        
+        // 设置事件监听器
+        this.setupChangeNameModal();
+    }
+    
+    // 设置修改名称模态框事件
+    setupChangeNameModal() {
+        const confirmBtn = document.getElementById('confirmChangeNameBtn');
+        const cancelBtn = document.getElementById('cancelChangeNameBtn');
+        const closeBtn = document.getElementById('closeChangeNameModal');
+        
+        // 移除旧的事件监听器
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newCloseBtn = closeBtn.cloneNode(true);
+        
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        
+        // 添加新的事件监听器
+        newConfirmBtn.addEventListener('click', () => this.confirmChangeName());
+        newCancelBtn.addEventListener('click', () => this.closeChangeNameModal());
+        newCloseBtn.addEventListener('click', () => this.closeChangeNameModal());
+    }
+    
+    // 确认修改名称
+    confirmChangeName() {
+        const newSectName = document.getElementById('newSectName').value.trim();
+        const newPlayerName = document.getElementById('newPlayerName').value.trim();
+        
+        if (!newSectName || !newPlayerName) {
+            alert('请填写完整的宗门名称和玩家姓名！');
+            return;
+        }
+        
+        const oldSectName = gameState.sectName;
+        const oldPlayerName = gameState.playerName;
+        
+        // 更新名称
+        gameState.sectName = newSectName;
+        gameState.playerName = newPlayerName;
+        
+        // 刷新显示
+        updateDisplay(gameState);
+        
+        // 添加日志
+        if (oldSectName !== newSectName) {
+            addLog(`[改名] 宗门名称从"${oldSectName}"改为"${newSectName}"`, 'text-purple-400');
+        }
+        if (oldPlayerName !== newPlayerName) {
+            addLog(`[改名] 玩家姓名从"${oldPlayerName}"改为"${newPlayerName}"`, 'text-purple-400');
+        }
+        
+        // 关闭模态框
+        this.closeChangeNameModal();
+    }
+    
+    // 关闭修改名称模态框
+    closeChangeNameModal() {
+        document.getElementById('changeNameModal').classList.add('hidden');
     }
     
     // 处理招募弟子
@@ -723,38 +1427,319 @@ class CultivationGame {
         
         eventsList.innerHTML = '';
         
-        // 创建一个示例事件
-        const eventDiv = document.createElement('div');
-        eventDiv.className = 'bg-slate-800 p-4 rounded ancient-border';
-        eventDiv.innerHTML = `
-            <h3 class="text-lg font-bold text-amber-200 mb-2">🌟 灵脉发现</h3>
-            <p class="text-gray-300 mb-4">宗门附近发现了一条灵脉，可以获得大量灵石，但可能有守护兽。</p>
-            <div class="flex gap-2">
-                <button class="event-accept px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded transition-colors" data-event="spiritVein">
-                    接受挑战
-                </button>
-                <button class="event-ignore px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors" data-event="spiritVein">
-                    忽略事件
-                </button>
-            </div>
-        `;
+        // 随机选择2-3个事件
+        const numEvents = Math.floor(Math.random() * 2) + 2; // 2-3个事件
+        const selectedEvents = [];
         
-        eventsList.appendChild(eventDiv);
+        for (let i = 0; i < numEvents; i++) {
+            const randomEvent = COLLECTIVE_EVENTS[Math.floor(Math.random() * COLLECTIVE_EVENTS.length)];
+            if (!selectedEvents.find(e => e.name === randomEvent.name)) {
+                selectedEvents.push({...randomEvent, id: `event_${i}`});
+            }
+        }
+        
+        selectedEvents.forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'bg-slate-800 p-4 rounded ancient-border mb-4';
+            
+            // 根据事件类型设置颜色
+            let typeColor = 'text-gray-300';
+            let buttonColor = 'bg-green-600 hover:bg-green-500';
+            
+            switch (event.type) {
+                case 'blessing':
+                case 'celebration':
+                case 'natural':
+                case 'miracle':
+                case 'legendary':
+                    typeColor = 'text-green-400';
+                    buttonColor = 'bg-green-600 hover:bg-green-500';
+                    break;
+                case 'curse':
+                case 'catastrophe':
+                    typeColor = 'text-red-400';
+                    buttonColor = 'bg-red-600 hover:bg-red-500';
+                    break;
+                case 'crisis':
+                    typeColor = 'text-orange-400';
+                    buttonColor = 'bg-orange-600 hover:bg-orange-500';
+                    break;
+                case 'opportunity':
+                case 'discovery':
+                    typeColor = 'text-blue-400';
+                    buttonColor = 'bg-blue-600 hover:bg-blue-500';
+                    break;
+            }
+            
+            eventDiv.innerHTML = `
+                <h3 class="text-lg font-bold text-amber-200 mb-2">${this.getEventIcon(event.type)} ${event.name}</h3>
+                <p class="${typeColor} mb-4">${event.description}</p>
+                <div class="text-sm text-gray-400 mb-3">
+                    难度: ${this.getDifficultyText(event.difficulty)}
+                </div>
+                <div class="flex gap-2">
+                    <button class="event-accept px-4 py-2 ${buttonColor} text-white rounded transition-colors" data-event="${event.id}">
+                        处理事件
+                    </button>
+                    <button class="event-ignore px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors" data-event="${event.id}">
+                        忽略事件
+                    </button>
+                </div>
+            `;
+            
+            eventsList.appendChild(eventDiv);
+            
+            // 存储事件数据
+            eventDiv.eventData = event;
+        });
         
         // 添加事件按钮监听器
-        eventDiv.querySelectorAll('.event-accept').forEach(btn => {
+        eventsList.querySelectorAll('.event-accept').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const eventId = e.target.dataset.event;
-                this.handleEventAccept(eventId);
+                this.handleCollectiveEventAccept(eventId);
             });
         });
         
-        eventDiv.querySelectorAll('.event-ignore').forEach(btn => {
+        eventsList.querySelectorAll('.event-ignore').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const eventId = e.target.dataset.event;
-                this.handleEventIgnore(eventId);
+                this.handleCollectiveEventIgnore(eventId);
             });
         });
+    }
+    
+    // 获取事件图标
+    getEventIcon(type) {
+        const icons = {
+            blessing: '🌟',
+            celebration: '🎉',
+            natural: '🌊',
+            miracle: '✨',
+            legendary: '👑',
+            curse: '😈',
+            catastrophe: '☄️',
+            crisis: '⚔️',
+            opportunity: '💎',
+            discovery: '⛏️',
+            event: '🏮'
+        };
+        return icons[type] || '📜';
+    }
+    
+    // 获取难度文本
+    getDifficultyText(difficulty) {
+        const difficulties = {
+            easy: '简单',
+            medium: '中等',
+            hard: '困难',
+            rare: '罕见',
+            legendary: '传说'
+        };
+        return difficulties[difficulty] || difficulty;
+    }
+    
+    // 处理集体事件接受
+    handleCollectiveEventAccept(eventId) {
+        const eventsList = document.getElementById('eventsList');
+        const eventElements = eventsList.querySelectorAll('.bg-slate-800');
+        
+        for (let eventElement of eventElements) {
+            if (eventElement.eventData && eventElement.eventData.id === eventId) {
+                const event = eventElement.eventData;
+                this.applyCollectiveEvent(event);
+                break;
+            }
+        }
+        
+        this.closeEventsModal();
+        this.updateDisplay();
+    }
+    
+    // 处理集体事件忽略
+    handleCollectiveEventIgnore(eventId) {
+        const eventsList = document.getElementById('eventsList');
+        const eventElements = eventsList.querySelectorAll('.bg-slate-800');
+        
+        for (let eventElement of eventElements) {
+            if (eventElement.eventData && eventElement.eventData.id === eventId) {
+                const event = eventElement.eventData;
+                addLog(`[事件] 忽略了${event.name}`, 'text-gray-400');
+                break;
+            }
+        }
+        
+        this.closeEventsModal();
+    }
+    
+    // 应用集体事件效果
+    applyCollectiveEvent(event) {
+        console.log('应用集体事件:', event);
+        
+        // 应用奖励
+        if (event.reward) {
+            if (event.reward.spiritStones) {
+                gameState.spiritStones += event.reward.spiritStones;
+                addLog(`[事件] ${event.name}，获得${event.reward.spiritStones}灵石`, 'text-emerald-400');
+            }
+            if (event.reward.breakthroughPills) {
+                gameState.breakthroughPills += event.reward.breakthroughPills;
+                addLog(`[事件] ${event.name}，获得${event.reward.breakthroughPills}枚破境丹`, 'text-purple-400');
+            }
+            if (event.reward.reputation) {
+                gameState.reputation += event.reward.reputation;
+                addLog(`[事件] ${event.name}，声望${event.reward.reputation > 0 ? '+' : ''}${event.reward.reputation}`, 'text-amber-400');
+            }
+            if (event.reward.globalCultivationBonus) {
+                this.applyGlobalCultivationBonus(event.reward.globalCultivationBonus, event.reward.duration);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-green-400');
+            }
+            if (event.reward.globalRealmBoost) {
+                this.applyGlobalRealmBoost();
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-purple-400');
+            }
+            if (event.reward.randomBreakthrough) {
+                this.applyRandomBreakthrough(event.reward.randomBreakthrough);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-purple-400');
+            }
+            if (event.reward.randomTechnique) {
+                this.applyRandomTechnique(event.reward.randomTechnique);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-blue-400');
+            }
+        }
+        
+        // 应用惩罚
+        if (event.penalty) {
+            if (event.penalty.spiritStones) {
+                gameState.spiritStones = Math.max(0, gameState.spiritStones + event.penalty.spiritStones);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+            if (event.penalty.reputation) {
+                gameState.reputation = Math.max(0, gameState.reputation + event.penalty.reputation);
+                addLog(`[事件] ${event.name}，声望${event.penalty.reputation > 0 ? '+' : ''}${event.penalty.reputation}`, 'text-orange-400');
+            }
+            if (event.penalty.globalCultivationPenalty) {
+                this.applyGlobalCultivationPenalty(event.penalty.globalCultivationPenalty, event.penalty.duration);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+            if (event.penalty.randomInjury) {
+                this.applyRandomInjury(event.penalty.randomInjury);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+        }
+    }
+    
+    // 应用全局修炼加成
+    applyGlobalCultivationBonus(bonus, duration) {
+        const effect = {
+            type: 'cultivationBonus',
+            value: bonus,
+            endTime: Date.now() + duration,
+            startTime: Date.now()
+        };
+        
+        gameState.globalEffects.effects.push(effect);
+        gameState.globalEffects.cultivationBonus *= bonus;
+        
+        // 设置定时器移除效果
+        setTimeout(() => {
+            this.removeGlobalEffect(effect);
+            gameState.globalEffects.cultivationBonus /= bonus;
+            addLog('[效果] 全局修炼加成效果结束', 'text-gray-400');
+        }, duration);
+    }
+    
+    // 应用全局修炼减益
+    applyGlobalCultivationPenalty(penalty, duration) {
+        const effect = {
+            type: 'cultivationPenalty',
+            value: penalty,
+            endTime: Date.now() + duration,
+            startTime: Date.now()
+        };
+        
+        gameState.globalEffects.effects.push(effect);
+        gameState.globalEffects.cultivationPenalty *= penalty;
+        
+        // 设置定时器移除效果
+        setTimeout(() => {
+            this.removeGlobalEffect(effect);
+            gameState.globalEffects.cultivationPenalty /= penalty;
+            addLog('[效果] 全局修炼减益效果结束', 'text-gray-400');
+        }, duration);
+    }
+    
+    // 应用全局境界提升
+    applyGlobalRealmBoost() {
+        gameState.disciples.forEach(disciple => {
+            if (disciple.alive && !disciple.onTask) {
+                const currentRealmIndex = REALMS.indexOf(disciple.realm);
+                if (currentRealmIndex < REALMS.length - 1 && currentRealmIndex > 0) {
+                    // 提升一个小境界
+                    const newRealmIndex = Math.min(currentRealmIndex + 1, REALMS.length - 1);
+                    disciple.realm = REALMS[newRealmIndex];
+                    disciple.cultivation = 0;
+                }
+            }
+        });
+    }
+    
+    // 应用随机突破
+    applyRandomBreakthrough(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.onTask && d.cultivation < 100);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                disciple.cultivation = 100;
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 应用随机功法
+    applyRandomTechnique(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.onTask);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                // 随机选择一个基础功法
+                const randomTechnique = BASE_TECHNIQUES[Math.floor(Math.random() * BASE_TECHNIQUES.length)];
+                disciple.learnTechnique(randomTechnique);
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 应用随机受伤
+    applyRandomInjury(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.injured && !d.onTask);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                disciple.injured = true;
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 移除全局效果
+    removeGlobalEffect(effectToRemove) {
+        const index = gameState.globalEffects.effects.findIndex(effect => 
+            effect.type === effectToRemove.type && 
+            effect.startTime === effectToRemove.startTime
+        );
+        if (index > -1) {
+            gameState.globalEffects.effects.splice(index, 1);
+        }
     }
     
     // 处理接受事件
@@ -786,6 +1771,29 @@ class CultivationGame {
     // 添加updateDisplay方法供外部调用
     updateDisplay() {
         updateDisplay(gameState);
+    }
+    
+    // 根据弟子境界获取合适的功法
+    getRandomTechniqueForDisciple(disciple) {
+        const realmIndex = REALMS.indexOf(disciple.realm);
+        let availableTechniques = BASE_TECHNIQUES;
+        
+        // 根据弟子境界调整功法品质概率
+        if (realmIndex <= 10) {
+            // 炼气期：主要获得黄阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '黄阶');
+        } else if (realmIndex <= 20) {
+            // 筑基期：可能获得玄阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '黄阶' || t.quality === '玄阶');
+        } else if (realmIndex <= 30) {
+            // 金丹期：可能获得地阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '玄阶' || t.quality === '地阶');
+        } else {
+            // 更高境界：可能获得任何功法
+            availableTechniques = BASE_TECHNIQUES;
+        }
+        
+        return availableTechniques[Math.floor(Math.random() * availableTechniques.length)];
     }
 }
 

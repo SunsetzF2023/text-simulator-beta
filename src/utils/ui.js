@@ -1,4 +1,4 @@
-import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFIG, INFLUENCE_LEVELS, VISIT_EVENTS, COLLECTIVE_EVENTS, REGION_CONFIG, REALMS, TRAITS } from '../data/constants.js';
+import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFIG, INFLUENCE_LEVELS, VISIT_EVENTS, COLLECTIVE_EVENTS, REGION_CONFIG, REALMS, TRAITS, SPIRIT_ROOTS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES } from '../data/constants.js';
 
 // 更新主界面显示
 export function updateDisplay(gameState) {
@@ -34,10 +34,12 @@ export function updateDisplay(gameState) {
     const spiritStones = document.getElementById('spiritStones');
     const breakthroughPills = document.getElementById('breakthroughPills');
     const reputation = document.getElementById('reputation');
+    const disciples = document.getElementById('disciples');
     
     if (spiritStones) spiritStones.textContent = gameState.spiritStones || 0;
     if (breakthroughPills) breakthroughPills.textContent = gameState.breakthroughPills || 0;
     if (reputation) reputation.textContent = gameState.reputation || 0;
+    if (disciples) disciples.textContent = gameState.disciples.filter(d => d.alive).length || 0;
     
     // 更新影响力信息
     updateInfluenceDisplay(gameState);
@@ -254,6 +256,60 @@ export function showDiscipleDetails(disciple, gameState) {
         </div>
         
         <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">📜 功法修炼</h3>
+            <div class="bg-slate-800 p-3 rounded border border-slate-600">
+                ${disciple.techniques.length > 0 ? `
+                    <div class="space-y-3">
+                        ${disciple.getTechniqueInfo().map(technique => `
+                            <div class="bg-slate-700 p-3 rounded border ${technique.isCurrent ? 'border-amber-400' : 'border-slate-600'}">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <span class="font-bold" style="color: ${TECHNIQUE_QUALITIES[technique.quality].color}">
+                                            ${technique.name}
+                                        </span>
+                                        ${technique.isCurrent ? '<span class="ml-2 text-amber-400 text-sm">[当前修炼]</span>' : ''}
+                                    </div>
+                                    <button onclick="window.switchTechnique('${disciple.id}', '${technique.name}')" 
+                                            class="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-colors">
+                                        ${technique.isCurrent ? '修炼中' : '切换修炼'}
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    ${technique.description} | 属性: ${technique.attribute} | 类型: ${technique.type}
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <span class="text-gray-400">修炼进度:</span>
+                                        <div class="w-full bg-gray-600 rounded-full h-2 mt-1">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: ${technique.progress}%"></div>
+                                        </div>
+                                        <span class="text-green-400">${technique.progress.toFixed(1)}% - ${technique.level.name}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400">战力加成:</span>
+                                        <span class="text-red-400 font-bold">+${technique.powerBonus}</span>
+                                        <span class="text-gray-400 ml-1">(${(technique.matchBonus * 100).toFixed(0)}%匹配)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <button onclick="window.practiceTechnique('${disciple.id}')" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded transition-colors">
+                            ⚡ 修炼当前功法
+                        </button>
+                    </div>
+                ` : `
+                    <div class="text-center text-gray-400 py-4">
+                        <p>📚 该弟子尚未学会任何功法</p>
+                        <p class="text-sm mt-2">前往坊市购买功法秘籍</p>
+                    </div>
+                `}
+            </div>
+        </div>
+        
+        <div class="mt-4">
             <h3 class="text-lg font-bold text-amber-200 mb-2">🎒 携带物品</h3>
             <div class="grid grid-cols-3 gap-2">
                 ${generateTreasures(disciple).map(treasure => 
@@ -287,6 +343,11 @@ export function showDiscipleDetails(disciple, gameState) {
                 ${disciple.injured ? `
                     <button id="healBtn" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded transition-colors">
                         💊 治疗 (消耗5灵石)
+                    </button>
+                ` : ''}
+                ${disciple.cultivation >= 100 ? `
+                    <button id="breakthroughBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded transition-colors">
+                        ⚡ 帮助突破
                     </button>
                 ` : ''}
                 <button id="arrangeMarriageBtn" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded transition-colors">
@@ -330,6 +391,18 @@ function setupDiscipleModalEvents(disciple, gameState) {
                 addLog(`[治疗] 为${disciple.name}治疗伤势，消耗5灵石`, 'text-green-400');
             } else {
                 addLog('[治疗] 灵石不足，需要5灵石才能治疗', 'text-red-400');
+            }
+        };
+    }
+    
+    // 突破按钮
+    const breakthroughBtn = document.getElementById('breakthroughBtn');
+    if (breakthroughBtn && disciple.cultivation >= 100) {
+        breakthroughBtn.onclick = () => {
+            // 调用游戏的突破检查函数
+            if (window.game && window.game.checkBreakthrough) {
+                window.game.checkBreakthrough(disciple);
+                showDiscipleDetails(disciple, gameState); // 刷新详情
             }
         };
     }
@@ -674,7 +747,8 @@ export function setupButtonListeners(callbacks) {
         techniqueHallBtn: () => callbacks.onTechniqueHall(),
         pastRecordsBtn: () => callbacks.onPastRecords(),
         eventsBtn: () => callbacks.onEvents(),
-        regionBtn: () => callbacks.onRegion()
+        regionBtn: () => callbacks.onRegion(),
+        changeNameBtn: () => callbacks.onChangeName && callbacks.onChangeName()
     };
     
     Object.entries(buttons).forEach(([id, handler]) => {
@@ -839,8 +913,33 @@ window.buyMarketItem = function(itemId) {
         
         addLog(`[坊市] 购买了${item.name}，消耗${item.price}灵石`, 'text-green-400');
         
-        // 应用物品效果
-        applyItemEffect(item, gameState);
+        // 如果是功法，存入功法堂
+        if (item.type === 'technique') {
+            // 检查功法堂是否已有此功法
+            const existingTechnique = gameState.techniqueHall.find(t => t.name === item.name);
+            if (existingTechnique) {
+                existingTechnique.stock++;
+                addLog(`[坊市] ${item.name}库存+1，当前库存：${existingTechnique.stock}`, 'text-blue-400');
+            } else {
+                // 从BASE_TECHNIQUES中查找功法数据
+                const techniqueData = BASE_TECHNIQUES.find(t => t.name === item.name);
+                if (techniqueData) {
+                    gameState.techniqueHall.push({
+                        ...techniqueData,
+                        stock: 1,
+                        obtainedFrom: '坊市购买',
+                        purchaseDate: Date.now()
+                    });
+                    addLog(`[坊市] ${item.name}已存入功法堂`, 'text-purple-400');
+                }
+            }
+            
+            // 显示学习对话框
+            showTechniqueLearningDialog(item, gameState);
+        } else {
+            // 应用物品效果
+            applyItemEffect(item, gameState);
+        }
         
         // 如果库存为0，移除商品
         if (item.stock <= 0) {
@@ -851,6 +950,82 @@ window.buyMarketItem = function(itemId) {
         showMarket(gameState);
         if (window.game) window.game.updateDisplay();
     }
+};
+
+// 显示功法学习对话框
+function showTechniqueLearningDialog(techniqueItem, gameState) {
+    // 检查功法堂中的功法
+    const hallTechnique = gameState.techniqueHall.find(t => t.name === techniqueItem.name);
+    const stock = hallTechnique ? hallTechnique.stock : 0;
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-lg max-w-md w-full mx-4 border border-amber-400">
+            <h3 class="text-xl font-bold text-amber-200 mb-4">📚 选择学习弟子</h3>
+            <p class="text-gray-300 mb-2">购买的是 <span class="text-purple-400 font-bold">${techniqueItem.name}</span></p>
+            <p class="text-gray-300 mb-4">功法堂库存：<span class="text-green-400 font-bold">${stock}</span> 本</p>
+            <p class="text-gray-300 mb-4">请选择要学习的弟子：</p>
+            <div class="max-h-60 overflow-y-auto mb-4">
+                ${gameState.disciples.filter(d => d.alive && !d.onTask).map(disciple => `
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer" 
+                         onclick="selectDiscipleForTechnique('${disciple.id}', '${techniqueItem.name}')">
+                        <div>
+                            <span class="text-cyan-400 font-medium">${disciple.name}</span>
+                            <span class="text-gray-400 text-sm ml-2">${disciple.realm} | ${disciple.spiritRoot}灵根</span>
+                        </div>
+                        ${disciple.techniques.find(t => t.name === techniqueItem.name) ? 
+                            '<span class="text-red-400 text-sm">已学会</span>' : 
+                            '<span class="text-green-400 text-sm">可学习</span>'}
+                    </div>
+                `).join('') || '<p class="text-gray-400">没有可用的弟子</p>'}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors">
+                取消
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// 选择弟子学习功法
+window.selectDiscipleForTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    // 从BASE_TECHNIQUES中查找功法数据
+    const techniqueData = BASE_TECHNIQUES.find(t => t.name === techniqueName);
+    if (!techniqueData) return;
+    
+    // 检查功法堂中是否有此功法
+    const hallTechnique = gameState.techniqueHall.find(t => t.name === techniqueName);
+    if (!hallTechnique) {
+        addLog(`[功法] 功法堂中没有${techniqueName}，请先购买`, 'text-red-400');
+        return;
+    }
+    
+    if (disciple.learnTechnique(techniqueData)) {
+        // 减少功法堂库存
+        hallTechnique.stock--;
+        if (hallTechnique.stock <= 0) {
+            // 如果库存为0，从功法堂移除
+            const index = gameState.techniqueHall.findIndex(t => t.name === techniqueName);
+            if (index > -1) {
+                gameState.techniqueHall.splice(index, 1);
+            }
+        }
+        
+        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！剩余库存：${hallTechnique.stock}`, 'text-purple-400');
+    } else {
+        addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
+    }
+    
+    // 关闭对话框
+    document.querySelector('.fixed').remove();
 };
 
 // 应用物品效果（存入宝库）
@@ -969,6 +1144,31 @@ function generateAuctionItems(gameState) {
     }
     
     gameState.auctionEndTime = Date.now() + AUCTION_CONFIG.AUCTION_DURATION;
+    
+    // 延迟触发NPC初始竞拍，让拍卖会更生动
+    setTimeout(() => {
+        gameState.auctionItems.forEach(item => {
+            if (Math.random() < 0.4) { // 40%概率有NPC初始出价
+                const npcBidder = generateNPCBidder(item);
+                if (npcBidder) {
+                    // NPC初始出价通常比较保守
+                    const initialBid = Math.max(item.currentBid, Math.floor(item.basePrice * 0.6));
+                    item.currentBid = initialBid;
+                    item.bidder = npcBidder.name;
+                    item.bidCount = 1;
+                    
+                    const messages = [
+                        `[拍卖会] ${npcBidder.name}率先对${item.name}出价${initialBid}灵石`,
+                        `[拍卖会] ${npcBidder.name}似乎对${item.name}很感兴趣，出价${initialBid}灵石`,
+                        `[拍卖会] ${npcBidder.name}冷静地出价${initialBid}灵石`
+                    ];
+                    const message = messages[Math.floor(Math.random() * messages.length)];
+                    addLog(message, 'text-cyan-400');
+                }
+            }
+        });
+        showAuction(gameState);
+    }, 2000 + Math.random() * 3000); // 2-5秒后开始NPC竞拍
 }
 
 // 创建拍卖物品卡片
@@ -1048,11 +1248,126 @@ window.placeBid = function(itemId, bidAmount) {
     
     addLog(`[拍卖会] ${gameState.playerName}对${item.name}出价${bidAmount}灵石`, 'text-yellow-400');
     
+    // 触发NPC竞拍反应
+    setTimeout(() => triggerNPCBidding(gameState, item), 1000 + Math.random() * 2000);
+    
     // 刷新显示
     showAuction(gameState);
     if (window.game) window.game.updateDisplay();
 };
 
+// NPC竞拍逻辑 - 增强竞争氛围
+function triggerNPCBidding(gameState, playerBidItem) {
+    if (!gameState.auctionItems || gameState.auctionItems.length === 0) return;
+    
+    // 为每个拍卖物品都有机会触发NPC竞拍
+    gameState.auctionItems.forEach(item => {
+        // 提高NPC参与概率，创造激烈竞争氛围
+        const npcParticipationChance = item.rarity === 'legendary' ? 0.9 : 
+                                     item.rarity === 'epic' ? 0.8 :
+                                     item.rarity === 'rare' ? 0.7 : 0.6;
+        
+        if (Math.random() < npcParticipationChance) {
+            // 可能多个NPC同时竞拍
+            const npcCount = Math.floor(Math.random() * 3) + 1; // 1-3个NPC
+            for (let i = 0; i < npcCount; i++) {
+                const npcBidder = generateNPCBidder(item);
+                if (npcBidder) {
+                    performNPCBid(gameState, item, npcBidder);
+                    
+                    // 添加竞拍日志，增强氛围
+                    const bidAmount = item.currentBid + Math.floor(Math.random() * 50) + 10;
+                    addLog(`[拍卖会] ${npcBidder.name}对${item.name}出价${bidAmount}灵石！`, 'text-cyan-400');
+                }
+            }
+            
+            // 特殊事件：大佬入场
+            if (item.rarity === 'legendary' && Math.random() < 0.3) {
+                const tycoonName = AUCTION_CONFIG.NPC_BIDDERS[Math.floor(Math.random() * AUCTION_CONFIG.NPC_BIDDERS.length)];
+                const tycoonBid = Math.floor(item.basePrice * 3.5);
+                item.currentBid = tycoonBid;
+                item.highestBidder = tycoonName;
+                addLog(`[拍卖会] 💎 ${tycoonName}入场！对${item.name}直接出价${tycoonBid}灵石！`, 'text-red-400 font-bold');
+                addLog(`[拍卖会] 其他竞拍者面色凝重，似乎在权衡是否继续竞争...`, 'text-orange-400');
+            }
+        }
+    });
+    
+    // 刷新显示
+    showAuction(gameState);
+}
+
+// 生成NPC竞拍者
+function generateNPCBidder(item) {
+    const strategies = Object.keys(AUCTION_CONFIG.NPC_BIDDING_STRATEGIES);
+    const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+    const strategyConfig = AUCTION_CONFIG.NPC_BIDDING_STRATEGIES[strategy];
+    
+    // 根据策略决定是否参与竞拍
+    if (Math.random() > strategyConfig.chance) return null;
+    
+    // 检查物品稀有度是否符合NPC偏好
+    if (!strategyConfig.preferredRarity.includes(item.rarity)) {
+        if (Math.random() < 0.7) return null; // 30%概率还是会竞拍不偏好的物品
+    }
+    
+    const npcName = AUCTION_CONFIG.NPC_BIDDERS[Math.floor(Math.random() * AUCTION_CONFIG.NPC_BIDDERS.length)];
+    
+    return {
+        name: npcName,
+        strategy: strategy,
+        config: strategyConfig
+    };
+}
+
+// 执行NPC出价
+function performNPCBid(gameState, item, npcBidder) {
+    const maxBid = Math.floor(item.basePrice * npcBidder.config.maxBidMultiplier);
+    const minBid = Math.floor(item.basePrice * npcBidder.config.minBidMultiplier);
+    
+    // 如果当前价格已经超过NPC的最高出价意愿，则不参与
+    if (item.currentBid >= maxBid) return;
+    
+    // 计算NPC的出价
+    let bidAmount;
+    if (item.currentBid < minBid) {
+        // 如果当前价格低于NPC的最低出价，直接出到最低价格
+        bidAmount = minBid;
+    } else {
+        // 否则在当前价格基础上加价
+        const increment = Math.max(AUCTION_CONFIG.MIN_BID_INCREMENT, Math.floor(Math.random() * 20) + 5);
+        bidAmount = Math.min(item.currentBid + increment, maxBid);
+    }
+    
+    // 确保出价高于当前价格
+    if (bidAmount <= item.currentBid) return;
+    
+    // 更新拍卖物品
+    item.currentBid = bidAmount;
+    item.bidder = npcBidder.name;
+    item.bidCount++;
+    
+    // 添加竞拍日志
+    const bidMessages = [
+        `[拍卖会] ${npcBidder.name}对${item.name}出价${bidAmount}灵石`,
+        `[拍卖会] 💰 ${npcBidder.name}志在必得，出价${bidAmount}灵石`,
+        `[拍卖会] ${npcBidder.name}毫不犹豫，出价${bidAmount}灵石`,
+        `[拍卖会] ${npcBidder.name}加入战局，出价${bidAmount}灵石`
+    ];
+    const message = bidMessages[Math.floor(Math.random() * bidMessages.length)];
+    addLog(message, 'text-cyan-400');
+    
+    // 如果NPC出价很高，有可能触发其他NPC的反应
+    if (bidAmount > item.basePrice * 2 && Math.random() < 0.3) {
+        setTimeout(() => {
+            const otherNpc = generateNPCBidder(item);
+            if (otherNpc && otherNpc.name !== npcBidder.name) {
+                performNPCBid(gameState, item, otherNpc);
+                showAuction(gameState);
+            }
+        }, 1500 + Math.random() * 2000);
+    }
+}
 // 更新拍卖会计时器
 function updateAuctionTimer(gameState) {
     const timerElement = document.getElementById('auctionTimer');
@@ -1578,13 +1893,23 @@ function applyMaterialEffect(item, disciple) {
 
 // 检查弟子境界是否满足要求
 function checkRealmRequirement(disciple, requiredRealm) {
-    const realmHierarchy = [
-        '凡人', '炼气期', '筑基期', '金丹期', '元婴期', 
-        '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'
+    // 使用完整的REALMS数组
+    const REALMS = [
+        '凡人',
+        '炼气一层', '炼气二层', '炼气三层', '炼气四层', '炼气五层',
+        '炼气六层', '炼气七层', '炼气八层', '炼气九层', '炼气大圆满',
+        '筑基一层', '筑基二层', '筑基三层', '筑基四层', '筑基五层',
+        '筑基六层', '筑基七层', '筑基八层', '筑基九层', '筑基大圆满',
+        '金丹一层', '金丹二层', '金丹三层', '金丹四层', '金丹五层',
+        '金丹六层', '金丹七层', '金丹八层', '金丹九层', '金丹大圆满',
+        '元婴一层', '元婴二层', '元婴三层', '元婴四层', '元婴五层',
+        '元婴六层', '元婴七层', '元婴八层', '元婴九层', '元婴大圆满',
+        '化神一层', '化神二层', '化神三层', '化神四层', '化神五层',
+        '化神六层', '化神七层', '化神八层', '化神九层', '化神大圆满'
     ];
     
-    const discipleIndex = realmHierarchy.indexOf(disciple.realm);
-    const requiredIndex = realmHierarchy.indexOf(requiredRealm);
+    const discipleIndex = REALMS.indexOf(disciple.realm);
+    const requiredIndex = REALMS.indexOf(requiredRealm);
     
     return discipleIndex >= requiredIndex;
 }
@@ -1892,8 +2217,9 @@ function updateDiscipleHierarchy(gameState) {
     org.outerDisciples = [];
     org.innerDisciples = [];
     org.personalDisciples = [];
+    org.disciples = []; // 新增弟子层级
     
-    // 根据弟子境界和职位进行分层
+    // 根据弟子境界和职位进行// 重新分配弟子
     gameState.disciples.forEach(disciple => {
         if (!disciple.alive) return;
         
@@ -1908,15 +2234,8 @@ function updateDiscipleHierarchy(gameState) {
                 org.managers.push({ ...disciple, position });
             }
         } else {
-            // 没有职位的弟子根据境界分层
-            const realmIndex = getRealmIndex(disciple.realm);
-            if (realmIndex <= 2) { // 凡人、炼气期、筑基期
-                org.outerDisciples.push(disciple);
-            } else if (realmIndex <= 4) { // 金丹期、元婴期
-                org.innerDisciples.push(disciple);
-            } else { // 化神期及以上
-                org.personalDisciples.push(disciple);
-            }
+            // 所有没有职位的弟子都放在弟子层级
+            org.disciples.push(disciple);
         }
     });
 }
@@ -1938,8 +2257,22 @@ function getDisciplePosition(disciple, org) {
 
 // 获取境界索引
 function getRealmIndex(realm) {
-    const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
-    return realms.indexOf(realm);
+    // 使用完整的REALMS数组，而不是简化的境界数组
+    const REALMS = [
+        '凡人',
+        '炼气一层', '炼气二层', '炼气三层', '炼气四层', '炼气五层',
+        '炼气六层', '炼气七层', '炼气八层', '炼气九层', '炼气大圆满',
+        '筑基一层', '筑基二层', '筑基三层', '筑基四层', '筑基五层',
+        '筑基六层', '筑基七层', '筑基八层', '筑基九层', '筑基大圆满',
+        '金丹一层', '金丹二层', '金丹三层', '金丹四层', '金丹五层',
+        '金丹六层', '金丹七层', '金丹八层', '金丹九层', '金丹大圆满',
+        '元婴一层', '元婴二层', '元婴三层', '元婴四层', '元婴五层',
+        '元婴六层', '元婴七层', '元婴八层', '元婴九层', '元婴大圆满',
+        '化神一层', '化神二层', '化神三层', '化神四层', '化神五层',
+        '化神六层', '化神七层', '化神八层', '化神九层', '化神大圆满'
+    ];
+    
+    return REALMS.indexOf(realm);
 }
 
 // 显示组织架构标签页
@@ -2006,59 +2339,40 @@ function showDiscipleHierarchy(gameState) {
                 </div>
             </div>
             
-            <!-- 亲传弟子 -->
+            <!-- 长老 -->
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-purple-400 font-bold">🌟 亲传弟子 (${org.personalDisciples.length})</h3>
-                    <button onclick="managePosition('personalDisciple')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
+                    <h3 class="text-purple-400 font-bold">🏛️ 长老 (${org.elders.length})</h3>
+                    <button onclick="managePosition('elders')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
                 <div class="space-y-1">
-                    ${org.personalDisciples.length > 0 ? 
-                        org.personalDisciples.map(d => `
+                    ${org.elders.length > 0 ? 
+                        org.elders.map(d => `
                             <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
                                 <span class="text-white">${d.name}</span>
-                                <span class="text-gray-400">${d.realm}</span>
+                                <span class="text-gray-400">${d.realm} (${d.position.name})</span>
                             </div>
                         `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无亲传弟子</div>'
+                        '<div class="text-gray-500 text-sm">暂无长老</div>'
                     }
                 </div>
             </div>
             
-            <!-- 内门弟子 -->
+            <!-- 弟子 -->
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-blue-400 font-bold">🔵 内门弟子 (${org.innerDisciples.length})</h3>
-                    <button onclick="managePosition('innerDisciple')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
+                    <h3 class="text-blue-400 font-bold">👥 弟子 (${org.disciples.length})</h3>
+                    <button onclick="managePosition('disciples')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
-                <div class="space-y-1">
-                    ${org.innerDisciples.length > 0 ? 
-                        org.innerDisciples.map(d => `
+                <div class="space-y-1 max-h-48 overflow-y-auto">
+                    ${org.disciples.length > 0 ? 
+                        org.disciples.map(d => `
                             <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
                                 <span class="text-white">${d.name}</span>
                                 <span class="text-gray-400">${d.realm}</span>
                             </div>
                         `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无内门弟子</div>'
-                    }
-                </div>
-            </div>
-            
-            <!-- 外门弟子 -->
-            <div class="bg-slate-800 p-3 rounded">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-green-400 font-bold">🟢 外门弟子 (${org.outerDisciples.length})</h3>
-                    <button onclick="managePosition('outerDisciple')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">管理</button>
-                </div>
-                <div class="space-y-1 max-h-32 overflow-y-auto">
-                    ${org.outerDisciples.length > 0 ? 
-                        org.outerDisciples.map(d => `
-                            <div class="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
-                                <span class="text-white">${d.name}</span>
-                                <span class="text-gray-400">${d.realm}</span>
-                            </div>
-                        `).join('') :
-                        '<div class="text-gray-500 text-sm">暂无外门弟子</div>'
+                        '<div class="text-gray-500 text-sm">暂无弟子</div>'
                     }
                 </div>
             </div>
@@ -2269,20 +2583,20 @@ window.managePosition = function(hierarchyType) {
     let availableOptions = [];
     
     switch (hierarchyType) {
-        case 'personalDisciple':
+        case 'personalDisciples':
             disciples = org.personalDisciples;
             title = '🌟 亲传弟子管理';
-            availableOptions = ['innerDisciple', 'outerDisciple'];
+            availableOptions = ['innerDisciples', 'outerDisciples'];
             break;
-        case 'innerDisciple':
+        case 'innerDisciples':
             disciples = org.innerDisciples;
             title = '🔵 内门弟子管理';
-            availableOptions = ['personalDisciple', 'outerDisciple'];
+            availableOptions = ['personalDisciples', 'outerDisciples'];
             break;
-        case 'outerDisciple':
+        case 'outerDisciples':
             disciples = org.outerDisciples;
             title = '🟢 外门弟子管理';
-            availableOptions = ['innerDisciple', 'personalDisciple'];
+            availableOptions = ['innerDisciples', 'personalDisciples'];
             break;
     }
     
@@ -2347,16 +2661,30 @@ window.managePosition = function(hierarchyType) {
 
 // 提升弟子层级
 window.promoteDisciple = function(hierarchyType, discipleId) {
+    console.log('=== 晋升函数调用 ===');
+    console.log('参数:', { hierarchyType, discipleId });
+    console.log('当前时间:', new Date().toISOString());
+    
     const gameState = window.game ? window.game.gameState : null;
-    if (!gameState) return;
+    if (!gameState) {
+        console.error('gameState不存在');
+        return;
+    }
     
     const org = gameState.organization;
+    console.log('组织架构结构:', Object.keys(org));
+    console.log('外门弟子数组:', org.outerDisciples);
+    console.log('内门弟子数组:', org.innerDisciples);
+    console.log('亲传弟子数组:', org.personalDisciples);
+    
     const disciple = gameState.disciples.find(d => d.id == discipleId);
     
     if (!disciple) {
         alert('弟子不存在');
         return;
     }
+    
+    console.log('找到弟子:', disciple.name, disciple.realm);
     
     // 检查是否有职位
     const position = getDisciplePosition(disciple, org);
@@ -2366,40 +2694,64 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     }
     
     let newHierarchy = '';
-    let requiredRealm = '';
+    let requiredRealmIndex = 0;
     
     switch (hierarchyType) {
-        case 'outerDisciple':
-            newHierarchy = 'innerDisciple';
-            requiredRealm = '筑基期'; // 降低要求：筑基期即可
+        case 'outerDisciples':
+            newHierarchy = 'innerDisciples';
+            requiredRealmIndex = 11; // 筑基一层
             break;
-        case 'innerDisciple':
-            newHierarchy = 'personalDisciple';
-            requiredRealm = '金丹期'; // 降低要求：金丹期即可
+        case 'innerDisciples':
+            newHierarchy = 'personalDisciples';
+            requiredRealmIndex = 21; // 金丹一层
             break;
-        case 'personalDisciple':
+        case 'personalDisciples':
             alert('亲传弟子已是最高层级');
+            return;
+        default:
+            alert('未知的层级类型');
             return;
     }
     
     // 检查境界要求
-    const realmIndex = getRealmIndex(disciple.realm);
-    const requiredIndex = getRealmIndex(requiredRealm);
+    const discipleRealmIndex = getRealmIndex(disciple.realm);
     
-    if (realmIndex < requiredIndex) {
-        alert(`${disciple.name}境界不足，需要达到${requiredRealm}才能提升`);
+    console.log('境界检查:', {
+        discipleRealm: disciple.realm,
+        requiredRealmIndex: requiredRealmIndex,
+        discipleRealmIndex: discipleRealmIndex,
+        canPromote: discipleRealmIndex >= requiredRealmIndex
+    });
+    
+    if (discipleRealmIndex < requiredRealmIndex) {
+        alert(`${disciple.name}境界不足，需要达到筑基期才能提升`);
         return;
     }
     
     // 执行提升
     // 从原层级移除
+    console.log('晋升调试信息:', { hierarchyType, org, discipleId });
     const sourceArray = org[hierarchyType];
+    console.log('源层级数组:', sourceArray);
+    
+    if (!sourceArray || !Array.isArray(sourceArray)) {
+        console.error('源层级数组不存在:', hierarchyType, org);
+        alert('层级数据错误，无法提升');
+        return;
+    }
+    
     const index = sourceArray.findIndex(d => d.id == discipleId);
     if (index !== -1) {
         sourceArray.splice(index, 1);
     }
     
     // 添加到新层级
+    if (!org[newHierarchy]) {
+        console.error('目标层级不存在:', newHierarchy, org);
+        alert('目标层级错误，无法提升');
+        return;
+    }
+    
     org[newHierarchy].push(disciple);
     
     addLog(`[宗门] ${disciple.name}提升为${getHierarchyName(newHierarchy)}`, 'text-green-400');
@@ -2468,9 +2820,9 @@ window.demoteDisciple = function(hierarchyType, discipleId) {
 // 获取层级名称
 function getHierarchyName(hierarchyType) {
     const names = {
-        outerDisciple: '外门弟子',
-        innerDisciple: '内门弟子',
-        personalDisciple: '亲传弟子'
+        outerDisciples: '外门弟子',
+        innerDisciples: '内门弟子',
+        personalDisciples: '亲传弟子'
     };
     return names[hierarchyType] || '未知';
 }
@@ -2506,3 +2858,58 @@ function getPositionMinRealmName(positionKey) {
     const index = getPositionMinRealm(positionKey);
     return realms[index] || '凡人';
 }
+
+// 功法相关全局函数
+window.switchTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    if (disciple.switchTechnique(techniqueName)) {
+        showDiscipleDetails(disciple, gameState);
+        addLog(`[功法] ${disciple.name}开始修炼${techniqueName}`, 'text-blue-400');
+    }
+};
+
+window.practiceTechnique = function(discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    if (!disciple.currentTechnique) {
+        addLog(`[功法] ${disciple.name}还没有学会任何功法`, 'text-red-400');
+        return;
+    }
+    
+    const result = disciple.practiceTechnique();
+    if (result) {
+        showDiscipleDetails(disciple, gameState);
+        if (result.levelUp) {
+            addLog(`[功法] ${disciple.name}的${result.technique}修炼至${result.newLevel}！`, 'text-green-400');
+        }
+    }
+};
+
+// 学习功法函数（用于坊市购买）
+window.learnTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    // 从BASE_TECHNIQUES中查找功法数据
+    const techniqueData = BASE_TECHNIQUES.find(t => t.name === techniqueName);
+    if (!techniqueData) return;
+    
+    if (disciple.learnTechnique(techniqueData)) {
+        showDiscipleDetails(disciple, gameState);
+        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+    } else {
+        addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
+    }
+};

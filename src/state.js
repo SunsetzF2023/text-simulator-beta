@@ -60,8 +60,23 @@ export const gameState = {
     
     // 功法系统
     techniqueFragments: [], // 功法残本
-    sectLevel: 1, // 宗门等级
     unlockedBuildings: [], // 解锁的建筑
+    techniqueHall: [], // 功法堂 - 存储已购买的功法
+    
+    // 实力至上系统
+    totalPower: 0, // 宗门总战力
+    playerPower: 0, // 宗主战力
+    sectAura: 1.0, // 宗主光环加成
+    currentRegion: null, // 当前地区
+    nearbySects: [], // 周边宗门
+    lastRegionUpdate: 0, // 上次地区更新时间
+    
+    // 全局增益效果
+    globalEffects: {
+        cultivationBonus: 1.0, // 全局修炼速度加成
+        cultivationPenalty: 1.0, // 全局修炼速度减益
+        effects: [] // 当前生效的效果列表
+    },
     
     // 宗门宝库
     treasury: {
@@ -190,6 +205,12 @@ export function resetGame() {
     gameState.activeTasks = [];
     gameState.completedTasks = [];
     gameState.events = [];
+    gameState.techniqueHall = []; // 重置功法堂
+    gameState.globalEffects = { // 重置全局效果
+        cultivationBonus: 1.0,
+        cultivationPenalty: 1.0,
+        effects: []
+    };
     
     // 恢复玩家信息
     Object.assign(gameState, playerInfo);
