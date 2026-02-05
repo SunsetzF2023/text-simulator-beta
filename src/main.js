@@ -781,7 +781,7 @@ class CultivationGame {
         const enemySurvivors = [...enemyDisciples];
         const enemyCasualties = [];
         
-        battleLog.push(`[对决] 开始个体对决：`);
+        battleLog.push(`[对决] ⚔️ 战火点燃，杀气冲天！`);
         
         // 随机配对战斗
         const maxRounds = Math.max(ourDisciples.length, enemyDisciples.length);
@@ -797,13 +797,16 @@ class CultivationGame {
             const ourPower = ourFighter.getCombatPower();
             const enemyPower = enemyFighter.power;
             
+            // 生成丰富的战斗场景
+            this.generateBattleScene(ourFighter, enemyFighter, round, battleLog);
+            
             // 计算个体战斗结果
             const ourWinChance = ourPower / (ourPower + enemyPower);
             const ourWins = Math.random() < ourWinChance;
             
             if (ourWins) {
                 // 我方胜利，敌方单位阵亡
-                battleLog.push(`[对决] 第${round}回合：${ourFighter.name}(${ourFighter.realm}) VS ${enemyFighter.name}(${enemyFighter.realm}) - 我方胜利！`);
+                this.generateVictoryScene(ourFighter, enemyFighter, round, battleLog);
                 
                 const enemyIndex = enemySurvivors.indexOf(enemyFighter);
                 if (enemyIndex > -1) {
@@ -812,7 +815,7 @@ class CultivationGame {
                 }
             } else {
                 // 敌方胜利，我方弟子阵亡
-                battleLog.push(`[对决] 第${round}回合：${ourFighter.name}(${ourFighter.realm}) VS ${enemyFighter.name}(${enemyFighter.realm}) - 我方弟子阵亡！`);
+                this.generateDefeatScene(ourFighter, enemyFighter, round, battleLog);
                 
                 const ourIndex = ourSurvivors.indexOf(ourFighter);
                 if (ourIndex > -1) {
@@ -821,11 +824,15 @@ class CultivationGame {
                 }
             }
             
+            // 添加旁观者反应
+            this.generateSpectatorReactions(ourSurvivors, enemySurvivors, round, battleLog);
+            
             // 避免无限循环
-            if (round > 20) break;
+            if (round > 15) break;
         }
         
-        battleLog.push(`[对决] 战斗结束：我方存活${ourSurvivors.length}人，敌方存活${enemySurvivors.length}个`);
+        // 生成战斗结束场景
+        this.generateBattleEndScene(ourSurvivors, enemySurvivors, battleLog);
         
         return {
             ourSurvivors,
@@ -833,6 +840,166 @@ class CultivationGame {
             enemySurvivors,
             enemyCasualties
         };
+    }
+    
+    // 生成战斗场景
+    generateBattleScene(ourFighter, enemyFighter, round, battleLog) {
+        const scenes = [
+            () => {
+                battleLog.push(`[场景] 第${round}回合：${ourFighter.name}手持长剑，剑光如虹，直指${enemyFighter.name}！`);
+                battleLog.push(`[场景] ${enemyFighter.name}冷笑一声，魔气翻涌，形成黑色护盾！`);
+            },
+            () => {
+                battleLog.push(`[场景] 第${round}回合：${ourFighter.name}脚踏七星步，身形如鬼魅般闪现！`);
+                battleLog.push(`[场景] ${enemyFighter.name}瞳孔收缩，感受到了致命威胁！`);
+            },
+            () => {
+                battleLog.push(`[场景] 第${round}回合：${ourFighter.name}大喝一声，全身灵力爆发！`);
+                battleLog.push(`[场景] 空气中的灵气开始震动，${enemyFighter.name}面色凝重！`);
+            },
+            () => {
+                battleLog.push(`[场景] 第${round}回合：${ourFighter.name}剑指苍天，风云变色！`);
+                battleLog.push(`[场景] ${enemyFighter.name}感受到天地威压，不由后退半步！`);
+            },
+            () => {
+                battleLog.push(`[场景] 第${round}回合：${ourFighter.name}眼中杀机毕现，气势如山！`);
+                battleLog.push(`[场景] ${enemyFighter.name}浑身魔气沸腾，准备拼命一击！`);
+            }
+        ];
+        
+        const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
+        randomScene();
+        
+        // 添加嘴炮对话
+        this.generateBattleDialogue(ourFighter, enemyFighter, battleLog);
+    }
+    
+    // 生成战斗对话
+    generateBattleDialogue(ourFighter, enemyFighter, battleLog) {
+        const dialogues = [
+            {
+                our: [`"${ourFighter.name}：邪魔外道，今日就是你的死期！"`, `"${ourFighter.name}：为我宗门荣耀而战！"`],
+                enemy: [`"${enemyFighter.name}：哈哈哈，不自量力！"`, `"${enemyFighter.name}：今天就让你见识真正的恐怖！"`]
+            },
+            {
+                our: [`"${ourFighter.name}：你的魔功在我面前不堪一击！"`, `"${ourFighter.name}：正道永昌，邪道必亡！"`],
+                enemy: [`"${enemyFighter.name}：天真，让我来撕碎你的幻想！"`, `"${enemyFighter.name}：你的血肉将成为我的养料！"`]
+            },
+            {
+                our: [`"${ourFighter.name}：今日我若不死，他日必诛你九族！"`, `"${ourFighter.name}：接我这最强一击！"`],
+                enemy: [`"${enemyFighter.name}：就凭你？可笑！"`, `"${enemyFighter.name}：让我看看你的骨气有多硬！"`]
+            }
+        ];
+        
+        const dialogueSet = dialogues[Math.floor(Math.random() * dialogues.length)];
+        const ourDialogue = dialogueSet.our[Math.floor(Math.random() * dialogueSet.our.length)];
+        const enemyDialogue = dialogueSet.enemy[Math.floor(Math.random() * dialogueSet.enemy.length)];
+        
+        battleLog.push(`[对话] ${ourDialogue}`);
+        battleLog.push(`[对话] ${enemyDialogue}`);
+    }
+    
+    // 生成胜利场景
+    generateVictoryScene(ourFighter, enemyFighter, round, battleLog) {
+        const victoryScenes = [
+            () => {
+                battleLog.push(`[胜利] 💥 ${ourFighter.name}剑光一闪，${enemyFighter.name}的魔气护盾瞬间破碎！`);
+                battleLog.push(`[胜利] ${enemyFighter.name}难以置信地看着胸口的剑伤，缓缓倒下！`);
+            },
+            () => {
+                battleLog.push(`[胜利] 🔥 ${ourFighter.name}祭出本命法宝，金光万丈！`);
+                battleLog.push(`[胜利] ${enemyFighter.name}在金光中惨叫，化为飞灰！`);
+            },
+            () => {
+                battleLog.push(`[胜利] ⚡ ${ourFighter.name}施展出绝技，天地变色！`);
+                battleLog.push(`[胜利] ${enemyFighter.name}连惨叫都来不及，就被轰成碎片！`);
+            },
+            () => {
+                battleLog.push(`[胜利] 🌟 ${ourFighter.name}眼中精光一闪，一指点出！`);
+                battleLog.push(`[胜利] ${enemyFighter.name}眉心出现血洞，生机断绝！`);
+            }
+        ];
+        
+        const randomVictory = victoryScenes[Math.floor(Math.random() * victoryScenes.length)];
+        randomVictory();
+    }
+    
+    // 生成失败场景
+    generateDefeatScene(ourFighter, enemyFighter, round, battleLog) {
+        const defeatScenes = [
+            () => {
+                battleLog.push(`[战败] 💀 ${enemyFighter.name}魔爪一挥，黑色魔气吞噬了${ourFighter.name}！`);
+                battleLog.push(`[战败] ${ourFighter.name}在魔气中挣扎，最终被腐蚀殆尽！`);
+            },
+            () => {
+                battleLog.push(`[战败] 🩸 ${enemyFighter.name}的魔刀斩下，${ourFighter.name}勉强抵挡！`);
+                battleLog.push(`[战败] 刀光过后，${ourFighter.name}身体分为两半，鲜血染红大地！`);
+            },
+            () => {
+                battleLog.push(`[战败] ⚰️ ${enemyFighter.name}施展血魔大法，${ourFighter.name}全身血液被吸干！`);
+                battleLog.push(`[战败] ${ourFighter.name}变成一具干尸，眼中还残留着不甘！`);
+            },
+            () => {
+                battleLog.push(`[战败] 💔 ${ourFighter.name}被${enemyFighter.name}重创，灵脉寸断！`);
+                battleLog.push(`[战败] ${ourFighter.name}吐血而亡，临死前还想着宗门安危！`);
+            }
+        ];
+        
+        const randomDefeat = defeatScenes[Math.floor(Math.random() * defeatScenes.length)];
+        randomDefeat();
+    }
+    
+    // 生成旁观者反应
+    generateSpectatorReactions(ourSurvivors, enemySurvivors, round, battleLog) {
+        if (Math.random() > 0.6) return; // 40%概率生成旁观者反应
+        
+        const reactions = [
+            () => {
+                if (ourSurvivors.length > 1) {
+                    const spectator = ourSurvivors[Math.floor(Math.random() * ourSurvivors.length)];
+                    battleLog.push(`[旁观] ${spectator.name}看到同伴的英勇表现，热血沸腾！`);
+                }
+            },
+            () => {
+                if (enemySurvivors.length > 1) {
+                    const spectator = enemySurvivors[Math.floor(Math.random() * enemySurvivors.length)];
+                    battleLog.push(`[旁观] ${spectator.name}狞笑着，似乎在享受这场杀戮！`);
+                }
+            },
+            () => {
+                battleLog.push(`[旁观] 周围的修士们看到如此惨烈的战斗，无不心惊胆战！`);
+                battleLog.push(`[旁观] 有人开始担心，这样的战斗会不会波及到自己！`);
+            },
+            () => {
+                battleLog.push(`[旁观] 远处的凡人看到剑光魔气，纷纷跪地祈祷！`);
+                battleLog.push(`[旁观] 有人在议论，这是正邪大战的预兆！`);
+            },
+            () => {
+                battleLog.push(`[旁观] 天空中的飞鸟被战斗余波震死，纷纷坠落！`);
+                battleLog.push(`[旁观] 大地都在颤抖，仿佛在哀悼逝去的生命！`);
+            }
+        ];
+        
+        const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+        randomReaction();
+    }
+    
+    // 生成战斗结束场景
+    generateBattleEndScene(ourSurvivors, enemySurvivors, battleLog) {
+        battleLog.push(`[终局] 🌅 战斗的硝烟渐渐散去...`);
+        
+        if (ourSurvivors.length > 0 && enemySurvivors.length === 0) {
+            battleLog.push(`[终局] ✨ 我方弟子们虽然带伤，但眼中燃烧着胜利的火焰！`);
+            battleLog.push(`[终局] 🏆 ${ourSurvivors.map(d => d.name).join('、')}等人相视一笑，今日大获全胜！`);
+        } else if (ourSurvivors.length === 0 && enemySurvivors.length > 0) {
+            battleLog.push(`[终局] 💀 敌方魔头们狂笑着，踩着我方弟子的尸体！`);
+            battleLog.push(`[终局] 😢 ${enemySurvivors.map(e => e.name).join('、')}等准备继续肆虐！`);
+        } else {
+            battleLog.push(`[终局] ⚖️ 双方都损失惨重，各自收兵，暂时休战！`);
+            battleLog.push(`[终局] 🤔 但所有人都知道，这只是更大风暴的前奏！`);
+        }
+        
+        battleLog.push(`[统计] 📊 战斗结果：我方存活${ourSurvivors.length}人，敌方存活${enemySurvivors.length}个`);
     }
     
     // 计算伤亡
