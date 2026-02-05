@@ -1,4 +1,4 @@
-import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES } from '../data/constants.js';
+import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES } from '../data/constants.js';
 import { advancedAI } from '../ai/AdvancedAI.js';
 
 // 数据迁移函数 - 修复旧格式的天赋词条
@@ -47,6 +47,11 @@ export class Disciple {
         
         // 任务历史
         this.taskHistory = [];
+        
+        // 功法修炼系统
+        this.techniques = []; // 已学会的功法
+        this.currentTechnique = null; // 当前修炼的功法
+        this.techniqueProgress = {}; // 功法修炼进度
         
         // 关系
         this.relationships = {};
@@ -837,5 +842,169 @@ export class Disciple {
         }
         
         return '事情';
+    }
+    
+    // 获取功法修炼等级
+    getTechniqueLevel(techniqueName) {
+        const progress = this.techniqueProgress[techniqueName] || 0;
+        for (let i = TECHNIQUE_LEVELS.length - 1; i >= 0; i--) {
+            if (progress >= TECHNIQUE_LEVELS[i].progress) {
+                return TECHNIQUE_LEVELS[i];
+            }
+        }
+        return TECHNIQUE_LEVELS[0];
+    }
+    
+    // 学习功法
+    learnTechnique(techniqueData) {
+        if (!techniqueData) return false;
+        
+        // 检查是否已学会
+        if (this.techniques.find(t => t.name === techniqueData.name)) {
+            return false;
+        }
+        
+        // 检查属性匹配
+        const matchBonus = this.getTechniqueMatchBonus(techniqueData);
+        if (matchBonus < 0.3) {
+            this.addPersonalLog(`[功法] ${techniqueData.name}与自身属性不匹配，修炼效果很差`, Date.now());
+        }
+        
+        this.techniques.push(techniqueData);
+        this.techniqueProgress[techniqueData.name] = 0;
+        
+        if (!this.currentTechnique) {
+            this.currentTechnique = techniqueData;
+        }
+        
+        this.addPersonalLog(`[功法] 学会了${techniqueData.quality}功法：${techniqueData.name}`, Date.now());
+        return true;
+    }
+    
+    // 获取功法匹配加成
+    getTechniqueMatchBonus(technique) {
+        let bonus = 1.0;
+        
+        // 灵根匹配
+        if (technique.attribute && technique.attribute !== '无属性') {
+            if (this.spiritRoot === technique.attribute) {
+                bonus += 0.5; // 完美匹配
+            } else if (this.isCompatibleElement(this.spiritRoot, technique.attribute)) {
+                bonus += 0.2; // 兼容匹配
+            } else {
+                bonus -= 0.3; // 不匹配
+            }
+        }
+        
+        // 体质匹配
+        if (this.constitution) {
+            if (technique.type === 'body' && this.constitution.name.includes('体')) {
+                bonus += 0.3;
+            }
+            if (technique.type === 'foundation' && this.constitution.name.includes('灵')) {
+                bonus += 0.3;
+            }
+        }
+        
+        return Math.max(0.1, bonus);
+    }
+    
+    // 检查元素兼容性
+    isCompatibleElement(root1, root2) {
+        const compatibility = {
+            '金': ['土', '冰'],
+            '木': ['水', '风'],
+            '水': ['金', '木'],
+            '火': ['木', '风'],
+            '土': ['金', '火'],
+            '雷': ['水', '风'],
+            '风': ['火', '雷'],
+            '冰': ['水', '土']
+        };
+        
+        return compatibility[root1]?.includes(root2) || false;
+    }
+    
+    // 修炼功法
+    practiceTechnique() {
+        if (!this.currentTechnique) return null;
+        
+        const technique = this.currentTechnique;
+        const matchBonus = this.getTechniqueMatchBonus(technique);
+        const currentProgress = this.techniqueProgress[technique.name] || 0;
+        
+        if (currentProgress >= 100) {
+            this.addPersonalLog(`[功法] ${technique.name}已达到登峰造极境界`, Date.now());
+            return null;
+        }
+        
+        // 计算修炼进度
+        const baseProgress = Math.random() * 3 + 1; // 1-4基础进度
+        const talentBonus = this.talent / 100; // 天赋加成
+        const finalProgress = baseProgress * matchBonus * talentBonus;
+        
+        this.techniqueProgress[technique.name] = Math.min(100, currentProgress + finalProgress);
+        
+        const newLevel = this.getTechniqueLevel(technique.name);
+        const oldLevel = this.getTechniqueLevel(currentProgress);
+        
+        let result = {
+            technique: technique.name,
+            progress: this.techniqueProgress[technique.name],
+            levelUp: false
+        };
+        
+        // 检查是否升级
+        if (newLevel.progress > oldLevel.progress) {
+            result.levelUp = true;
+            result.newLevel = newLevel.name;
+            this.addPersonalLog(`[功法] ${technique.name}修炼至${newLevel.name}！`, Date.now());
+        }
+        
+        return result;
+    }
+    
+    // 获取功法战力加成
+    getTechniquePowerBonus() {
+        let totalBonus = 0;
+        
+        for (const technique of this.techniques) {
+            const progress = this.techniqueProgress[technique.name] || 0;
+            const level = this.getTechniqueLevel(technique.name);
+            const quality = TECHNIQUE_QUALITIES[technique.quality];
+            const matchBonus = this.getTechniqueMatchBonus(technique);
+            
+            const powerBonus = technique.basePower * quality.multiplier * level.powerBonus * matchBonus;
+            totalBonus += powerBonus;
+        }
+        
+        return Math.floor(totalBonus);
+    }
+    
+    // 切换修炼功法
+    switchTechnique(techniqueName) {
+        const technique = this.techniques.find(t => t.name === techniqueName);
+        if (technique) {
+            this.currentTechnique = technique;
+            this.addPersonalLog(`[功法] 开始修炼${technique.name}`, Date.now());
+            return true;
+        }
+        return false;
+    }
+    
+    // 获取功法信息
+    getTechniqueInfo() {
+        return this.techniques.map(technique => ({
+            name: technique.name,
+            quality: technique.quality,
+            attribute: technique.attribute,
+            type: technique.type,
+            description: technique.description,
+            progress: this.techniqueProgress[technique.name] || 0,
+            level: this.getTechniqueLevel(technique.name),
+            isCurrent: this.currentTechnique?.name === technique.name,
+            matchBonus: this.getTechniqueMatchBonus(technique),
+            powerBonus: Math.floor(technique.basePower * TECHNIQUE_QUALITIES[technique.quality].multiplier * this.getTechniqueLevel(technique.name).powerBonus * this.getTechniqueMatchBonus(technique))
+        }));
     }
 }

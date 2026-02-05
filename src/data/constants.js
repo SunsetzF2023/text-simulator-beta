@@ -135,6 +135,75 @@ export const TASK_TEMPLATES = [
     }
 ];
 
+// 功法品质系统
+export const TECHNIQUE_QUALITIES = {
+    '黄阶': { color: '#8B7355', multiplier: 1.0, rarity: 'common' },
+    '玄阶': { color: '#4A5568', multiplier: 1.5, rarity: 'uncommon' },
+    '地阶': { color: '#2D3748', multiplier: 2.0, rarity: 'rare' },
+    '天阶': { color: '#1A202C', multiplier: 3.0, rarity: 'epic' }
+};
+
+// 功法修炼等级
+export const TECHNIQUE_LEVELS = [
+    { name: '初学乍练', progress: 0, powerBonus: 1.0 },
+    { name: '初出茅庐', progress: 20, powerBonus: 1.2 },
+    { name: '登堂入室', progress: 40, powerBonus: 1.5 },
+    { name: '炉火纯青', progress: 60, powerBonus: 1.8 },
+    { name: '出神入化', progress: 80, powerBonus: 2.2 },
+    { name: '登峰造极', progress: 100, powerBonus: 2.5 }
+];
+
+// 基础功法数据
+export const BASE_TECHNIQUES = [
+    // 黄阶功法
+    { name: '引气诀', quality: '黄阶', attribute: '无属性', type: 'foundation', 
+      description: '最基础的引气功法，适合初学者', basePower: 10, cultivationBonus: 1.1 },
+    { name: '炼体术', quality: '黄阶', attribute: '土', type: 'body', 
+      description: '强化肉身的粗浅功法', basePower: 12, cultivationBonus: 1.0 },
+    { name: '御风步', quality: '黄阶', attribute: '风', type: 'movement', 
+      description: '提升速度的身法', basePower: 8, cultivationBonus: 1.1 },
+    { name: '碎石拳', quality: '黄阶', attribute: '土', type: 'attack', 
+      description: '刚猛的拳法', basePower: 15, cultivationBonus: 1.0 },
+    { name: '凝火术', quality: '黄阶', attribute: '火', type: 'attack', 
+      description: '凝聚火焰攻击', basePower: 14, cultivationBonus: 1.1 },
+    { name: '聚水诀', quality: '黄阶', attribute: '水', type: 'defense', 
+      description: '操控水流的防御功法', basePower: 11, cultivationBonus: 1.1 },
+    { name: '锐金指', quality: '黄阶', attribute: '金', type: 'attack', 
+      description: '锋锐的指法', basePower: 13, cultivationBonus: 1.0 },
+    { name: '青木诀', quality: '黄阶', attribute: '木', type: 'healing', 
+      description: '促进恢复的木系功法', basePower: 9, cultivationBonus: 1.2 },
+    
+    // 玄阶功法
+    { name: '五行遁法', quality: '玄阶', attribute: '无属性', type: 'movement', 
+      description: '借助五行元素遁走的身法', basePower: 20, cultivationBonus: 1.3 },
+    { name: '烈阳掌', quality: '玄阶', attribute: '火', type: 'attack', 
+      description: '炽热如阳的掌法', basePower: 28, cultivationBonus: 1.2 },
+    { name: '玄冰盾', quality: '玄阶', attribute: '冰', type: 'defense', 
+      description: '坚不可摧的冰系防御', basePower: 25, cultivationBonus: 1.2 },
+    { name: '奔雷剑法', quality: '玄阶', attribute: '雷', type: 'attack', 
+      description: '迅如雷霆的剑法', basePower: 30, cultivationBonus: 1.1 },
+    { name: '厚土诀', quality: '玄阶', attribute: '土', type: 'defense', 
+      description: '大地般的防御功法', basePower: 26, cultivationBonus: 1.3 },
+    { name: '回春术', quality: '玄阶', attribute: '木', type: 'healing', 
+      description: '快速恢复伤势的治疗术', basePower: 22, cultivationBonus: 1.4 },
+    
+    // 地阶功法
+    { name: '九转玄功', quality: '地阶', attribute: '无属性', type: 'foundation', 
+      description: '玄奥无比的顶级功法', basePower: 40, cultivationBonus: 1.6 },
+    { name: '焚天诀', quality: '地阶', attribute: '火', type: 'attack', 
+      description: '可焚烧天地的火法', basePower: 50, cultivationBonus: 1.4 },
+    { name: '万剑归宗', quality: '地阶', attribute: '金', type: 'attack', 
+      description: '剑道至高绝学', basePower: 55, cultivationBonus: 1.3 },
+    { name: '不动明王身', quality: '地阶', attribute: '土', type: 'body', 
+      description: '金刚不坏的护体神功', basePower: 45, cultivationBonus: 1.5 },
+    
+    // 天阶功法
+    { name: '混沌开天诀', quality: '天阶', attribute: '无属性', type: 'foundation', 
+      description: '传说中开天辟地的无上功法', basePower: 80, cultivationBonus: 2.0 },
+    { name: '轮回诀', quality: '天阶', attribute: '无属性', type: 'special', 
+      description: '涉及轮回法则的禁忌功法', basePower: 70, cultivationBonus: 1.8 }
+];
+
 // 游戏配置
 export const GAME_CONFIG = {
     AUTO_SAVE_INTERVAL: 30000, // 30秒自动保存
@@ -222,11 +291,27 @@ export const MARKET_ITEMS = [
     { name: '法袍', type: 'armor', basePrice: 60, rarity: 'rare', description: '蕴含法力的道袍' },
     { name: '护身符', type: 'talisman', basePrice: 40, rarity: 'rare', description: '可抵挡一次致命攻击' },
     
-    // 功法秘籍
-    { name: '基础剑诀', type: 'manual', basePrice: 30, rarity: 'uncommon', description: '入门级剑法秘籍' },
-    { name: '炼气心得', type: 'manual', basePrice: 50, rarity: 'rare', description: '前人炼气经验总结' },
-    { name: '筑基要诀', type: 'manual', basePrice: 150, rarity: 'epic', description: '筑基期的修炼指南' },
-    { name: '丹方残卷', type: 'manual', basePrice: 100, rarity: 'rare', description: '记录了某种丹药的炼制方法' },
+    // 功法秘籍（使用新的功法系统）
+    { name: '引气诀(无属性)', type: 'technique', basePrice: 25, rarity: 'common', description: '最基础的引气功法，适合初学者' },
+    { name: '炼体术(土)', type: 'technique', basePrice: 30, rarity: 'common', description: '强化肉身的粗浅功法' },
+    { name: '御风步(风)', type: 'technique', basePrice: 28, rarity: 'common', description: '提升速度的身法' },
+    { name: '碎石拳(土)', type: 'technique', basePrice: 35, rarity: 'common', description: '刚猛的拳法' },
+    { name: '凝火术(火)', type: 'technique', basePrice: 32, rarity: 'common', description: '凝聚火焰攻击' },
+    { name: '聚水诀(水)', type: 'technique', basePrice: 30, rarity: 'common', description: '操控水流的防御功法' },
+    { name: '锐金指(金)', type: 'technique', basePrice: 33, rarity: 'common', description: '锋锐的指法' },
+    { name: '青木诀(木)', type: 'technique', basePrice: 29, rarity: 'common', description: '促进恢复的木系功法' },
+    { name: '五行遁法(无属性)', type: 'technique', basePrice: 80, rarity: 'uncommon', description: '借助五行元素遁走的身法' },
+    { name: '烈阳掌(火)', type: 'technique', basePrice: 90, rarity: 'uncommon', description: '炽热如阳的掌法' },
+    { name: '玄冰盾(冰)', type: 'technique', basePrice: 85, rarity: 'uncommon', description: '坚不可摧的冰系防御' },
+    { name: '奔雷剑法(雷)', type: 'technique', basePrice: 100, rarity: 'uncommon', description: '迅如雷霆的剑法' },
+    { name: '厚土诀(土)', type: 'technique', basePrice: 88, rarity: 'uncommon', description: '大地般的防御功法' },
+    { name: '回春术(木)', type: 'technique', basePrice: 75, rarity: 'uncommon', description: '快速恢复伤势的治疗术' },
+    { name: '九转玄功(无属性)', type: 'technique', basePrice: 200, rarity: 'rare', description: '玄奥无比的顶级功法' },
+    { name: '焚天诀(火)', type: 'technique', basePrice: 250, rarity: 'rare', description: '可焚烧天地的火法' },
+    { name: '万剑归宗(金)', type: 'technique', basePrice: 280, rarity: 'rare', description: '剑道至高绝学' },
+    { name: '不动明王身(土)', type: 'technique', basePrice: 220, rarity: 'rare', description: '金刚不坏的护体神功' },
+    { name: '混沌开天诀(无属性)', type: 'technique', basePrice: 600, rarity: 'epic', description: '传说中开天辟地的无上功法' },
+    { name: '轮回诀(无属性)', type: 'technique', basePrice: 500, rarity: 'epic', description: '涉及轮回法则的禁忌功法' },
     
     // 特殊物品
     { name: '灵兽蛋', type: 'special', basePrice: 120, rarity: 'epic', description: '神秘的兽蛋，可能孵化出灵兽' },

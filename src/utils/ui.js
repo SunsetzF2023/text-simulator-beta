@@ -1,4 +1,4 @@
-import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFIG, INFLUENCE_LEVELS, VISIT_EVENTS, COLLECTIVE_EVENTS, REGION_CONFIG, REALMS, TRAITS } from '../data/constants.js';
+import { TASK_TEMPLATES, GAME_CONFIG, MARKET_ITEMS, AUCTION_CONFIG, RARITY_CONFIG, INFLUENCE_LEVELS, VISIT_EVENTS, COLLECTIVE_EVENTS, REGION_CONFIG, REALMS, TRAITS, SPIRIT_ROOTS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES } from '../data/constants.js';
 
 // 更新主界面显示
 export function updateDisplay(gameState) {
@@ -250,6 +250,60 @@ export function showDiscipleDetails(disciple, gameState) {
                                      traitType === 'negative' ? 'text-red-400 bg-red-900' : 'text-yellow-400 bg-yellow-900';
                     return `<span class="px-3 py-1 rounded text-sm font-medium ${colorClass}">${traitName}</span>`;
                 }).join('')}
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-lg font-bold text-amber-200 mb-2">📜 功法修炼</h3>
+            <div class="bg-slate-800 p-3 rounded border border-slate-600">
+                ${disciple.techniques.length > 0 ? `
+                    <div class="space-y-3">
+                        ${disciple.getTechniqueInfo().map(technique => `
+                            <div class="bg-slate-700 p-3 rounded border ${technique.isCurrent ? 'border-amber-400' : 'border-slate-600'}">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <span class="font-bold" style="color: ${TECHNIQUE_QUALITIES[technique.quality].color}">
+                                            ${technique.name}
+                                        </span>
+                                        ${technique.isCurrent ? '<span class="ml-2 text-amber-400 text-sm">[当前修炼]</span>' : ''}
+                                    </div>
+                                    <button onclick="window.switchTechnique('${disciple.id}', '${technique.name}')" 
+                                            class="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition-colors">
+                                        ${technique.isCurrent ? '修炼中' : '切换修炼'}
+                                    </button>
+                                </div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    ${technique.description} | 属性: ${technique.attribute} | 类型: ${technique.type}
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <span class="text-gray-400">修炼进度:</span>
+                                        <div class="w-full bg-gray-600 rounded-full h-2 mt-1">
+                                            <div class="bg-green-500 h-2 rounded-full" style="width: ${technique.progress}%"></div>
+                                        </div>
+                                        <span class="text-green-400">${technique.progress.toFixed(1)}% - ${technique.level.name}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400">战力加成:</span>
+                                        <span class="text-red-400 font-bold">+${technique.powerBonus}</span>
+                                        <span class="text-gray-400 ml-1">(${(technique.matchBonus * 100).toFixed(0)}%匹配)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <button onclick="window.practiceTechnique('${disciple.id}')" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded transition-colors">
+                            ⚡ 修炼当前功法
+                        </button>
+                    </div>
+                ` : `
+                    <div class="text-center text-gray-400 py-4">
+                        <p>📚 该弟子尚未学会任何功法</p>
+                        <p class="text-sm mt-2">前往坊市购买功法秘籍</p>
+                    </div>
+                `}
             </div>
         </div>
         
@@ -839,8 +893,13 @@ window.buyMarketItem = function(itemId) {
         
         addLog(`[坊市] 购买了${item.name}，消耗${item.price}灵石`, 'text-green-400');
         
-        // 应用物品效果
-        applyItemEffect(item, gameState);
+        // 如果是功法，需要选择弟子学习
+        if (item.type === 'technique') {
+            showTechniqueLearningDialog(item, gameState);
+        } else {
+            // 应用物品效果
+            applyItemEffect(item, gameState);
+        }
         
         // 如果库存为0，移除商品
         if (item.stock <= 0) {
@@ -851,6 +910,60 @@ window.buyMarketItem = function(itemId) {
         showMarket(gameState);
         if (window.game) window.game.updateDisplay();
     }
+};
+
+// 显示功法学习对话框
+function showTechniqueLearningDialog(techniqueItem, gameState) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-800 p-6 rounded-lg max-w-md w-full mx-4 border border-amber-400">
+            <h3 class="text-xl font-bold text-amber-200 mb-4">📚 选择学习弟子</h3>
+            <p class="text-gray-300 mb-4">购买的是 <span class="text-purple-400 font-bold">${techniqueItem.name}</span></p>
+            <p class="text-gray-300 mb-4">请选择要学习的弟子：</p>
+            <div class="max-h-60 overflow-y-auto mb-4">
+                ${gameState.disciples.filter(d => d.alive && !d.onTask).map(disciple => `
+                    <div class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer" 
+                         onclick="selectDiscipleForTechnique('${disciple.id}', '${techniqueItem.name}')">
+                        <div>
+                            <span class="text-cyan-400 font-medium">${disciple.name}</span>
+                            <span class="text-gray-400 text-sm ml-2">${disciple.realm} | ${disciple.spiritRoot}灵根</span>
+                        </div>
+                        ${disciple.techniques.find(t => t.name === techniqueItem.name) ? 
+                            '<span class="text-red-400 text-sm">已学会</span>' : 
+                            '<span class="text-green-400 text-sm">可学习</span>'}
+                    </div>
+                `).join('') || '<p class="text-gray-400">没有可用的弟子</p>'}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" 
+                    class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors">
+                取消
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// 选择弟子学习功法
+window.selectDiscipleForTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    // 从BASE_TECHNIQUES中查找功法数据
+    const techniqueData = BASE_TECHNIQUES.find(t => t.name === techniqueName);
+    if (!techniqueData) return;
+    
+    if (disciple.learnTechnique(techniqueData)) {
+        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+    } else {
+        addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
+    }
+    
+    // 关闭对话框
+    document.querySelector('.fixed').remove();
 };
 
 // 应用物品效果（存入宝库）
@@ -2624,3 +2737,58 @@ function getPositionMinRealmName(positionKey) {
     const index = getPositionMinRealm(positionKey);
     return realms[index] || '凡人';
 }
+
+// 功法相关全局函数
+window.switchTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    if (disciple.switchTechnique(techniqueName)) {
+        showDiscipleDetails(disciple, gameState);
+        addLog(`[功法] ${disciple.name}开始修炼${techniqueName}`, 'text-blue-400');
+    }
+};
+
+window.practiceTechnique = function(discipleId) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    if (!disciple.currentTechnique) {
+        addLog(`[功法] ${disciple.name}还没有学会任何功法`, 'text-red-400');
+        return;
+    }
+    
+    const result = disciple.practiceTechnique();
+    if (result) {
+        showDiscipleDetails(disciple, gameState);
+        if (result.levelUp) {
+            addLog(`[功法] ${disciple.name}的${result.technique}修炼至${result.newLevel}！`, 'text-green-400');
+        }
+    }
+};
+
+// 学习功法函数（用于坊市购买）
+window.learnTechnique = function(discipleId, techniqueName) {
+    const gameState = window.game ? window.game.gameState : null;
+    if (!gameState) return;
+    
+    const disciple = gameState.disciples.find(d => d.id == discipleId);
+    if (!disciple) return;
+    
+    // 从BASE_TECHNIQUES中查找功法数据
+    const techniqueData = BASE_TECHNIQUES.find(t => t.name === techniqueName);
+    if (!techniqueData) return;
+    
+    if (disciple.learnTechnique(techniqueData)) {
+        showDiscipleDetails(disciple, gameState);
+        addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+    } else {
+        addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
+    }
+};
