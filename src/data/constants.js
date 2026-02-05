@@ -247,7 +247,7 @@ export const AUCTION_CONFIG = {
     AUCTION_DURATION: 30000, // 拍卖持续时间（毫秒）
     EXTENSION_TIME: 10000, // 最后加价延长的时间
     START_ITEMS: 3, // 初始拍卖物品数量
-    MAX_ITEMS: 6, // 最大拍卖物品数量
+MAX_ITEMS: 6, // 最大拍卖物品数量
     
     // NPC竞拍者名字池
     NPC_BIDDERS: [

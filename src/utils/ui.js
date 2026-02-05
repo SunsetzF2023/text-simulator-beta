@@ -1171,7 +1171,6 @@ function performNPCBid(gameState, item, npcBidder) {
         }, 1500 + Math.random() * 2000);
     }
 }
-
 // 更新拍卖会计时器
 function updateAuctionTimer(gameState) {
     const timerElement = document.getElementById('auctionTimer');
