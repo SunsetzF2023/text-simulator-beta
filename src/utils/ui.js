@@ -2843,9 +2843,9 @@ window.demoteDisciple = function(hierarchyType, discipleId) {
 // 获取层级名称
 function getHierarchyName(hierarchyType) {
     const names = {
-        outerDisciple: '外门弟子',
-        innerDisciple: '内门弟子',
-        personalDisciple: '亲传弟子'
+        outerDisciples: '外门弟子',
+        innerDisciples: '内门弟子',
+        personalDisciples: '亲传弟子'
     };
     return names[hierarchyType] || '未知';
 }
