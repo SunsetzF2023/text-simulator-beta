@@ -1028,12 +1028,51 @@ window.selectDiscipleForTechnique = function(discipleId, techniqueName) {
     document.querySelector('.fixed').remove();
 };
 
-// 应用物品效果（存入宝库）
+// 应用物品效果（存入宝库或功法堂）
 function applyItemEffect(item, gameState) {
     console.log('应用物品效果，物品:', item);
     console.log('当前宝库:', gameState.treasury);
     
-    // 将物品存入宝库
+    // 如果是功法，存入功法堂
+    if (item.type === 'technique') {
+        // 检查功法堂是否已有此功法
+        const existingTechnique = gameState.techniqueHall.find(t => t.name === item.name);
+        if (existingTechnique) {
+            existingTechnique.stock++;
+            addLog(`[功法堂] ${item.name}库存+1，当前库存：${existingTechnique.stock}`, 'text-blue-400');
+        } else {
+            // 从BASE_TECHNIQUES中查找功法数据
+            const techniqueData = BASE_TECHNIQUES.find(t => t.name === item.name);
+            if (techniqueData) {
+                gameState.techniqueHall.push({
+                    ...techniqueData,
+                    stock: 1,
+                    obtainedFrom: item.obtainedFrom || '拍卖会获得',
+                    purchaseDate: Date.now()
+                });
+                addLog(`[功法堂] ${item.name}已存入功法堂`, 'text-purple-400');
+            } else {
+                // 如果找不到基础数据，创建基础功法记录
+                gameState.techniqueHall.push({
+                    name: item.name,
+                    quality: item.rarity === 'legendary' ? '天阶' : 
+                            item.rarity === 'epic' ? '地阶' : 
+                            item.rarity === 'rare' ? '玄阶' : '黄阶',
+                    attribute: '无属性',
+                    type: 'special',
+                    basePower: 100,
+                    description: item.description || '神秘的功法秘籍',
+                    stock: 1,
+                    obtainedFrom: item.obtainedFrom || '拍卖会获得',
+                    purchaseDate: Date.now()
+                });
+                addLog(`[功法堂] ${item.name}已存入功法堂`, 'text-purple-400');
+            }
+        }
+        return;
+    }
+    
+    // 其他物品存入宝库
     const category = getCategoryByType(item.type);
     console.log('物品分类:', category);
     
@@ -1554,11 +1593,213 @@ function endAuction(gameState) {
 // 显示功法阁
 export function showTechniqueHall(gameState) {
     const modal = document.getElementById('techniqueHallModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        // TODO: 实现功法阁内容
-        console.log('显示功法阁');
+    const techniqueFragments = document.getElementById('techniqueFragments');
+    
+    if (!modal || !techniqueFragments) return;
+    
+    // 清空并重新生成功法堂内容
+    techniqueFragments.innerHTML = '';
+    
+    if (gameState.techniqueHall && gameState.techniqueHall.length > 0) {
+        gameState.techniqueHall.forEach((technique, index) => {
+            const techniqueCard = document.createElement('div');
+            techniqueCard.className = 'bg-slate-800 p-4 rounded ancient-border';
+            
+            const qualityColor = {
+                '凡阶': 'text-gray-400',
+                '黄阶': 'text-yellow-400', 
+                '玄阶': 'text-blue-400',
+                '地阶': 'text-green-400',
+                '天阶': 'text-purple-400'
+            }[technique.quality] || 'text-gray-400';
+            
+            techniqueCard.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-lg font-bold ${qualityColor}">${technique.name}</h4>
+                    <span class="text-sm text-amber-300">库存: ${technique.stock || 1}</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-300 mb-3">
+                    <p><strong>品质：</strong><span class="${qualityColor}">${technique.quality}</span></p>
+                    <p><strong>属性：</strong>${technique.attribute}</p>
+                    <p><strong>类型：</strong>${technique.type}</p>
+                    <p><strong>战力加成：</strong>+${technique.basePower}</p>
+                    <p><strong>描述：</strong>${technique.description}</p>
+                    <p class="text-xs text-amber-200"><strong>来源：</strong>${technique.obtainedFrom || '未知'}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="assign-technique-btn px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded" 
+                            data-technique-name="${technique.name}" data-technique-index="${index}">
+                        📚 分配给弟子
+                    </button>
+                    ${technique.stock > 1 ? `
+                        <button class="batch-assign-btn px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded" 
+                                data-technique-name="${technique.name}" data-technique-index="${index}">
+                            🎯 批量分配
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            techniqueFragments.appendChild(techniqueCard);
+        });
+        
+        // 绑定分配按钮事件
+        bindTechniqueAssignmentEvents(gameState);
+        
+    } else {
+        techniqueFragments.innerHTML = `
+            <div class="col-span-2 text-center py-8">
+                <p class="text-gray-400 text-lg mb-2">📚 功法堂空空如也</p>
+                <p class="text-gray-500 text-sm">前往坊市或拍卖会购买功法秘籍</p>
+            </div>
+        `;
     }
+    
+    modal.classList.remove('hidden');
+    console.log('显示功法堂');
+}
+
+// 绑定功法分配事件
+function bindTechniqueAssignmentEvents(gameState) {
+    // 单个分配按钮
+    document.querySelectorAll('.assign-technique-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const techniqueName = e.target.dataset.techniqueName;
+            showTechniqueAssignmentDialog(techniqueName, gameState, false);
+        };
+    });
+    
+    // 批量分配按钮
+    document.querySelectorAll('.batch-assign-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const techniqueName = e.target.dataset.techniqueName;
+            showTechniqueAssignmentDialog(techniqueName, gameState, true);
+        };
+    });
+}
+
+// 显示功法分配对话框
+function showTechniqueAssignmentDialog(techniqueName, gameState, isBatch = false) {
+    const technique = gameState.techniqueHall.find(t => t.name === techniqueName);
+    if (!technique) return;
+    
+    const eligibleDisciples = gameState.disciples.filter(d => d.alive && !d.onTask);
+    const availableDisciples = isBatch ? 
+        eligibleDisciples.filter(d => !d.techniques.some(t => t.name === techniqueName)) :
+        eligibleDisciples;
+    
+    if (availableDisciples.length === 0) {
+        addLog(`[功法] 没有合适的弟子可以分配${techniqueName}`, 'text-red-400');
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-amber-200 mb-4">📚 分配功法：${techniqueName}</h3>
+            <div class="mb-4 p-3 bg-slate-800 rounded">
+                <p class="text-gray-300"><strong>品质：</strong><span class="text-purple-400">${technique.quality}</span></p>
+                <p class="text-gray-300"><strong>库存：</strong><span class="text-green-400">${technique.stock}</span></p>
+                <p class="text-gray-300"><strong>描述：</strong>${technique.description}</p>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-200 mb-2">选择要分配的弟子：</p>
+                <div class="space-y-2 max-h-60 overflow-y-auto">
+                    ${availableDisciples.map(disciple => `
+                        <label class="flex items-center p-2 bg-slate-800 rounded hover:bg-slate-700 cursor-pointer">
+                            <input type="${isBatch ? 'checkbox' : 'radio'}" 
+                                   name="discipleSelection" 
+                                   value="${disciple.id}"
+                                   class="mr-3">
+                            <div class="flex-1">
+                                <span class="text-amber-200 font-bold">${disciple.name}</span>
+                                <span class="text-gray-400 ml-2">${disciple.realm}</span>
+                                <span class="text-blue-400 ml-2">战力:${disciple.getCombatPower()}</span>
+                                ${disciple.techniques.some(t => t.name === techniqueName) ? 
+                                    '<span class="text-yellow-400 ml-2">[已学会]</span>' : ''}
+                            </div>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirmAssignment" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded">
+                    确认分配
+                </button>
+                <button id="cancelAssignment" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded">
+                    取消
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 绑定事件
+    document.getElementById('confirmAssignment').onclick = () => {
+        const selectedDisciples = isBatch ? 
+            Array.from(document.querySelectorAll('input[name="discipleSelection"]:checked')).map(input => input.value) :
+            [document.querySelector('input[name="discipleSelection"]:checked')?.value].filter(Boolean);
+        
+        if (selectedDisciples.length === 0) {
+            addLog('[功法] 请选择至少一名弟子', 'text-red-400');
+            return;
+        }
+        
+        executeTechniqueAssignment(selectedDisciples, technique, gameState);
+        document.body.removeChild(modal);
+    };
+    
+    document.getElementById('cancelAssignment').onclick = () => {
+        document.body.removeChild(modal);
+    };
+}
+
+// 执行功法分配
+function executeTechniqueAssignment(discipleIds, technique, gameState) {
+    let successCount = 0;
+    let alreadyLearnedCount = 0;
+    
+    discipleIds.forEach(discipleId => {
+        const disciple = gameState.disciples.find(d => d.id == discipleId);
+        if (!disciple) return;
+        
+        if (disciple.techniques.some(t => t.name === technique.name)) {
+            alreadyLearnedCount++;
+            return;
+        }
+        
+        if (disciple.learnTechnique(technique)) {
+            // 减少库存
+            technique.stock--;
+            if (technique.stock <= 0) {
+                const index = gameState.techniqueHall.findIndex(t => t.name === technique.name);
+                if (index > -1) {
+                    gameState.techniqueHall.splice(index, 1);
+                }
+            }
+            
+            successCount++;
+        }
+    });
+    
+    if (successCount > 0) {
+        addLog(`[功法] 成功将${technique.name}分配给${successCount}名弟子！`, 'text-green-400');
+    }
+    
+    if (alreadyLearnedCount > 0) {
+        addLog(`[功法] ${alreadyLearnedCount}名弟子已经学会了${technique.name}`, 'text-yellow-400');
+    }
+    
+    if (technique.stock > 0) {
+        addLog(`[功法] ${technique.name}剩余库存：${technique.stock}`, 'text-blue-400');
+    } else {
+        addLog(`[功法] ${technique.name}已分配完毕`, 'text-purple-400');
+    }
+    
+    // 刷新功法堂显示
+    showTechniqueHall(gameState);
 }
 
 // 显示宝库
