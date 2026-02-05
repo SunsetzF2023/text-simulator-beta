@@ -479,6 +479,28 @@ export class Disciple {
         this.currentTask = null;
         
         if (success) {
+            // 给予弟子个人成长奖励
+            if (task.reward) {
+                if (task.reward.experience) {
+                    this.cultivation += task.reward.experience;
+                    this.addPersonalLog(`[任务] 获得修为：${task.reward.experience}`, Date.now());
+                }
+                // 弟子个人也可能获得一些额外奖励
+                if (task.reward.spiritStones && Math.random() < 0.3) {
+                    // 30%概率弟子个人获得少量灵石作为奖励
+                    const personalReward = Math.floor(task.reward.spiritStones * 0.1);
+                    this.addPersonalLog(`[任务] 获得个人奖励：${personalReward}灵石`, Date.now());
+                }
+            }
+            
+            // 记录任务历史
+            this.taskHistory.push({
+                taskName: task.name,
+                success: true,
+                time: Date.now(),
+                reward: task.reward
+            });
+            
             this.addPersonalLog(`[任务] 成功完成任务：${task.name}`, Date.now());
             return {
                 success: true,
@@ -497,12 +519,30 @@ export class Disciple {
             if (Math.random() < finalInjuryChance) {
                 this.injured = true;
                 this.addPersonalLog(`[任务] 执行任务失败并受伤`, Date.now());
+                
+                // 记录失败的任务历史
+                this.taskHistory.push({
+                    taskName: task.name,
+                    success: false,
+                    time: Date.now(),
+                    injured: true
+                });
+                
                 return {
                     success: false,
                     message: `${this.name}执行任务失败并受伤`
                 };
             } else {
                 this.addPersonalLog(`[任务] 任务失败，但平安返回`, Date.now());
+                
+                // 记录失败的任务历史
+                this.taskHistory.push({
+                    taskName: task.name,
+                    success: false,
+                    time: Date.now(),
+                    injured: false
+                });
+                
                 return {
                     success: false,
                     message: `${this.name}任务失败，但平安返回`
