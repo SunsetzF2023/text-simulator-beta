@@ -411,6 +411,11 @@ export class Disciple {
             events.push(this.triggerSocialEvent(allDisciples));
         }
         
+        // 外出历练事件（获得资源）
+        if (Math.random() < 0.15) { // 15%概率触发外出历练
+            events.push(this.triggerExpeditionEvent());
+        }
+        
         // 奇遇事件（小概率获得功法）
         if (Math.random() < 0.05) { // 5%概率触发奇遇
             events.push(this.triggerAdventureEvent());
@@ -724,6 +729,71 @@ export class Disciple {
             
             return friendly;
         }
+    }
+    
+    // 触发外出历练事件
+    triggerExpeditionEvent() {
+        const expeditions = [
+            {
+                type: 'expedition',
+                message: `${this.name}外出历练，在山涧中发现了一个小型灵石矿脉，收获了一些灵石。`,
+                reward: { spiritStones: Math.floor(Math.random() * 20) + 10 }, // 10-29灵石
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}深入古战场，偶然发现了一批前人遗留的破境丹。`,
+                reward: { breakthroughPills: Math.floor(Math.random() * 3) + 1 }, // 1-3破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}帮助了一个商队击退山匪，商队赠予了一些灵石和丹药作为谢礼。`,
+                reward: { spiritStones: Math.floor(Math.random() * 15) + 5, breakthroughPills: 1 }, // 5-19灵石 + 1破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}在秘境中采摘到了一些稀有灵草，炼制成了破境丹。`,
+                reward: { breakthroughPills: Math.floor(Math.random() * 2) + 2 }, // 2-3破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}探索了一处古代修士的洞府，发现了其中的珍藏。`,
+                reward: { spiritStones: Math.floor(Math.random() * 30) + 20, breakthroughPills: Math.floor(Math.random() * 2) + 1 }, // 20-49灵石 + 1-2破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}在历练途中遇到了一位丹师，用修为心得交换了一些丹药。`,
+                reward: { breakthroughPills: Math.floor(Math.random() * 4) + 2 }, // 2-5破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}协助官府清剿了一群魔修，获得了丰厚的奖励。`,
+                reward: { spiritStones: Math.floor(Math.random() * 40) + 30, breakthroughPills: Math.floor(Math.random() * 3) + 2 }, // 30-69灵石 + 2-4破境丹
+                discipleId: this.id
+            }
+        ];
+        
+        // 根据境界调整奖励概率
+        const realmIndex = REALMS.indexOf(this.realm);
+        let adjustedExpeditions = [...expeditions];
+        
+        if (realmIndex <= 10) {
+            // 炼气期：降低高奖励概率
+            adjustedExpeditions = expeditions.filter((_, index) => index < 4); // 只能获得前4种较低奖励
+        } else if (realmIndex <= 20) {
+            // 筑基期：正常概率
+            // 可以获得所有类型，但高奖励概率降低
+        } else {
+            // 金丹期及以上：增加高奖励概率
+            // 可以获得所有类型，包括高奖励
+        }
+        
+        return adjustedExpeditions[Math.floor(Math.random() * adjustedExpeditions.length)];
     }
     
     // 接受任务

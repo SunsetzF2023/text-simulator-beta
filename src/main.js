@@ -499,6 +499,8 @@ class CultivationGame {
             colorClass = 'text-green-400';
         } else if (event.type === 'technique_fragment') {
             colorClass = 'text-purple-400';
+        } else if (event.type === 'expedition') {
+            colorClass = 'text-blue-400';
         } else if (event.type === 'pill' || event.type === 'treasure' || event.type === 'weapon') {
             colorClass = 'text-yellow-400';
         }
