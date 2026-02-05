@@ -748,7 +748,7 @@ export class Disciple {
             },
             {
                 type: 'expedition',
-                message: `${this.name}帮助了一个商队击退山匪，商队赠予了一些灵石和丹药作为谢礼。`,
+                message: `${this.name}帮助了一个商队击退山匪，商队赠予了一些灵石和破境丹作为谢礼。`,
                 reward: { spiritStones: Math.floor(Math.random() * 15) + 5, breakthroughPills: 1 }, // 5-19灵石 + 1破境丹
                 discipleId: this.id
             },
@@ -766,7 +766,7 @@ export class Disciple {
             },
             {
                 type: 'expedition',
-                message: `${this.name}在历练途中遇到了一位丹师，用修为心得交换了一些丹药。`,
+                message: `${this.name}在历练途中遇到了一位丹师，用修为心得交换了一些破境丹。`,
                 reward: { breakthroughPills: Math.floor(Math.random() * 4) + 2 }, // 2-5破境丹
                 discipleId: this.id
             },
