@@ -2343,7 +2343,7 @@ function showDiscipleHierarchy(gameState) {
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-purple-400 font-bold">🌟 亲传弟子 (${org.personalDisciples.length})</h3>
-                    <button onclick="managePosition('personalDisciple')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
+                    <button onclick="managePosition('personalDisciples')" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
                 <div class="space-y-1">
                     ${org.personalDisciples.length > 0 ? 
@@ -2362,7 +2362,7 @@ function showDiscipleHierarchy(gameState) {
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-blue-400 font-bold">🔵 内门弟子 (${org.innerDisciples.length})</h3>
-                    <button onclick="managePosition('innerDisciple')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
+                    <button onclick="managePosition('innerDisciples')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
                 <div class="space-y-1">
                     ${org.innerDisciples.length > 0 ? 
@@ -2381,7 +2381,7 @@ function showDiscipleHierarchy(gameState) {
             <div class="bg-slate-800 p-3 rounded">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-green-400 font-bold">🟢 外门弟子 (${org.outerDisciples.length})</h3>
-                    <button onclick="managePosition('outerDisciple')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">管理</button>
+                    <button onclick="managePosition('outerDisciples')" class="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded">管理</button>
                 </div>
                 <div class="space-y-1 max-h-32 overflow-y-auto">
                     ${org.outerDisciples.length > 0 ? 
@@ -2602,20 +2602,20 @@ window.managePosition = function(hierarchyType) {
     let availableOptions = [];
     
     switch (hierarchyType) {
-        case 'personalDisciple':
+        case 'personalDisciples':
             disciples = org.personalDisciples;
             title = '🌟 亲传弟子管理';
-            availableOptions = ['innerDisciple', 'outerDisciple'];
+            availableOptions = ['innerDisciples', 'outerDisciples'];
             break;
-        case 'innerDisciple':
+        case 'innerDisciples':
             disciples = org.innerDisciples;
             title = '🔵 内门弟子管理';
-            availableOptions = ['personalDisciple', 'outerDisciple'];
+            availableOptions = ['personalDisciples', 'outerDisciples'];
             break;
-        case 'outerDisciple':
+        case 'outerDisciples':
             disciples = org.outerDisciples;
             title = '🟢 外门弟子管理';
-            availableOptions = ['innerDisciple', 'personalDisciple'];
+            availableOptions = ['innerDisciples', 'personalDisciples'];
             break;
     }
     
@@ -2702,16 +2702,19 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     let requiredRealm = '';
     
     switch (hierarchyType) {
-        case 'outerDisciple':
-            newHierarchy = 'innerDisciple';
+        case 'outerDisciples':
+            newHierarchy = 'innerDisciples';
             requiredRealm = '筑基期'; // 降低要求：筑基期即可
             break;
-        case 'innerDisciple':
-            newHierarchy = 'personalDisciple';
+        case 'innerDisciples':
+            newHierarchy = 'personalDisciples';
             requiredRealm = '金丹期'; // 降低要求：金丹期即可
             break;
-        case 'personalDisciple':
+        case 'personalDisciples':
             alert('亲传弟子已是最高层级');
+            return;
+        default:
+            alert('未知的层级类型');
             return;
     }
     
@@ -2727,12 +2730,24 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     // 执行提升
     // 从原层级移除
     const sourceArray = org[hierarchyType];
+    if (!sourceArray || !Array.isArray(sourceArray)) {
+        console.error('源层级数组不存在:', hierarchyType, org);
+        alert('层级数据错误，无法提升');
+        return;
+    }
+    
     const index = sourceArray.findIndex(d => d.id == discipleId);
     if (index !== -1) {
         sourceArray.splice(index, 1);
     }
     
     // 添加到新层级
+    if (!org[newHierarchy]) {
+        console.error('目标层级不存在:', newHierarchy, org);
+        alert('目标层级错误，无法提升');
+        return;
+    }
+    
     org[newHierarchy].push(disciple);
     
     addLog(`[宗门] ${disciple.name}提升为${getHierarchyName(newHierarchy)}`, 'text-green-400');
