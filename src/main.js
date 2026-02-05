@@ -485,6 +485,9 @@ class CultivationGame {
         
         addLog('[系统] 游戏存档已加载。', 'text-amber-200');
         
+        // 启动游戏循环
+        this.startGameLoop();
+        
         console.log('存档加载完成');
     }
     
