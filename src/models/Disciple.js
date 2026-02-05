@@ -423,52 +423,170 @@ export class Disciple {
     // 触发奇遇事件
     triggerAdventureEvent() {
         const adventures = [
+            // 功法获得事件 - 参考鬼谷八荒剧情
+            {
+                type: 'complete_technique',
+                message: `${this.name}在古修士洞府中，发现了一本完整的《${this.getRandomTechniqueName()}》秘籍！`,
+                reward: { technique: true },
+                detail: '洞府石门上刻着："得此法者，当承吾志，匡扶正义"'
+            },
+            {
+                type: 'complete_technique',
+                message: `${this.name}救助了一位垂死的老剑仙，临终前传授了《${this.getRandomTechniqueName()}》作为谢礼！`,
+                reward: { technique: true },
+                detail: '老剑仙气息奄奄："此剑法乃我毕生心血，望君善用之..."'
+            },
+            {
+                type: 'complete_technique',
+                message: `${this.name}在秘境深处，击败了守护异兽，获得了它守护的《${this.getRandomTechniqueName()}》！`,
+                reward: { technique: true },
+                detail: '异兽倒下时，眼中闪过一丝解脱，仿佛在感谢你让它解脱'
+            },
+            {
+                type: 'complete_technique',
+                message: `${this.name}在坊市古籍摊位，慧眼识珠，发现了一本被误认为废纸的《${this.getRandomTechniqueName()}》！`,
+                reward: { technique: true },
+                detail: '摊主浑然不觉，你心中暗喜："此乃天大的机缘！"'
+            },
+            {
+                type: 'complete_technique',
+                message: `${this.name}在雷雨天修炼时，天雷劈中，竟将《${this.getRandomTechniqueName()}》打入体内！`,
+                reward: { technique: true },
+                detail: '天雷异象，万中无一，此乃天意传功！'
+            },
+            {
+                type: 'complete_technique',
+                message: `${this.name}在宗门藏经阁打扫时，无意间触发了机关，获得了隐藏的《${this.getRandomTechniqueName()}》！`,
+                reward: { technique: true },
+                detail: '石壁缓缓开启，露出密室，里面静静躺着一本泛黄的古籍'
+            },
             {
                 type: 'technique_fragment',
                 message: `${this.name}外出历练时，在一处山洞中发现了古老的功法残本！`,
-                reward: { techniqueFragment: true }
+                reward: { techniqueFragment: true },
+                detail: '残本上字迹模糊，但仍能感受到其中蕴含的强大力量'
             },
             {
                 type: 'technique_fragment',
                 message: `${this.name}帮助了一位受伤的老者，老者赠予了一本功法残本作为谢礼！`,
-                reward: { techniqueFragment: true }
+                reward: { techniqueFragment: true },
+                detail: '老者感激道："此残本虽不完整，但蕴含着先贤的智慧"'
             },
             {
                 type: 'technique_fragment',
                 message: `${this.name}在坊市淘书时，意外发现了一本夹在古籍中的功法残页！`,
-                reward: { techniqueFragment: true }
+                reward: { techniqueFragment: true },
+                detail: '残页上的文字古老而深奥，似乎记录着某种绝学'
             },
+            // 突破和顿悟事件
             {
                 type: 'breakthrough',
                 message: `${this.name}在瀑布下顿悟，修为大进！`,
-                reward: { experience: 80 } // 提高到80
+                reward: { experience: 80 },
+                detail: '水声轰鸣中，你突然明白了功法的真谛，修为瓶颈瞬间突破'
             },
+            {
+                type: 'breakthrough',
+                message: `${this.name}观月悟道，心境圆满，修为暴涨！`,
+                reward: { experience: 100 },
+                detail: '月圆之夜，天地灵气格外充沛，你趁机修炼，收获颇丰'
+            },
+            {
+                type: 'breakthrough',
+                message: `${this.name}在生死一战中突破极限，战力大增！`,
+                reward: { experience: 120, combatBonus: 50 },
+                detail: '面对强敌时，你爆发出了前所未有的潜力，一举突破'
+            },
+            // 财富事件
             {
                 type: 'treasure',
                 message: `${this.name}发现了一个隐藏的储物袋！`,
-                reward: { spiritStones: Math.floor(Math.random() * 50) + 20 }
+                reward: { spiritStones: Math.floor(Math.random() * 100) + 50 },
+                detail: '储物袋中装满了灵石，还有几枚散发着淡淡光芒的丹药'
             },
+            {
+                type: 'treasure',
+                message: `${this.name}在古战场中，发掘出了一处前人留下的宝藏！`,
+                reward: { spiritStones: Math.floor(Math.random() * 150) + 100, breakthroughPills: 2 },
+                detail: '宝藏中不仅有灵石，还有几枚珍贵的破境丹，似乎是某位前辈的积累'
+            },
+            {
+                type: 'treasure',
+                message: `${this.name}救助了一位富商，获得了重金酬谢！`,
+                reward: { spiritStones: Math.floor(Math.random() * 200) + 150 },
+                detail: '富商感激涕零："若非少侠相救，我一家老小性命难保！"'
+            },
+            // 消耗事件
             {
                 type: 'consume_item',
                 message: `${this.name}遭遇危险，消耗了宗门的一枚丹药才得以脱身！`,
-                reward: { consumeItem: true, itemType: 'pill' }
+                reward: { consumeItem: true, itemType: 'pill' },
+                detail: '面对强敌，你不得不服用珍贵的丹药，虽然逃脱，但心中颇为不舍'
             },
             {
                 type: 'consume_item',
                 message: `${this.name}的武器在战斗中损坏，不得不使用宗门备用武器！`,
-                reward: { consumeItem: true, itemType: 'weapon' }
+                reward: { consumeItem: true, itemType: 'weapon' },
+                detail: '兵器断裂的瞬间，你心中一痛，那是你最信任的伙伴'
+            },
+            // 特殊事件
+            {
+                type: 'spirit_beast',
+                message: `${this.name}在深山中遇到了一只灵兽，经过一番激战，成功收服！`,
+                reward: { spiritBeast: true },
+                detail: '灵兽眼中闪烁着智慧的光芒，最终选择了臣服于你'
+            },
+            {
+                type: 'enlightenment',
+                message: `${this.name}在寺庙中听高僧讲道，心有所悟，修为精进！`,
+                reward: { experience: 60, cultivationBonus: 1.2 },
+                detail: '高僧的话语如醍醐灌顶，让你对修炼有了全新的认识'
             }
         ];
         
         // 大气运之弟子更容易获得功法
         if (this.constitution && this.constitution.name !== '凡体') {
-            const techniqueAdventures = adventures.filter(a => a.reward.techniqueFragment);
-            if (Math.random() < 0.6 && techniqueAdventures.length > 0) {
-                return techniqueAdventures[Math.floor(Math.random() * techniqueAdventures.length)];
+            const techniqueAdventures = adventures.filter(a => a.reward.technique || a.reward.techniqueFragment);
+            if (Math.random() < 0.7 && techniqueAdventures.length > 0) {
+                const selectedAdventure = techniqueAdventures[Math.floor(Math.random() * techniqueAdventures.length)];
+                if (selectedAdventure.detail) {
+                    this.addPersonalLog(`[奇遇] ${selectedAdventure.detail}`, Date.now());
+                }
+                return selectedAdventure;
             }
         }
         
-        return adventures[Math.floor(Math.random() * adventures.length)];
+        // 普通随机选择
+        const selectedAdventure = adventures[Math.floor(Math.random() * adventures.length)];
+        if (selectedAdventure.detail) {
+            this.addPersonalLog(`[奇遇] ${selectedAdventure.detail}`, Date.now());
+        }
+        
+        return selectedAdventure;
+    }
+    
+    // 获取随机功法名称
+    getRandomTechniqueName() {
+        const techniques = BASE_TECHNIQUES;
+        // 根据弟子境界调整功法品质概率
+        const realmIndex = REALMS.indexOf(this.realm);
+        let availableTechniques = techniques;
+        
+        if (realmIndex <= 10) {
+            // 炼气期：主要获得黄阶功法
+            availableTechniques = techniques.filter(t => t.quality === '黄阶');
+        } else if (realmIndex <= 20) {
+            // 筑基期：可能获得玄阶功法
+            availableTechniques = techniques.filter(t => t.quality === '黄阶' || t.quality === '玄阶');
+        } else if (realmIndex <= 30) {
+            // 金丹期：可能获得地阶功法
+            availableTechniques = techniques.filter(t => t.quality === '玄阶' || t.quality === '地阶');
+        } else {
+            // 更高境界：可能获得任何功法
+            availableTechniques = techniques;
+        }
+        
+        return availableTechniques[Math.floor(Math.random() * availableTechniques.length)].name;
     }
     
     // 触发修炼事件

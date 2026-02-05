@@ -1254,17 +1254,39 @@ window.placeBid = function(itemId, bidAmount) {
     if (window.game) window.game.updateDisplay();
 };
 
-// NPC竞拍逻辑
+// NPC竞拍逻辑 - 增强竞争氛围
 function triggerNPCBidding(gameState, playerBidItem) {
     if (!gameState.auctionItems || gameState.auctionItems.length === 0) return;
     
     // 为每个拍卖物品都有机会触发NPC竞拍
     gameState.auctionItems.forEach(item => {
-        // 只对非玩家当前出价的物品进行竞拍，或者也对玩家出价的物品进行竞争
-        if (Math.random() < 0.6) { // 60%概率有NPC参与竞拍
-            const npcBidder = generateNPCBidder(item);
-            if (npcBidder) {
-                performNPCBid(gameState, item, npcBidder);
+        // 提高NPC参与概率，创造激烈竞争氛围
+        const npcParticipationChance = item.rarity === 'legendary' ? 0.9 : 
+                                     item.rarity === 'epic' ? 0.8 :
+                                     item.rarity === 'rare' ? 0.7 : 0.6;
+        
+        if (Math.random() < npcParticipationChance) {
+            // 可能多个NPC同时竞拍
+            const npcCount = Math.floor(Math.random() * 3) + 1; // 1-3个NPC
+            for (let i = 0; i < npcCount; i++) {
+                const npcBidder = generateNPCBidder(item);
+                if (npcBidder) {
+                    performNPCBid(gameState, item, npcBidder);
+                    
+                    // 添加竞拍日志，增强氛围
+                    const bidAmount = item.currentBid + Math.floor(Math.random() * 50) + 10;
+                    addLog(`[拍卖会] ${npcBidder.name}对${item.name}出价${bidAmount}灵石！`, 'text-cyan-400');
+                }
+            }
+            
+            // 特殊事件：大佬入场
+            if (item.rarity === 'legendary' && Math.random() < 0.3) {
+                const tycoonName = AUCTION_CONFIG.NPC_BIDDERS[Math.floor(Math.random() * AUCTION_CONFIG.NPC_BIDDERS.length)];
+                const tycoonBid = Math.floor(item.basePrice * 3.5);
+                item.currentBid = tycoonBid;
+                item.highestBidder = tycoonName;
+                addLog(`[拍卖会] 💎 ${tycoonName}入场！对${item.name}直接出价${tycoonBid}灵石！`, 'text-red-400 font-bold');
+                addLog(`[拍卖会] 其他竞拍者面色凝重，似乎在权衡是否继续竞争...`, 'text-orange-400');
             }
         }
     });

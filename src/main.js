@@ -523,6 +523,16 @@ class CultivationGame {
                 gameState.techniqueFragments.push(fragment);
                 addLog(`[奇遇] 获得了《${fragment.name}》残本！`, 'text-purple-400');
             }
+            if (event.reward.technique) {
+                // 完整功法获得
+                const disciple = gameState.disciples.find(d => d.id === event.discipleId);
+                if (disciple) {
+                    // 根据弟子境界选择合适的功法
+                    const technique = this.getRandomTechniqueForDisciple(disciple);
+                    disciple.learnTechnique(technique);
+                    addLog(`[奇遇] ${disciple.name}获得了完整功法《${technique.name}》！`, 'text-purple-400 font-bold');
+                }
+            }
             if (event.reward.experience) {
                 // 计算修炼速度加成
                 const disciple = gameState.disciples.find(d => d.id === event.discipleId);
@@ -1247,6 +1257,29 @@ class CultivationGame {
         updateDisplay(gameState);
     }
 }
+
+// 根据弟子境界获取合适的功法
+    getRandomTechniqueForDisciple(disciple) {
+        const realmIndex = REALMS.indexOf(disciple.realm);
+        let availableTechniques = BASE_TECHNIQUES;
+        
+        // 根据弟子境界调整功法品质概率
+        if (realmIndex <= 10) {
+            // 炼气期：主要获得黄阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '黄阶');
+        } else if (realmIndex <= 20) {
+            // 筑基期：可能获得玄阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '黄阶' || t.quality === '玄阶');
+        } else if (realmIndex <= 30) {
+            // 金丹期：可能获得地阶功法
+            availableTechniques = BASE_TECHNIQUES.filter(t => t.quality === '玄阶' || t.quality === '地阶');
+        } else {
+            // 更高境界：可能获得任何功法
+            availableTechniques = BASE_TECHNIQUES;
+        }
+        
+        return availableTechniques[Math.floor(Math.random() * availableTechniques.length)];
+    }
 
 // 生成功法残本的辅助函数
 function generateTechniqueFragment(isAdvanced = false) {
