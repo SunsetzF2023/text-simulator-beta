@@ -1036,33 +1036,44 @@ class CultivationGame {
     
     // 设置游戏按钮事件
     setupGameButtons() {
-        setupButtonListeners({
-            onCollect: () => this.handleCollect(),
-            onBreakthrough: () => this.handleBreakthrough(),
-            onRecruit: () => this.handleRecruit(),
-            onTaskHall: () => this.handleTaskHall(),
-            onMarket: () => this.handleMarket(),
-            onAuction: () => this.handleAuction(),
-            onTechniqueHall: () => this.handleTechniqueHall(),
-            onTreasury: () => this.handleTreasury(),
-            onPastRecords: () => this.handlePastRecords(),
-            onEvents: () => this.handleEvents(),
-            onRegion: () => this.handleRegion(),
-            onChangeName: () => this.handleChangeName()
-        });
+        try {
+            console.log('设置游戏按钮事件...');
+            setupButtonListeners({
+                onCollect: () => this.handleCollect(),
+                onBreakthrough: () => this.handleBreakthrough(),
+                onRecruit: () => this.handleRecruit(),
+                onTaskHall: () => this.handleTaskHall(),
+                onMarket: () => this.handleMarket(),
+                onAuction: () => this.handleAuction(),
+                onTechniqueHall: () => this.handleTechniqueHall(),
+                onTreasury: () => this.handleTreasury(),
+                onPastRecords: () => this.handlePastRecords(),
+                onEvents: () => this.handleEvents(),
+                onRegion: () => this.handleRegion(),
+                onChangeName: () => this.handleChangeName()
+            });
+            console.log('游戏按钮事件设置完成');
+        } catch (error) {
+            console.error('设置按钮事件时出错:', error);
+        }
     }
     
     // 处理采集灵石
     handleCollect() {
-        const realmIndex = REALMS.indexOf(gameState.playerRealm);
-        const efficiency = Math.pow(1.5, Math.floor(realmIndex / 9));
-        const gain = Math.floor(efficiency);
-        
-        gameState.spiritStones += gain;
-        updateDisplay(gameState);
-        addLog(`[采集] ${gameState.playerName} 采集了${gain}枚灵石。`, 'text-emerald-400');
-        
-        console.log(`采集灵石: +${gain}`);
+        try {
+            console.log('处理采集灵石...');
+            const realmIndex = REALMS.indexOf(gameState.playerRealm);
+            const efficiency = Math.pow(1.5, Math.floor(realmIndex / 9));
+            const gain = Math.floor(efficiency);
+            
+            gameState.spiritStones += gain;
+            updateDisplay(gameState);
+            addLog(`[采集] ${gameState.playerName} 采集了${gain}枚灵石。`, 'text-emerald-400');
+            
+            console.log(`采集灵石: +${gain}`);
+        } catch (error) {
+            console.error('采集灵石时出错:', error);
+        }
     }
     
     // 处理突破境界
@@ -1106,6 +1117,13 @@ class CultivationGame {
                 addLog(`[突破] 灵石不足，需要${cost}灵石才能突破。`, 'text-red-400');
             }
         }
+        
+        // 更新实力系统
+        this.calculateTotalPower();
+        this.updateSectAura();
+        
+        const newSectTier = this.getSectTier();
+        addLog(`[宗门] ${gameState.sectName}晋升为${newSectTier}，总战力：${gameState.totalPower}`, 'text-purple-400');
         
         console.log(`突破尝试: ${gameState.playerRealm}`);
     }
