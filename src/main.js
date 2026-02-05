@@ -5,11 +5,16 @@ import {
     GAME_CONFIG, 
     TASK_TEMPLATES, 
     MARKET_ITEMS, 
-    INFLUENCE_LEVELS,
+    AUCTION_CONFIG, 
+    RARITY_CONFIG, 
+    INFLUENCE_LEVELS, 
+    VISIT_EVENTS, 
+    COLLECTIVE_EVENTS,
+    REGION_CONFIG, 
+    BASE_TECHNIQUES,
     INVASION_CONFIG,
     INVADING_SECTS,
     SECT_UPGRADE_REQUIREMENTS,
-    COLLECTIVE_EVENTS,
     EVIL_TASKS,
     DEMON_ARTS,
     DISCIPLE_CONFLICTS
@@ -533,8 +538,11 @@ class CultivationGame {
                     // 基于天赋的加成
                     const talentBonus = 0.5 + (disciple.talent / 100); // 0.5-1.5倍
                     
+                    // 全局效果加成
+                    const globalBonus = gameState.globalEffects.cultivationBonus / gameState.globalEffects.cultivationPenalty;
+                    
                     // 总加成
-                    const totalBonus = spiritRootBonus * constitutionBonus * talentBonus;
+                    const totalBonus = spiritRootBonus * constitutionBonus * talentBonus * globalBonus;
                     experienceGain = Math.floor(experienceGain * totalBonus);
                     
                     // 应用修为
@@ -893,38 +901,319 @@ class CultivationGame {
         
         eventsList.innerHTML = '';
         
-        // 创建一个示例事件
-        const eventDiv = document.createElement('div');
-        eventDiv.className = 'bg-slate-800 p-4 rounded ancient-border';
-        eventDiv.innerHTML = `
-            <h3 class="text-lg font-bold text-amber-200 mb-2">🌟 灵脉发现</h3>
-            <p class="text-gray-300 mb-4">宗门附近发现了一条灵脉，可以获得大量灵石，但可能有守护兽。</p>
-            <div class="flex gap-2">
-                <button class="event-accept px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded transition-colors" data-event="spiritVein">
-                    接受挑战
-                </button>
-                <button class="event-ignore px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors" data-event="spiritVein">
-                    忽略事件
-                </button>
-            </div>
-        `;
+        // 随机选择2-3个事件
+        const numEvents = Math.floor(Math.random() * 2) + 2; // 2-3个事件
+        const selectedEvents = [];
         
-        eventsList.appendChild(eventDiv);
+        for (let i = 0; i < numEvents; i++) {
+            const randomEvent = COLLECTIVE_EVENTS[Math.floor(Math.random() * COLLECTIVE_EVENTS.length)];
+            if (!selectedEvents.find(e => e.name === randomEvent.name)) {
+                selectedEvents.push({...randomEvent, id: `event_${i}`});
+            }
+        }
+        
+        selectedEvents.forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'bg-slate-800 p-4 rounded ancient-border mb-4';
+            
+            // 根据事件类型设置颜色
+            let typeColor = 'text-gray-300';
+            let buttonColor = 'bg-green-600 hover:bg-green-500';
+            
+            switch (event.type) {
+                case 'blessing':
+                case 'celebration':
+                case 'natural':
+                case 'miracle':
+                case 'legendary':
+                    typeColor = 'text-green-400';
+                    buttonColor = 'bg-green-600 hover:bg-green-500';
+                    break;
+                case 'curse':
+                case 'catastrophe':
+                    typeColor = 'text-red-400';
+                    buttonColor = 'bg-red-600 hover:bg-red-500';
+                    break;
+                case 'crisis':
+                    typeColor = 'text-orange-400';
+                    buttonColor = 'bg-orange-600 hover:bg-orange-500';
+                    break;
+                case 'opportunity':
+                case 'discovery':
+                    typeColor = 'text-blue-400';
+                    buttonColor = 'bg-blue-600 hover:bg-blue-500';
+                    break;
+            }
+            
+            eventDiv.innerHTML = `
+                <h3 class="text-lg font-bold text-amber-200 mb-2">${this.getEventIcon(event.type)} ${event.name}</h3>
+                <p class="${typeColor} mb-4">${event.description}</p>
+                <div class="text-sm text-gray-400 mb-3">
+                    难度: ${this.getDifficultyText(event.difficulty)}
+                </div>
+                <div class="flex gap-2">
+                    <button class="event-accept px-4 py-2 ${buttonColor} text-white rounded transition-colors" data-event="${event.id}">
+                        处理事件
+                    </button>
+                    <button class="event-ignore px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors" data-event="${event.id}">
+                        忽略事件
+                    </button>
+                </div>
+            `;
+            
+            eventsList.appendChild(eventDiv);
+            
+            // 存储事件数据
+            eventDiv.eventData = event;
+        });
         
         // 添加事件按钮监听器
-        eventDiv.querySelectorAll('.event-accept').forEach(btn => {
+        eventsList.querySelectorAll('.event-accept').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const eventId = e.target.dataset.event;
-                this.handleEventAccept(eventId);
+                this.handleCollectiveEventAccept(eventId);
             });
         });
         
-        eventDiv.querySelectorAll('.event-ignore').forEach(btn => {
+        eventsList.querySelectorAll('.event-ignore').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const eventId = e.target.dataset.event;
-                this.handleEventIgnore(eventId);
+                this.handleCollectiveEventIgnore(eventId);
             });
         });
+    }
+    
+    // 获取事件图标
+    getEventIcon(type) {
+        const icons = {
+            blessing: '🌟',
+            celebration: '🎉',
+            natural: '🌊',
+            miracle: '✨',
+            legendary: '👑',
+            curse: '😈',
+            catastrophe: '☄️',
+            crisis: '⚔️',
+            opportunity: '💎',
+            discovery: '⛏️',
+            event: '🏮'
+        };
+        return icons[type] || '📜';
+    }
+    
+    // 获取难度文本
+    getDifficultyText(difficulty) {
+        const difficulties = {
+            easy: '简单',
+            medium: '中等',
+            hard: '困难',
+            rare: '罕见',
+            legendary: '传说'
+        };
+        return difficulties[difficulty] || difficulty;
+    }
+    
+    // 处理集体事件接受
+    handleCollectiveEventAccept(eventId) {
+        const eventsList = document.getElementById('eventsList');
+        const eventElements = eventsList.querySelectorAll('.bg-slate-800');
+        
+        for (let eventElement of eventElements) {
+            if (eventElement.eventData && eventElement.eventData.id === eventId) {
+                const event = eventElement.eventData;
+                this.applyCollectiveEvent(event);
+                break;
+            }
+        }
+        
+        this.closeEventsModal();
+        this.updateDisplay();
+    }
+    
+    // 处理集体事件忽略
+    handleCollectiveEventIgnore(eventId) {
+        const eventsList = document.getElementById('eventsList');
+        const eventElements = eventsList.querySelectorAll('.bg-slate-800');
+        
+        for (let eventElement of eventElements) {
+            if (eventElement.eventData && eventElement.eventData.id === eventId) {
+                const event = eventElement.eventData;
+                addLog(`[事件] 忽略了${event.name}`, 'text-gray-400');
+                break;
+            }
+        }
+        
+        this.closeEventsModal();
+    }
+    
+    // 应用集体事件效果
+    applyCollectiveEvent(event) {
+        console.log('应用集体事件:', event);
+        
+        // 应用奖励
+        if (event.reward) {
+            if (event.reward.spiritStones) {
+                gameState.spiritStones += event.reward.spiritStones;
+                addLog(`[事件] ${event.name}，获得${event.reward.spiritStones}灵石`, 'text-emerald-400');
+            }
+            if (event.reward.breakthroughPills) {
+                gameState.breakthroughPills += event.reward.breakthroughPills;
+                addLog(`[事件] ${event.name}，获得${event.reward.breakthroughPills}枚破境丹`, 'text-purple-400');
+            }
+            if (event.reward.reputation) {
+                gameState.reputation += event.reward.reputation;
+                addLog(`[事件] ${event.name}，声望${event.reward.reputation > 0 ? '+' : ''}${event.reward.reputation}`, 'text-amber-400');
+            }
+            if (event.reward.globalCultivationBonus) {
+                this.applyGlobalCultivationBonus(event.reward.globalCultivationBonus, event.reward.duration);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-green-400');
+            }
+            if (event.reward.globalRealmBoost) {
+                this.applyGlobalRealmBoost();
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-purple-400');
+            }
+            if (event.reward.randomBreakthrough) {
+                this.applyRandomBreakthrough(event.reward.randomBreakthrough);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-purple-400');
+            }
+            if (event.reward.randomTechnique) {
+                this.applyRandomTechnique(event.reward.randomTechnique);
+                addLog(`[事件] ${event.name}，${event.reward.message}`, 'text-blue-400');
+            }
+        }
+        
+        // 应用惩罚
+        if (event.penalty) {
+            if (event.penalty.spiritStones) {
+                gameState.spiritStones = Math.max(0, gameState.spiritStones + event.penalty.spiritStones);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+            if (event.penalty.reputation) {
+                gameState.reputation = Math.max(0, gameState.reputation + event.penalty.reputation);
+                addLog(`[事件] ${event.name}，声望${event.penalty.reputation > 0 ? '+' : ''}${event.penalty.reputation}`, 'text-orange-400');
+            }
+            if (event.penalty.globalCultivationPenalty) {
+                this.applyGlobalCultivationPenalty(event.penalty.globalCultivationPenalty, event.penalty.duration);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+            if (event.penalty.randomInjury) {
+                this.applyRandomInjury(event.penalty.randomInjury);
+                addLog(`[事件] ${event.name}，${event.penalty.message}`, 'text-red-400');
+            }
+        }
+    }
+    
+    // 应用全局修炼加成
+    applyGlobalCultivationBonus(bonus, duration) {
+        const effect = {
+            type: 'cultivationBonus',
+            value: bonus,
+            endTime: Date.now() + duration,
+            startTime: Date.now()
+        };
+        
+        gameState.globalEffects.effects.push(effect);
+        gameState.globalEffects.cultivationBonus *= bonus;
+        
+        // 设置定时器移除效果
+        setTimeout(() => {
+            this.removeGlobalEffect(effect);
+            gameState.globalEffects.cultivationBonus /= bonus;
+            addLog('[效果] 全局修炼加成效果结束', 'text-gray-400');
+        }, duration);
+    }
+    
+    // 应用全局修炼减益
+    applyGlobalCultivationPenalty(penalty, duration) {
+        const effect = {
+            type: 'cultivationPenalty',
+            value: penalty,
+            endTime: Date.now() + duration,
+            startTime: Date.now()
+        };
+        
+        gameState.globalEffects.effects.push(effect);
+        gameState.globalEffects.cultivationPenalty *= penalty;
+        
+        // 设置定时器移除效果
+        setTimeout(() => {
+            this.removeGlobalEffect(effect);
+            gameState.globalEffects.cultivationPenalty /= penalty;
+            addLog('[效果] 全局修炼减益效果结束', 'text-gray-400');
+        }, duration);
+    }
+    
+    // 应用全局境界提升
+    applyGlobalRealmBoost() {
+        gameState.disciples.forEach(disciple => {
+            if (disciple.alive && !disciple.onTask) {
+                const currentRealmIndex = REALMS.indexOf(disciple.realm);
+                if (currentRealmIndex < REALMS.length - 1 && currentRealmIndex > 0) {
+                    // 提升一个小境界
+                    const newRealmIndex = Math.min(currentRealmIndex + 1, REALMS.length - 1);
+                    disciple.realm = REALMS[newRealmIndex];
+                    disciple.cultivation = 0;
+                }
+            }
+        });
+    }
+    
+    // 应用随机突破
+    applyRandomBreakthrough(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.onTask && d.cultivation < 100);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                disciple.cultivation = 100;
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 应用随机功法
+    applyRandomTechnique(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.onTask);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                // 随机选择一个基础功法
+                const randomTechnique = BASE_TECHNIQUES[Math.floor(Math.random() * BASE_TECHNIQUES.length)];
+                disciple.learnTechnique(randomTechnique);
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 应用随机受伤
+    applyRandomInjury(count) {
+        const availableDisciples = gameState.disciples.filter(d => d.alive && !d.injured && !d.onTask);
+        const selectedDisciples = [];
+        
+        for (let i = 0; i < count && i < availableDisciples.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableDisciples.length);
+            const disciple = availableDisciples[randomIndex];
+            if (!selectedDisciples.includes(disciple)) {
+                disciple.injured = true;
+                selectedDisciples.push(disciple);
+            }
+        }
+    }
+    
+    // 移除全局效果
+    removeGlobalEffect(effectToRemove) {
+        const index = gameState.globalEffects.effects.findIndex(effect => 
+            effect.type === effectToRemove.type && 
+            effect.startTime === effectToRemove.startTime
+        );
+        if (index > -1) {
+            gameState.globalEffects.effects.splice(index, 1);
+        }
     }
     
     // 处理接受事件

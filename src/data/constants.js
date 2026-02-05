@@ -909,6 +909,115 @@ export const COLLECTIVE_EVENTS = [
         difficulty: 'hard',
         reward: { items: 'epic', experience: 200 },
         penalty: { disciples: 1 }
+    },
+    // 新增群体性增益事件
+    {
+        name: '天降祥瑞',
+        description: '天降祥瑞，灵气充沛，弟子们修炼速度大幅提升',
+        type: 'blessing',
+        difficulty: 'easy',
+        reward: { 
+            globalCultivationBonus: 2.0, 
+            duration: 300000, // 5分钟
+            message: '全体弟子修炼速度提升100%，持续5分钟！'
+        },
+        penalty: {}
+    },
+    {
+        name: '宗门庆典',
+        description: '宗门举办庆典，弟子们士气高涨，修炼效率提升',
+        type: 'celebration',
+        difficulty: 'medium',
+        reward: { 
+            globalCultivationBonus: 1.5, 
+            duration: 240000, // 4分钟
+            reputation: 30,
+            message: '全体弟子修炼速度提升50%，持续4分钟！'
+        },
+        penalty: { spiritStones: -100 }
+    },
+    {
+        name: '灵气潮汐',
+        description: '天地灵气潮汐来袭，修炼事半功倍',
+        type: 'natural',
+        difficulty: 'medium',
+        reward: { 
+            globalCultivationBonus: 3.0, 
+            duration: 180000, // 3分钟
+            message: '灵气潮汐来袭！全体弟子修炼速度提升200%，持续3分钟！'
+        },
+        penalty: {}
+    },
+    {
+        name: '心魔入侵',
+        description: '心魔入侵，弟子们心神不宁，修炼受阻',
+        type: 'curse',
+        difficulty: 'hard',
+        reward: { 
+            reputation: 80,
+            message: '成功抵御心魔入侵，宗门声望大增！'
+        },
+        penalty: { 
+            globalCultivationPenalty: 0.5, 
+            duration: 240000, // 4分钟
+            message: '心魔入侵影响！全体弟子修炼速度降低50%，持续4分钟！'
+        }
+    },
+    {
+        name: '灵石矿脉',
+        description: '发现大型灵石矿脉，宗门财富激增',
+        type: 'discovery',
+        difficulty: 'medium',
+        reward: { 
+            spiritStones: 500,
+            message: '发现灵石矿脉！获得500灵石！'
+        },
+        penalty: { 
+            reputation: -20,
+            message: '过度开采引起其他势力不满，声望-20'
+        }
+    },
+    {
+        name: '丹药风暴',
+        description: '天地间丹药精华汇聚，弟子们修为大进',
+        type: 'miracle',
+        difficulty: 'rare',
+        reward: { 
+            randomBreakthrough: 3,
+            message: '丹药风暴来袭！随机3名弟子修为大进！'
+        },
+        penalty: { 
+            spiritStones: -200,
+            message: '吸收丹药精华消耗200灵石'
+        }
+    },
+    {
+        name: '劫难降临',
+        description: '天地劫难降临，宗门损失惨重',
+        type: 'catastrophe',
+        difficulty: 'hard',
+        reward: { 
+            reputation: 150,
+            message: '成功渡过劫难，宗门声望大增！'
+        },
+        penalty: { 
+            spiritStones: -300,
+            randomInjury: 2,
+            message: '劫难降临！损失300灵石，2名弟子受伤！'
+        }
+    },
+    {
+        name: '仙人指路',
+        description: '神秘仙人现身指路，弟子们受益匪浅',
+        type: 'legendary',
+        difficulty: 'legendary',
+        reward: { 
+            globalRealmBoost: 1,
+            randomTechnique: 2,
+            reputation: 200,
+            message: '仙人指路！全体弟子境界提升，2名弟子获得功法！'
+        },
+        penalty: {}
     }
 ];
 

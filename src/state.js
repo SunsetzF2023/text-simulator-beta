@@ -64,6 +64,13 @@ export const gameState = {
     unlockedBuildings: [], // 解锁的建筑
     techniqueHall: [], // 功法堂 - 存储已购买的功法
     
+    // 全局增益效果
+    globalEffects: {
+        cultivationBonus: 1.0, // 全局修炼速度加成
+        cultivationPenalty: 1.0, // 全局修炼速度减益
+        effects: [] // 当前生效的效果列表
+    },
+    
     // 宗门宝库
     treasury: {
         pills: [], // 丹药
@@ -192,6 +199,11 @@ export function resetGame() {
     gameState.completedTasks = [];
     gameState.events = [];
     gameState.techniqueHall = []; // 重置功法堂
+    gameState.globalEffects = { // 重置全局效果
+        cultivationBonus: 1.0,
+        cultivationPenalty: 1.0,
+        effects: []
+    };
     
     // 恢复玩家信息
     Object.assign(gameState, playerInfo);
