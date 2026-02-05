@@ -2729,7 +2729,10 @@ window.promoteDisciple = function(hierarchyType, discipleId) {
     
     // 执行提升
     // 从原层级移除
+    console.log('晋升调试信息:', { hierarchyType, org, discipleId });
     const sourceArray = org[hierarchyType];
+    console.log('源层级数组:', sourceArray);
+    
     if (!sourceArray || !Array.isArray(sourceArray)) {
         console.error('源层级数组不存在:', hierarchyType, org);
         alert('层级数据错误，无法提升');
