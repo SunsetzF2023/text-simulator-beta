@@ -782,24 +782,101 @@ class CultivationGame {
         const enemies = [];
         const enemyCount = Math.floor(Math.random() * 5) + 3; // 3-7个敌人
         
-        for (let i = 0; i < enemyCount; i++) {
-            const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
+        if (isBeast) {
+            // 妖兽名称库
+            const beastNames = [
+                // 妖君系列
+                '炎虎妖君', '炽焰熊君', '青牛妖君', '黑蛟妖君', '金狮妖君',
+                '银狼妖君', '赤虎妖君', '玄龟妖君', '白象妖君', '苍鹰妖君',
+                
+                // 妖王系列
+                '巫山妖王', '血月妖王', '幽谷妖王', '雷泽妖王', '风林妖王',
+                '冰原妖王', '烈焰妖王', '深渊妖王', '暗影妖王', '雷霆妖王',
+                
+                // 妖尊系列
+                '黑甲犀尊', '铁臂猿尊', '碧眼狐尊', '金翅雕尊', '墨鳞蛟尊',
+                '赤血蛇尊', '白骨虎尊', '紫电狼尊', '青鳞鳄尊', '血瞳鹰尊',
+                
+                // 兽王系列
+                '北原兽王', '南疆兽王', '西域兽王', '东海兽王', '中州兽王',
+                '雪山兽王', '火山兽王', '森林兽王', '沼泽兽王', '沙漠兽王',
+                
+                // 地区之主系列
+                '苍山之主', '幽谷之主', '雷泽之主', '风林之主', '冰原之主',
+                '烈焰之主', '深渊之主', '暗影之主', '雷霆之主', '血月之主',
+                
+                // 特殊异种
+                '三尾妖狐', '九幽冥狼', '烈焰雄狮', '冰霜巨熊', '雷霆巨鹰',
+                '深渊魔蛟', '暗影毒蝎', '血瞳妖虎', '金翅大鹏', '墨玉麒麟',
+                
+                // 稀有品种
+                '赤炎妖虎', '碧眼灵狐', '金鳞妖龙', '银月天狼', '紫电妖豹',
+                '玄冰妖熊', '烈焰妖狮', '青风妖鹤', '黑水妖蛟', '黄土妖牛'
+            ];
             
-            if (isBeast) {
+            // 随机选择不重复的妖兽名称
+            const selectedNames = [];
+            const tempNames = [...beastNames];
+            
+            for (let i = 0; i < enemyCount && tempNames.length > 0; i++) {
+                const randomIndex = Math.floor(Math.random() * tempNames.length);
+                selectedNames.push(tempNames[randomIndex]);
+                tempNames.splice(randomIndex, 1);
+            }
+            
+            // 生成妖兽
+            selectedNames.forEach((beastName, i) => {
+                const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
+                
                 enemies.push({
-                    name: `${factionName}${i + 1}号`,
+                    name: beastName,
                     power: Math.floor(enemyPower),
                     type: '妖兽',
                     realm: this.getRandomBeastRealm(enemyPower)
                 });
-            } else {
+            });
+            
+        } else {
+            // 魔修弟子名称库
+            const demonNames = [
+                // 血魔宗弟子
+                '血魔弟子', '血煞修士', '血影修罗', '血狱魔卒', '血海妖徒',
+                
+                // 天魔教弟子
+                '天魔修士', '魔焰弟子', '魔影狂徒', '魔炎修罗', '魔煞妖人',
+                
+                // 幽魂殿弟子
+                '幽魂修士', '鬼影弟子', '魂魔狂徒', '幽冥修罗', '鬼煞妖卒',
+                
+                // 万毒门弟子
+                '毒魔修士', '毒炎弟子', '毒影狂徒', '毒煞修罗', '毒海妖人',
+                
+                // 通用魔修称号
+                '魔道修士', '魔门弟子', '魔宗狂徒', '魔教修罗', '魔界妖卒',
+                '邪修士', '魔门精英', '魔道高手', '魔宗护法', '魔教先锋'
+            ];
+            
+            // 随机选择不重复的魔修名称
+            const selectedNames = [];
+            const tempNames = [...demonNames];
+            
+            for (let i = 0; i < enemyCount && tempNames.length > 0; i++) {
+                const randomIndex = Math.floor(Math.random() * tempNames.length);
+                selectedNames.push(tempNames[randomIndex]);
+                tempNames.splice(randomIndex, 1);
+            }
+            
+            // 生成魔修弟子
+            selectedNames.forEach((demonName, i) => {
+                const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
+                
                 enemies.push({
-                    name: `${factionName}弟子${i + 1}`,
+                    name: demonName,
                     power: Math.floor(enemyPower),
                     type: '魔修',
                     realm: this.getRandomDemonRealm(enemyPower)
                 });
-            }
+            });
         }
         
         return enemies;
