@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试</title>
+</head>
+<body>
+    <h1>模块导入测试</h1>
+    <div id="output"></div>
+    
+    <script type="module">
+        import('./src/main.js').then(module => {
+            document.getElementById('output').innerHTML = '<p style="color: green;">✅ main.js 加载成功！</p>';
+            console.log('游戏模块加载成功');
+        }).catch(error => {
+            document.getElementById('output').innerHTML = `<p style="color: red;">❌ 加载失败: ${error.message}</p>`;
+            console.error('加载失败:', error);
+        });
+    </script>
+</body>
+</html>

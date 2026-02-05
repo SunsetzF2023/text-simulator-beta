@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>修仙宗门模拟器 - 简化测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-900 text-amber-200 min-h-screen">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center mb-8">修仙宗门模拟器 - 测试版</h1>
+        
+        <div id="test-output" class="bg-slate-800 p-4 rounded">
+            <p>正在测试模块加载...</p>
+        </div>
+        
+        <div class="mt-8 text-center">
+            <button id="test-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded">
+                测试按钮
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        console.log('开始加载脚本...');
+        
+        // 简单的测试
+        document.getElementById('test-btn').addEventListener('click', () => {
+            document.getElementById('test-output').innerHTML = '<p>✅ 按钮点击测试成功！</p>';
+        });
+        
+        // 尝试加载模块
+        try {
+            import('./src/main.js').then(module => {
+                console.log('main.js 加载成功');
+                document.getElementById('test-output').innerHTML = '<p>✅ main.js 加载成功！</p>';
+            }).catch(error => {
+                console.error('main.js 加载失败:', error);
+                document.getElementById('test-output').innerHTML = `<p>❌ main.js 加载失败: ${error.message}</p>`;
+            });
+        } catch (error) {
+            console.error('模块导入错误:', error);
+            document.getElementById('test-output').innerHTML = `<p>❌ 模块导入错误: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>
