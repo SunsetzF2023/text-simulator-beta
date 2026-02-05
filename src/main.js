@@ -783,40 +783,50 @@ class CultivationGame {
         const enemyCount = Math.floor(Math.random() * 5) + 3; // 3-7个敌人
         
         if (isBeast) {
-            // 妖兽名称库
-            const beastNames = [
-                // 妖君系列
-                '炎虎妖君', '炽焰熊君', '青牛妖君', '黑蛟妖君', '金狮妖君',
-                '银狼妖君', '赤虎妖君', '玄龟妖君', '白象妖君', '苍鹰妖君',
+            // 妖兽名称库 - 按实力等级分类
+            const beastNamesByLevel = {
+                // 凡兽-一阶妖兽
+                low: [
+                    '幼狼', '小狐', '野兔', '山猫', '野猪',
+                    '麻雀', '松鼠', '野鸡', '青蛙', '蛇'
+                ],
                 
-                // 妖王系列
-                '巫山妖王', '血月妖王', '幽谷妖王', '雷泽妖王', '风林妖王',
-                '冰原妖王', '烈焰妖王', '深渊妖王', '暗影妖王', '雷霆妖王',
+                // 二阶-三阶妖兽
+                mid: [
+                    '炎虎妖君', '炽焰熊君', '青牛妖君', '黑蛟妖君', '金狮妖君',
+                    '银狼妖君', '赤虎妖君', '玄龟妖君', '白象妖君', '苍鹰妖君',
+                    '巫山妖王', '血月妖王', '幽谷妖王', '雷泽妖王', '风林妖王',
+                    '三尾妖狐', '九幽冥狼', '烈焰雄狮', '冰霜巨熊', '雷霆巨鹰'
+                ],
                 
-                // 妖尊系列
-                '黑甲犀尊', '铁臂猿尊', '碧眼狐尊', '金翅雕尊', '墨鳞蛟尊',
-                '赤血蛇尊', '白骨虎尊', '紫电狼尊', '青鳞鳄尊', '血瞳鹰尊',
-                
-                // 兽王系列
-                '北原兽王', '南疆兽王', '西域兽王', '东海兽王', '中州兽王',
-                '雪山兽王', '火山兽王', '森林兽王', '沼泽兽王', '沙漠兽王',
-                
-                // 地区之主系列
-                '苍山之主', '幽谷之主', '雷泽之主', '风林之主', '冰原之主',
-                '烈焰之主', '深渊之主', '暗影之主', '雷霆之主', '血月之主',
-                
-                // 特殊异种
-                '三尾妖狐', '九幽冥狼', '烈焰雄狮', '冰霜巨熊', '雷霆巨鹰',
-                '深渊魔蛟', '暗影毒蝎', '血瞳妖虎', '金翅大鹏', '墨玉麒麟',
-                
-                // 稀有品种
-                '赤炎妖虎', '碧眼灵狐', '金鳞妖龙', '银月天狼', '紫电妖豹',
-                '玄冰妖熊', '烈焰妖狮', '青风妖鹤', '黑水妖蛟', '黄土妖牛'
-            ];
+                // 四阶-五阶妖兽
+                high: [
+                    '黑甲犀尊', '铁臂猿尊', '碧眼狐尊', '金翅雕尊', '墨鳞蛟尊',
+                    '北原兽王', '南疆兽王', '西域兽王', '东海兽王', '中州兽王',
+                    '苍山之主', '幽谷之主', '雷泽之主', '风林之主', '冰原之主',
+                    '深渊魔蛟', '暗影毒蝎', '血瞳妖虎', '金翅大鹏', '墨玉麒麟'
+                ]
+            };
+            
+            // 根据总战力确定主要等级
+            let mainLevel = 'mid';
+            if (totalPower < 1500) {
+                mainLevel = 'low';
+            } else if (totalPower > 6000) {
+                mainLevel = 'high';
+            }
             
             // 随机选择不重复的妖兽名称
             const selectedNames = [];
-            const tempNames = [...beastNames];
+            const tempNames = [...beastNamesByLevel[mainLevel]];
+            
+            // 如果主要等级名称不够，从其他等级补充
+            if (tempNames.length < enemyCount) {
+                const otherLevels = ['low', 'mid', 'high'].filter(level => level !== mainLevel);
+                otherLevels.forEach(level => {
+                    tempNames.push(...beastNamesByLevel[level]);
+                });
+            }
             
             for (let i = 0; i < enemyCount && tempNames.length > 0; i++) {
                 const randomIndex = Math.floor(Math.random() * tempNames.length);
@@ -828,11 +838,21 @@ class CultivationGame {
             selectedNames.forEach((beastName, i) => {
                 const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
                 
+                // 根据妖兽名称确定境界
+                let realm;
+                if (beastNamesByLevel.low.includes(beastName)) {
+                    realm = this.getRandomBeastRealm(enemyPower * 0.7); // 低级妖兽
+                } else if (beastNamesByLevel.high.includes(beastName)) {
+                    realm = this.getRandomBeastRealm(enemyPower * 1.3); // 高级妖兽
+                } else {
+                    realm = this.getRandomBeastRealm(enemyPower); // 中级妖兽
+                }
+                
                 enemies.push({
                     name: beastName,
                     power: Math.floor(enemyPower),
                     type: '妖兽',
-                    realm: this.getRandomBeastRealm(enemyPower)
+                    realm: realm
                 });
             });
             
@@ -947,63 +967,97 @@ class CultivationGame {
         battleLog.push(`[战斗] 我方参战弟子：${ourDisciples.length}人，总战力：${ourTotalPower}`);
         battleLog.push(`[战斗] 敌方参战单位：${enemyDisciples.length}个，总战力：${enemyTotalPower}`);
         
-        // 个体化战斗系统
-        const battleResult = this.simulateIndividualBattles(ourDisciples, enemyDisciples, battleLog);
-        
-        // 处理战斗结果
-        const ourSurvivors = battleResult.ourSurvivors;
-        const ourCasualties = battleResult.ourCasualties;
-        const enemySurvivors = battleResult.enemySurvivors;
-        const enemyCasualties = battleResult.enemyCasualties;
-        
-        // 判断胜负
-        const victory = ourSurvivors.length > 0 && (enemySurvivors.length === 0 || ourSurvivors.length > enemySurvivors.length);
-        
-        if (victory) {
-            battleLog.push(`[胜利] 我方成功击退${invasionType}！`);
+        // 检查是否还有弟子存活
+        if (ourDisciples.length === 0) {
+            // 所有弟子都战死了，玩家亲自出战
+            battleLog.push(`[绝境] 💀 所有弟子都已战死，${gameState.playerName}必须亲自出战！`);
+            battleLog.push(`[绝境] 这是最后的防线，${gameState.playerName}手持神兵，准备决一死战！`);
             
-            // 移除牺牲的弟子
-            ourCasualties.forEach(casualty => {
-                const index = gameState.disciples.findIndex(d => d.id === casualty.id);
-                if (index > -1) {
-                    gameState.disciples.splice(index, 1);
-                }
-            });
+            const playerVictory = this.executePlayerBattle(enemyDisciples, battleLog);
             
-            if (ourCasualties.length > 0) {
-                battleLog.push(`[损失] 不幸牺牲${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
+            if (playerVictory) {
+                battleLog.push(`[奇迹] 🌟 ${gameState.playerName}以一人之力击退了${invasionType}！`);
+                battleLog.push(`[奇迹] 这是传说中的奇迹，${gameState.playerName}威名震慑四方！`);
+                
+                // 玩家胜利的奖励
+                const spiritStonesReward = Math.floor(enemyTotalPower * 0.2);
+                const reputationReward = Math.floor(enemyTotalPower * 0.1);
+                
+                gameState.spiritStones += spiritStonesReward;
+                gameState.reputation += reputationReward;
+                
+                battleLog.push(`[奖励] 获得${spiritStonesReward}灵石，${reputationReward}声望`);
+            } else {
+                // 玩家战败，游戏结束
+                battleLog.push(`[终焉] 💔 ${gameState.playerName}力战不敌，最终倒在了${invasionType}的围攻之下...`);
+                battleLog.push(`[终焉] 宗门覆灭，传承断绝，一切都结束了...`);
+                
+                // 记录到宗门见闻
+                this.recordInvasionToHistory(battleLog, invasionType);
+                
+                // 游戏结束
+                this.triggerGameOver();
+                return;
             }
-            
-            // 获得奖励
-            const spiritStonesReward = Math.floor(enemyTotalPower * 0.1);
-            const reputationReward = Math.floor(enemyTotalPower * 0.05);
-            
-            gameState.spiritStones += spiritStonesReward;
-            gameState.reputation += reputationReward;
-            
-            battleLog.push(`[奖励] 获得${spiritStonesReward}灵石，${reputationReward}声望`);
-            
         } else {
-            battleLog.push(`[战败] 我方败给了${invasionType}...`);
+            // 正常的弟子战斗
+            const battleResult = this.simulateIndividualBattles(ourDisciples, enemyDisciples, battleLog);
             
-            // 移除牺牲的弟子
-            ourCasualties.forEach(casualty => {
-                const index = gameState.disciples.findIndex(d => d.id === casualty.id);
-                if (index > -1) {
-                    gameState.disciples.splice(index, 1);
+            // 处理战斗结果
+            const ourSurvivors = battleResult.ourSurvivors;
+            const ourCasualties = battleResult.ourCasualties;
+            const enemySurvivors = battleResult.enemySurvivors;
+            const enemyCasualties = battleResult.enemyCasualties;
+            
+            // 判断胜负
+            const victory = ourSurvivors.length > 0 && (enemySurvivors.length === 0 || ourSurvivors.length > enemySurvivors.length);
+            
+            if (victory) {
+                battleLog.push(`[胜利] 我方成功击退${invasionType}！`);
+                
+                // 移除牺牲的弟子
+                ourCasualties.forEach(casualty => {
+                    const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                    if (index > -1) {
+                        gameState.disciples.splice(index, 1);
+                    }
+                });
+                
+                if (ourCasualties.length > 0) {
+                    battleLog.push(`[损失] 不幸牺牲${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
                 }
-            });
-            
-            battleLog.push(`[损失] 损失${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
-            
-            // 损失资源
-            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.2);
-            const reputationLoss = Math.floor(gameState.reputation * 0.1);
-            
-            gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
-            gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
-            
-            battleLog.push(`[损失] 损失${spiritStonesLoss}灵石，${reputationLoss}声望`);
+                
+                // 获得奖励
+                const spiritStonesReward = Math.floor(enemyTotalPower * 0.1);
+                const reputationReward = Math.floor(enemyTotalPower * 0.05);
+                
+                gameState.spiritStones += spiritStonesReward;
+                gameState.reputation += reputationReward;
+                
+                battleLog.push(`[奖励] 获得${spiritStonesReward}灵石，${reputationReward}声望`);
+                
+            } else {
+                battleLog.push(`[战败] 我方败给了${invasionType}...`);
+                
+                // 移除牺牲的弟子
+                ourCasualties.forEach(casualty => {
+                    const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                    if (index > -1) {
+                        gameState.disciples.splice(index, 1);
+                    }
+                });
+                
+                battleLog.push(`[损失] 损失${ourCasualties.length}名弟子：${ourCasualties.map(d => d.name).join('、')}`);
+                
+                // 损失资源
+                const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.2);
+                const reputationLoss = Math.floor(gameState.reputation * 0.1);
+                
+                gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
+                gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
+                
+                battleLog.push(`[损失] 损失${spiritStonesLoss}灵石，${reputationLoss}声望`);
+            }
         }
         
         // 记录到宗门见闻
@@ -1013,6 +1067,108 @@ class CultivationGame {
         this.calculateTotalPower();
     }
     
+    // 玩家亲自战斗
+    executePlayerBattle(enemyDisciples, battleLog) {
+        const playerPower = this.calculatePlayerPower();
+        let playerHP = 100; // 玩家生命值
+        let currentEnemyIndex = 0;
+        
+        battleLog.push(`[对决] ⚔️ ${gameState.playerName}(境界:${gameState.playerRealm}) VS 敌方${enemyDisciples.length}个单位`);
+        battleLog.push(`[对决] 玩家战力：${playerPower}，生命值：${playerHP}`);
+        
+        // 逐个与敌人战斗
+        while (currentEnemyIndex < enemyDisciples.length && playerHP > 0) {
+            const enemy = enemyDisciples[currentEnemyIndex];
+            let enemyHP = 100; // 敌人生命值
+            
+            battleLog.push(`[回合] 第${currentEnemyIndex + 1}回合：${gameState.playerName} VS ${enemy.name}(${enemy.realm})`);
+            
+            // 回合制战斗
+            let round = 1;
+            while (playerHP > 0 && enemyHP > 0 && round <= 10) { // 最多10回合
+                // 玩家攻击
+                const playerDamage = Math.floor(Math.random() * 30) + 10; // 10-40伤害
+                const playerHitChance = Math.min(0.8, playerPower / (playerPower + enemy.power)); // 命中率
+                
+                if (Math.random() < playerHitChance) {
+                    enemyHP -= playerDamage;
+                    battleLog.push(`[攻击] 第${round}回合：${gameState.playerName}重创${enemy.name}，造成${playerDamage}点伤害！`);
+                } else {
+                    battleLog.push(`[攻击] 第${round}回合：${gameState.playerName}的攻击被${enemy.name}躲开！`);
+                }
+                
+                if (enemyHP <= 0) break;
+                
+                // 敌人攻击
+                const enemyDamage = Math.floor(Math.random() * 25) + 8; // 8-33伤害
+                const enemyHitChance = Math.min(0.7, enemy.power / (playerPower + enemy.power)); // 命中率
+                
+                if (Math.random() < enemyHitChance) {
+                    playerHP -= enemyDamage;
+                    battleLog.push(`[反击] 第${round}回合：${enemy.name}反击${gameState.playerName}，造成${enemyDamage}点伤害！`);
+                } else {
+                    battleLog.push(`[反击] 第${round}回合：${enemy.name}的攻击被${gameState.playerName}躲开！`);
+                }
+                
+                round++;
+            }
+            
+            if (enemyHP <= 0) {
+                battleLog.push(`[击杀] ${gameState.playerName}成功击杀了${enemy.name}！剩余生命值：${playerHP}`);
+                currentEnemyIndex++;
+            } else if (playerHP <= 0) {
+                battleLog.push(`[战败] ${gameState.playerName}被${enemy.name}击败...`);
+                break;
+            } else {
+                battleLog.push(`[平手] ${gameState.playerName}与${enemy.name}战成平手，各自后退！`);
+                currentEnemyIndex++;
+            }
+        }
+        
+        // 判断最终结果
+        const victory = playerHP > 0 && currentEnemyIndex === enemyDisciples.length;
+        
+        if (victory) {
+            battleLog.push(`[胜利] 🎉 ${gameState.playerName}以一人之力击败了所有敌人！剩余生命值：${playerHP}`);
+        } else {
+            battleLog.push(`[失败] 💀 ${gameState.playerName}最终力竭而倒...击败了${currentEnemyIndex}个敌人`);
+        }
+        
+        return victory;
+    }
+    
+    // 触发游戏结束
+    triggerGameOver() {
+        // 停止游戏循环
+        this.stopGameLoop();
+        
+        // 显示游戏结束界面
+        const gameOverDiv = document.createElement('div');
+        gameOverDiv.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50';
+        gameOverDiv.innerHTML = `
+            <div class="bg-slate-900 p-8 rounded-lg max-w-md text-center border-2 border-red-600">
+                <h2 class="text-3xl font-bold text-red-500 mb-4">游戏结束</h2>
+                <p class="text-gray-300 mb-4">
+                    ${gameState.playerName}力战不敌，宗门覆灭。<br>
+                    传承断绝，一切都结束了...
+                </p>
+                <div class="text-left text-gray-400 mb-6">
+                    <p>最终成就：</p>
+                    <p>• 宗门名称：${gameState.sectName}</p>
+                    <p>• 宗主境界：${gameState.playerRealm}</p>
+                    <p>• 最终声望：${gameState.reputation}</p>
+                    <p>• 存续时间：${gameState.currentDay}天</p>
+                </div>
+                <button onclick="location.reload()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded">
+                    重新开始
+                </button>
+            </div>
+        `;
+        document.body.appendChild(gameOverDiv);
+        
+        addLog(`[游戏结束] ${gameState.playerName}的传奇故事到此结束...`, 'text-red-600 font-bold');
+    }
+    
     // 模拟个体化战斗
     simulateIndividualBattles(ourDisciples, enemyDisciples, battleLog) {
         const ourSurvivors = [...ourDisciples];
@@ -1020,10 +1176,10 @@ class CultivationGame {
         const enemySurvivors = [...enemyDisciples];
         const enemyCasualties = [];
         
-        battleLog.push(`[对决] ⚔️ 战火点燃，杀气冲天！`);
+        battleLog.push(`[入侵] ⚔️ ${ourDisciples.length}名弟子迎战${enemyDisciples.length}个敌人！`);
         
-        // 随机配对战斗
-        const maxRounds = Math.max(ourDisciples.length, enemyDisciples.length);
+        // 简化战斗：最多5回合
+        const maxRounds = Math.min(5, Math.max(ourDisciples.length, enemyDisciples.length));
         
         for (let round = 1; round <= maxRounds; round++) {
             // 如果一方已经全部阵亡，战斗结束
@@ -1036,16 +1192,13 @@ class CultivationGame {
             const ourPower = ourFighter.getCombatPower();
             const enemyPower = enemyFighter.power;
             
-            // 生成丰富的战斗场景
-            this.generateBattleScene(ourFighter, enemyFighter, round, battleLog);
-            
             // 计算个体战斗结果
             const ourWinChance = ourPower / (ourPower + enemyPower);
             const ourWins = Math.random() < ourWinChance;
             
             if (ourWins) {
                 // 我方胜利，敌方单位阵亡
-                this.generateVictoryScene(ourFighter, enemyFighter, round, battleLog);
+                battleLog.push(`[战斗] ${ourFighter.name}击败${enemyFighter.name}！`);
                 
                 const enemyIndex = enemySurvivors.indexOf(enemyFighter);
                 if (enemyIndex > -1) {
@@ -1054,7 +1207,7 @@ class CultivationGame {
                 }
             } else {
                 // 敌方胜利，我方弟子阵亡
-                this.generateDefeatScene(ourFighter, enemyFighter, round, battleLog);
+                battleLog.push(`[战斗] ${ourFighter.name}被${enemyFighter.name}击败！`);
                 
                 const ourIndex = ourSurvivors.indexOf(ourFighter);
                 if (ourIndex > -1) {
@@ -1062,16 +1215,25 @@ class CultivationGame {
                     ourCasualties.push(ourFighter);
                 }
             }
-            
-            // 添加旁观者反应
-            this.generateSpectatorReactions(ourSurvivors, enemySurvivors, round, battleLog);
-            
-            // 避免无限循环
-            if (round > 15) break;
         }
         
-        // 生成战斗结束场景
-        this.generateBattleEndScene(ourSurvivors, enemySurvivors, battleLog);
+        // 添加旁观者反应（简化）
+        if (ourSurvivors.length > enemySurvivors.length) {
+            battleLog.push(`[战况] 我方占据优势，周围修士纷纷点头称赞！`);
+        } else if (ourSurvivors.length < enemySurvivors.length) {
+            battleLog.push(`[战况] 形势不利，凡人百姓惊恐逃离！`);
+        } else {
+            battleLog.push(`[战况] 战况胶着，双方各有损伤！`);
+        }
+        
+        // 判断胜负
+        const victory = ourSurvivors.length > 0 && (enemySurvivors.length === 0 || ourSurvivors.length > enemySurvivors.length);
+        
+        if (victory) {
+            battleLog.push(`[胜利] 🎉 成功击退入侵！`);
+        } else {
+            battleLog.push(`[战败] 💀 战败损失惨重...`);
+        }
         
         return {
             ourSurvivors,
@@ -1239,6 +1401,58 @@ class CultivationGame {
         }
         
         battleLog.push(`[统计] 📊 战斗结果：我方存活${ourSurvivors.length}人，敌方存活${enemySurvivors.length}个`);
+    }
+    
+    // 根据宝物计算战斗力加成
+    calculatePowerFromTreasure(treasureValue) {
+        // 基础战斗力加成
+        let basePower = treasureValue * 2; // 基础转化比例
+        
+        // 根据宗门实力调整加成
+        const sectPower = gameState.totalPower;
+        let powerMultiplier = 1.0;
+        
+        // 宗门实力越强，宝物效果相对越弱（避免过度膨胀）
+        if (sectPower < 1000) {
+            // 弱小宗门：宝物效果显著
+            powerMultiplier = 1.5;
+        } else if (sectPower < 5000) {
+            // 中等宗门：宝物效果正常
+            powerMultiplier = 1.0;
+        } else if (sectPower < 20000) {
+            // 强大宗门：宝物效果减弱
+            powerMultiplier = 0.8;
+        } else {
+            // 超强宗门：宝物效果大幅减弱
+            powerMultiplier = 0.5;
+        }
+        
+        // 根据玩家境界调整
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        let realmMultiplier = 1.0;
+        
+        if (realmIndex <= 5) {
+            // 凡人-炼气期：宝物效果显著
+            realmMultiplier = 1.3;
+        } else if (realmIndex <= 15) {
+            // 筑基-金丹期：宝物效果正常
+            realmMultiplier = 1.0;
+        } else if (realmIndex <= 25) {
+            // 元婴-化神期：宝物效果减弱
+            realmMultiplier = 0.7;
+        } else {
+            // 返虚期及以上：宝物效果大幅减弱
+            realmMultiplier = 0.4;
+        }
+        
+        // 计算最终战斗力加成
+        const finalPower = Math.floor(basePower * powerMultiplier * realmMultiplier);
+        
+        // 确保最小加成和最大加成
+        const minPower = Math.max(5, Math.floor(sectPower * 0.01)); // 最少为宗门战力的1%，但不少于5点
+        const maxPower = Math.floor(sectPower * 0.15); // 最多为宗门战力的15%
+        
+        return Math.max(minPower, Math.min(finalPower, maxPower));
     }
     
     // 计算伤亡
@@ -3253,13 +3467,18 @@ CultivationGame.prototype.resolveCollectiveEvent = function(event, accept) {
         }
         
         if (event.reward.experience) {
-            // 给所有弟子加修为
+            // 根据宝物类型转化为战斗力
+            const powerBonus = this.calculatePowerFromTreasure(event.reward.experience);
+            
+            // 给所有活着的弟子增加战斗力
             gameState.disciples.forEach(disciple => {
                 if (disciple.alive) {
-                    disciple.cultivation = Math.min(100, disciple.cultivation + 10);
+                    disciple.powerBonus = (disciple.powerBonus || 0) + powerBonus;
                 }
             });
-            addLog(`[修炼] 所有弟子修为+10`, 'text-blue-400');
+            
+            addLog(`[宝物] 所有弟子获得宝物加持，战斗力+${powerBonus}！`, 'text-yellow-400 font-bold');
+            this.calculateTotalPower(); // 重新计算总战力
         }
         
     } else {

@@ -248,6 +248,11 @@ export class Disciple {
             basePower += this.temporaryBonus.combat;
         }
         
+        // 宝物加成
+        if (this.powerBonus) {
+            basePower += this.powerBonus;
+        }
+        
         return Math.floor(basePower);
     }
     
