@@ -837,52 +837,49 @@ class CultivationGame {
             });
             
         } else {
-            // 魔修弟子名称库
-            const demonNames = [
-                // 霸气魔号系列
-                '天屠血煞', '玄阴道人', '血狱魔君', '幽冥鬼帝', '万毒邪尊',
-                '烈焰魔主', '冰霜鬼王', '雷霆魔皇', '暗影邪帝', '血海魔尊',
+            // 魔修弟子名称库 - 按实力等级分类
+            const demonNamesByLevel = {
+                // 凡人-炼气期
+                low: [
+                    '血魔弟子', '天魔修士', '幽魂修士', '毒魔修士', '魔道修士',
+                    '邪修士', '血煞修士', '魔焰弟子', '鬼影弟子', '毒炎弟子',
+                    '魔门弟子', '血影修罗', '魔影狂徒', '魂魔狂徒', '毒影狂徒'
+                ],
                 
-                // 魔君系列
-                '黑天魔君', '赤炎魔君', '玄冰魔君', '幽冥魔君', '血海魔君',
-                '万毒魔君', '烈焰魔君', '冰霜魔君', '雷霆魔君', '暗影魔君',
+                // 筑基期
+                mid: [
+                    '血狱魔卒', '魔炎修罗', '幽冥修罗', '毒煞修罗', '魔宗狂徒',
+                    '魔教修罗', '血海妖徒', '魔煞妖人', '鬼煞妖卒', '毒海妖人',
+                    '魔界妖卒', '魔门精英', '魔道高手', '血影修罗', '魔影狂徒'
+                ],
                 
-                // 鬼王系列
-                '九幽鬼王', '血河鬼王', '黑狱鬼王', '白骨鬼王', '幽魂鬼王',
-                '怨灵鬼王', '死灵鬼王', '冥界鬼王', '黄泉鬼王', '阴司鬼王',
-                
-                // 邪尊系列
-                '天邪邪尊', '地邪邪尊', '玄邪邪尊', '血邪邪尊', '魔邪邪尊',
-                '毒邪邪尊', '火邪邪尊', '冰邪邪尊', '雷邪邪尊', '暗邪邪尊',
-                
-                // 魔帅系列
-                '屠天魔帅', '戮地魔帅', '噬魂魔帅', '饮血魔帅', '焚天魔帅',
-                '冰封魔帅', '雷劫魔帅', '暗夜魔帅', '幽冥魔帅', '万劫魔帅',
-                
-                // 邪使系列
-                '血海邪使', '魔域邪使', '幽都邪使', '冥府邪使', '地狱邪使',
-                '万毒邪使', '烈火邪使', '寒冰邪使', '雷霆邪使', '暗影邪使',
-                
-                // 魔将系列
-                '黑煞魔将', '血煞魔将', '玄冰魔将', '幽炎魔将', '雷霆魔将',
-                '暗影魔将', '毒龙魔将', '炎魔魔将', '冰魔魔将', '雷魔魔将',
-                
-                // 鬼卒系列
-                '索命鬼卒', '夺魂鬼卒', '噬心鬼卒', '饮血鬼卒', '焚身鬼卒',
-                '冰封鬼卒', '雷击鬼卒', '暗杀鬼卒', '幽冥鬼卒', '黄泉鬼卒',
-                
-                // 邪徒系列
-                '天邪邪徒', '地邪邪徒', '玄邪邪徒', '血邪邪徒', '魔邪邪徒',
-                '毒邪邪徒', '火邪邪徒', '冰邪邪徒', '雷邪邪徒', '暗邪邪徒',
-                
-                // 魔修系列
-                '逆天魔修', '弑神魔修', '噬魂魔修', '饮血魔修', '焚天魔修',
-                '冰封魔修', '雷劫魔修', '暗夜魔修', '幽冥魔修', '万劫魔修'
-            ];
+                // 金丹期及以上
+                high: [
+                    '魔宗护法', '魔教先锋', '血狱魔卒', '魔炎修罗', '幽冥修罗',
+                    '毒煞修罗', '血海妖徒', '魔煞妖人', '鬼煞妖卒', '毒海妖人',
+                    '魔门精英', '魔道高手', '魔宗护法', '魔教先锋', '血狱魔将'
+                ]
+            };
+            
+            // 根据总战力确定主要等级
+            let mainLevel = 'mid';
+            if (totalPower < 2000) {
+                mainLevel = 'low';
+            } else if (totalPower > 8000) {
+                mainLevel = 'high';
+            }
             
             // 随机选择不重复的魔修名称
             const selectedNames = [];
-            const tempNames = [...demonNames];
+            const tempNames = [...demonNamesByLevel[mainLevel]];
+            
+            // 如果主要等级名称不够，从其他等级补充
+            if (tempNames.length < enemyCount) {
+                const otherLevels = ['low', 'mid', 'high'].filter(level => level !== mainLevel);
+                otherLevels.forEach(level => {
+                    tempNames.push(...demonNamesByLevel[level]);
+                });
+            }
             
             for (let i = 0; i < enemyCount && tempNames.length > 0; i++) {
                 const randomIndex = Math.floor(Math.random() * tempNames.length);
@@ -894,11 +891,25 @@ class CultivationGame {
             selectedNames.forEach((demonName, i) => {
                 const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
                 
+                // 根据名称确定境界
+                let realm;
+                if (demonName.includes('弟子') || demonName.includes('修士')) {
+                    realm = this.getRandomDemonRealm(enemyPower * 0.8); // 弱一些
+                } else if (demonName.includes('狂徒') || demonName.includes('修罗')) {
+                    realm = this.getRandomDemonRealm(enemyPower); // 正常
+                } else if (demonName.includes('魔卒') || demonName.includes('妖人') || demonName.includes('妖卒')) {
+                    realm = this.getRandomDemonRealm(enemyPower * 1.1); // 强一些
+                } else if (demonName.includes('精英') || demonName.includes('高手') || demonName.includes('护法') || demonName.includes('先锋')) {
+                    realm = this.getRandomDemonRealm(enemyPower * 1.2); // 更强
+                } else {
+                    realm = this.getRandomDemonRealm(enemyPower); // 默认
+                }
+                
                 enemies.push({
                     name: demonName,
                     power: Math.floor(enemyPower),
                     type: '魔修',
-                    realm: this.getRandomDemonRealm(enemyPower)
+                    realm: realm
                 });
             });
         }
