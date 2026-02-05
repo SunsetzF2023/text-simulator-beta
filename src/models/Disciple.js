@@ -242,7 +242,52 @@ export class Disciple {
         // 考虑任务难度
         baseRate /= taskDifficulty;
         
+        // 玩家境界和战力加成
+        if (window.game && window.game.gameState) {
+            const gameState = window.game.gameState;
+            const playerRealmIndex = REALMS.indexOf(gameState.playerRealm);
+            const discipleRealmIndex = REALMS.indexOf(this.realm);
+            
+            // 玩家境界越高，弟子任务成功率越高
+            if (playerRealmIndex > 10) { // 玩家至少筑基期
+                baseRate *= 1 + (playerRealmIndex - 10) * 0.05; // 每个大境界+5%成功率
+            }
+            
+            // 玩家战力加成
+            const playerPower = this.calculatePlayerPower(gameState);
+            if (playerPower > 100) {
+                baseRate *= 1 + Math.min(playerPower / 1000, 0.3); // 最多+30%成功率
+            }
+            
+            // 弟子与玩家境界差距影响
+            const realmGap = playerRealmIndex - discipleRealmIndex;
+            if (realmGap > 5) {
+                baseRate *= 1.2; // 玩家境界远高于弟子，任务成功率+20%
+            } else if (realmGap < -3) {
+                baseRate *= 0.8; // 弟子境界高于玩家太多，任务成功率-20%
+            }
+        }
+        
         return Math.min(0.95, Math.max(0.05, baseRate)); // 限制在5%-95%之间
+    }
+    
+    // 计算玩家战力
+    calculatePlayerPower(gameState) {
+        let power = 0;
+        
+        // 境界贡献
+        const realmIndex = REALMS.indexOf(gameState.playerRealm);
+        power += realmIndex * 10;
+        
+        // 弟子数量贡献
+        power += gameState.disciples.length * 5;
+        
+        // 资源贡献
+        if (gameState.spiritStones) power += Math.min(gameState.spiritStones / 10, 50);
+        if (gameState.breakthroughPills) power += gameState.breakthroughPills * 20;
+        if (gameState.reputation) power += Math.min(gameState.reputation / 5, 100);
+        
+        return power;
     }
     
     // 生成特殊体质
@@ -374,7 +419,7 @@ export class Disciple {
             {
                 type: 'breakthrough',
                 message: `${this.name}在瀑布下顿悟，修为大进！`,
-                reward: { experience: 30 }
+                reward: { experience: 80 } // 提高到80
             },
             {
                 type: 'treasure',
@@ -407,7 +452,7 @@ export class Disciple {
     // 触发修炼事件
     triggerCultivationEvent() {
         const cultivationSpeed = this.getCultivationSpeed();
-        const baseExperience = Math.floor(Math.random() * 5) + 1;
+        const baseExperience = Math.floor(Math.random() * 15) + 10; // 提高基础修为：10-24
         const enhancedExperience = Math.floor(baseExperience * cultivationSpeed);
         
         const events = [
@@ -420,7 +465,19 @@ export class Disciple {
             {
                 type: 'breakthrough',
                 message: `${this.name}修炼有所感悟，修为大进！`,
-                reward: { experience: Math.floor(enhancedExperience * 3) + 10 },
+                reward: { experience: Math.floor(enhancedExperience * 3) + 30 }, // 大幅提高突破奖励
+                discipleId: this.id
+            },
+            {
+                type: 'breakthrough',
+                message: `${this.name}心无旁骛，进入深度修炼状态！`,
+                reward: { experience: Math.floor(enhancedExperience * 4) + 50 }, // 更高的修炼奖励
+                discipleId: this.id
+            },
+            {
+                type: 'breakthrough',
+                message: `${this.name}灵光一闪，突破瓶颈！`,
+                reward: { experience: Math.floor(enhancedExperience * 5) + 80 }, // 突破性奖励
                 discipleId: this.id
             }
         ];
@@ -435,20 +492,98 @@ export class Disciple {
         
         const other = otherDisciples[Math.floor(Math.random() * otherDisciples.length)];
         
-        const events = [
-            {
-                type: 'social',
-                message: `${this.name}与${other.name}交流修炼心得。`,
-                reward: null
-            },
-            {
-                type: 'social',
-                message: `${this.name}帮助${other.name}解决修炼难题。`,
-                reward: { loyalty: 1 }
-            }
-        ];
+        // 根据性格决定事件类型
+        const conflictChance = this.personality === '狂傲' ? 0.4 : 
+                              this.personality === '卑劣' ? 0.3 : 
+                              this.personality === '残暴' ? 0.35 : 0.1;
         
-        return events[Math.floor(Math.random() * events.length)];
+        const isConflict = Math.random() < conflictChance;
+        
+        if (isConflict) {
+            // 冲突事件
+            const conflicts = [
+                {
+                    type: 'conflict',
+                    message: `${this.name}与${other.name}因修炼理念不合发生争执！`,
+                    reward: { experience: -15 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'conflict',
+                    message: `${this.name}嫉妒${other.name}的天赋，暗中使绊！`,
+                    reward: { experience: -20 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'conflict',
+                    message: `${this.name}与${other.name}发生肢体冲突，双方都受了点内伤！`,
+                    reward: { experience: -25 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'conflict',
+                    message: `${this.name}在比试中败给了${other.name}，心神受损！`,
+                    reward: { experience: -18 },
+                    discipleId: this.id,
+                    targetId: other.id
+                }
+            ];
+            
+            const conflict = conflicts[Math.floor(Math.random() * conflicts.length)];
+            
+            // 对双方都产生影响
+            if (conflict.reward.experience) {
+                this.cultivation = Math.max(0, this.cultivation + conflict.reward.experience);
+                other.cultivation = Math.max(0, other.cultivation + Math.floor(conflict.reward.experience * 0.7));
+            }
+            
+            return conflict;
+        } else {
+            // 友好事件
+            const friendlyEvents = [
+                {
+                    type: 'social',
+                    message: `${this.name}与${other.name}交流修炼心得，都有所收获。`,
+                    reward: { experience: 20 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'social',
+                    message: `${this.name}帮助${other.name}解决修炼难题，教学相长。`,
+                    reward: { experience: 25 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'social',
+                    message: `${this.name}与${other.name}切磋武艺，共同进步！`,
+                    reward: { experience: 30 },
+                    discipleId: this.id,
+                    targetId: other.id
+                },
+                {
+                    type: 'social',
+                    message: `${this.name}和${other.name}一起顿悟，修为大进！`,
+                    reward: { experience: 50 },
+                    discipleId: this.id,
+                    targetId: other.id
+                }
+            ];
+            
+            const friendly = friendlyEvents[Math.floor(Math.random() * friendlyEvents.length)];
+            
+            // 对双方都产生正面影响
+            if (friendly.reward.experience) {
+                this.cultivation += friendly.reward.experience;
+                other.cultivation += Math.floor(friendly.reward.experience * 0.8);
+            }
+            
+            return friendly;
+        }
     }
     
     // 接受任务

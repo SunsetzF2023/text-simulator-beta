@@ -58,7 +58,7 @@ export const TASK_TEMPLATES = [
         name: '灵石采集', 
         difficulty: 1, 
         description: '采集灵石为宗门积累资源',
-        reward: { spiritStones: 5, experience: 10 },
+        reward: { spiritStones: 25, experience: 40 },
         duration: 3000
     },
     { 
@@ -66,7 +66,7 @@ export const TASK_TEMPLATES = [
         name: '宗门守卫', 
         difficulty: 1, 
         description: '守护宗门安全',
-        reward: { spiritStones: 3, experience: 8 },
+        reward: { spiritStones: 20, experience: 35 },
         duration: 4000
     },
     { 
@@ -74,7 +74,7 @@ export const TASK_TEMPLATES = [
         name: '野外历练', 
         difficulty: 2, 
         description: '在野外历练提升实力',
-        reward: { experience: 20, breakthroughPills: 0.1 },
+        reward: { experience: 60, breakthroughPills: 0.5, spiritStones: 15 },
         duration: 6000
     },
     { 
@@ -82,7 +82,7 @@ export const TASK_TEMPLATES = [
         name: '秘境探索', 
         difficulty: 3, 
         description: '探索附近的小型秘境',
-        reward: { spiritStones: 20, breakthroughPills: 0.3 },
+        reward: { spiritStones: 80, breakthroughPills: 1.2, experience: 80 },
         duration: 8000
     },
     { 
@@ -90,7 +90,7 @@ export const TASK_TEMPLATES = [
         name: '宗门宣传', 
         difficulty: 1, 
         description: '宣传宗门招收新弟子',
-        reward: { reputation: 10 },
+        reward: { reputation: 30, experience: 25 },
         duration: 5000
     },
     { 
@@ -98,7 +98,7 @@ export const TASK_TEMPLATES = [
         name: '外交任务', 
         difficulty: 2, 
         description: '与其他宗门进行外交活动',
-        reward: { reputation: 20, spiritStones: 15 },
+        reward: { reputation: 50, spiritStones: 45, experience: 40 },
         duration: 7000
     },
     { 
@@ -106,7 +106,7 @@ export const TASK_TEMPLATES = [
         name: '炼丹协助', 
         difficulty: 2, 
         description: '协助炼制丹药',
-        reward: { breakthroughPills: 0.2, experience: 15 },
+        reward: { breakthroughPills: 0.8, experience: 50, spiritStones: 25 },
         duration: 6000
     },
     { 
@@ -114,7 +114,7 @@ export const TASK_TEMPLATES = [
         name: '药材收集', 
         difficulty: 1, 
         description: '收集炼丹所需的药材',
-        reward: { breakthroughPills: 0.1, spiritStones: 8 },
+        reward: { breakthroughPills: 0.4, spiritStones: 30, experience: 30 },
         duration: 4000
     },
     { 
@@ -122,7 +122,7 @@ export const TASK_TEMPLATES = [
         name: '妖兽猎杀', 
         difficulty: 3, 
         description: '猎杀威胁宗门的妖兽',
-        reward: { spiritStones: 30, experience: 25 },
+        reward: { spiritStones: 120, experience: 100, breakthroughPills: 0.6 },
         duration: 10000
     },
     { 
@@ -130,7 +130,7 @@ export const TASK_TEMPLATES = [
         name: '护送任务', 
         difficulty: 2, 
         description: '护送重要人物安全到达目的地',
-        reward: { spiritStones: 18, reputation: 15 },
+        reward: { spiritStones: 70, reputation: 40, experience: 60 },
         duration: 8000
     }
 ];
