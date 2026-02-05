@@ -2680,16 +2680,30 @@ window.managePosition = function(hierarchyType) {
 
 // 提升弟子层级
 window.promoteDisciple = function(hierarchyType, discipleId) {
+    console.log('=== 晋升函数调用 ===');
+    console.log('参数:', { hierarchyType, discipleId });
+    console.log('当前时间:', new Date().toISOString());
+    
     const gameState = window.game ? window.game.gameState : null;
-    if (!gameState) return;
+    if (!gameState) {
+        console.error('gameState不存在');
+        return;
+    }
     
     const org = gameState.organization;
+    console.log('组织架构结构:', Object.keys(org));
+    console.log('外门弟子数组:', org.outerDisciples);
+    console.log('内门弟子数组:', org.innerDisciples);
+    console.log('亲传弟子数组:', org.personalDisciples);
+    
     const disciple = gameState.disciples.find(d => d.id == discipleId);
     
     if (!disciple) {
         alert('弟子不存在');
         return;
     }
+    
+    console.log('找到弟子:', disciple.name, disciple.realm);
     
     // 检查是否有职位
     const position = getDisciplePosition(disciple, org);
