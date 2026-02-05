@@ -2059,7 +2059,7 @@ CultivationGame.prototype.resolveCollectiveEvent = function(event, accept) {
         
         if (event.reward.breakthroughPills) {
             gameState.breakthroughPills += event.reward.breakthroughPills;
-            addLog(`[丹药] 获得${event.reward.breakthroughPills}枚突破丹`, 'text-purple-400');
+            addLog(`[丹药] 获得${event.reward.breakthroughPills}枚破境丹`, 'text-purple-400');
         }
         
         if (event.reward.experience) {
@@ -2112,7 +2112,7 @@ CultivationGame.prototype.formatEventReward = function(reward) {
     const parts = [];
     if (reward.reputation) parts.push(`声望 ${reward.reputation[0]}-${reward.reputation[1]}`);
     if (reward.spiritStones) parts.push(`灵石 ${reward.spiritStones[0]}-${reward.spiritStones[1]}`);
-    if (reward.breakthroughPills) parts.push(`突破丹 ${reward.breakthroughPills}`);
+    if (reward.breakthroughPills) parts.push(`破境丹 ${reward.breakthroughPills}`);
     if (reward.experience) parts.push(`修为 +${reward.experience}`);
     if (reward.items) parts.push(`${reward.items}品质物品`);
     return parts.join(', ') || '无';
