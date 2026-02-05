@@ -41,6 +41,8 @@ class CultivationGame {
         this.gameLoop = null;
         this.autoSaveInterval = null;
         this.isRunning = false;
+        this.lastEventTime = Date.now();
+        this.lastInvasionTime = Date.now();
     }
     
     // 🏛️ 实力至上系统核心函数
@@ -569,6 +571,9 @@ class CultivationGame {
         // 检查弟子冲突
         this.checkDiscipleConflicts();
         
+        // 检查定期入侵事件（每120秒检查一次）
+        this.checkPeriodicInvasion();
+        
         // 检查宗门升级
         this.checkSectUpgrade();
         
@@ -576,6 +581,251 @@ class CultivationGame {
         if (gameState.gameTick % 10 === 0) {
             console.log(`游戏心跳: ${gameState.gameTick}, 灵石: ${gameState.spiritStones.toFixed(1)}`);
         }
+    }
+    
+    // 检查定期入侵事件
+    checkPeriodicInvasion() {
+        // 每120秒（120个tick）检查一次
+        if (gameState.gameTick % 120 !== 0) return;
+        
+        // 弟子数量少于5个时不触发入侵
+        const aliveDisciples = gameState.disciples.filter(d => d.alive);
+        if (aliveDisciples.length < 5) return;
+        
+        // 30%概率触发入侵事件
+        if (Math.random() > 0.3) return;
+        
+        // 随机选择入侵类型
+        const invasionTypes = ['demon', 'beast'];
+        const invasionType = invasionTypes[Math.floor(Math.random() * invasionTypes.length)];
+        
+        if (invasionType === 'demon') {
+            this.triggerDemonInvasion(aliveDisciples);
+        } else {
+            this.triggerBeastTide(aliveDisciples);
+        }
+    }
+    
+    // 触发魔门入侵
+    triggerDemonInvasion(aliveDisciples) {
+        const demonSects = [
+            { name: '血魔宗', description: '修炼血魔功的邪派宗门', powerMultiplier: 0.8 },
+            { name: '天魔教', description: '信奉天魔的邪恶组织', powerMultiplier: 0.9 },
+            { name: '幽魂殿', description: '收集魂魄的阴邪宗门', powerMultiplier: 0.85 },
+            { name: '万毒门', description: '用毒之术冠绝天下', powerMultiplier: 0.75 }
+        ];
+        
+        const demonSect = demonSects[Math.floor(Math.random() * demonSects.length)];
+        const invasionPower = gameState.totalPower * demonSect.powerMultiplier;
+        
+        addLog(`[入侵] ⚠️ ${demonSect.name}来袭！${demonSect.description}`, 'text-red-600 font-bold');
+        addLog(`[入侵] 敌方战力约：${Math.floor(invasionPower)}，我方战力：${gameState.totalPower}`, 'text-red-400');
+        
+        // 生成敌方弟子
+        const enemyDisciples = this.generateEnemyDisciples(invasionPower, demonSect.name);
+        
+        // 执行战斗
+        this.executeInvasionBattle(aliveDisciples, enemyDisciples, '魔门入侵');
+    }
+    
+    // 触发兽潮入侵
+    triggerBeastTide(aliveDisciples) {
+        const beastTypes = [
+            { name: '妖狼群', description: '凶猛的妖狼群体', powerMultiplier: 0.7 },
+            { name: '毒蛇潮', description: '剧毒的毒蛇群', powerMultiplier: 0.65 },
+            { name: '鹰群来袭', description: '从天而降的妖鹰群', powerMultiplier: 0.75 },
+            { name: '猛虎下山', description: '强大的猛虎群体', powerMultiplier: 0.8 }
+        ];
+        
+        const beastType = beastTypes[Math.floor(Math.random() * beastTypes.length)];
+        const invasionPower = gameState.totalPower * beastType.powerMultiplier;
+        
+        addLog(`[兽潮] 🐯 ${beastType.name}来袭！${beastType.description}`, 'text-orange-600 font-bold');
+        addLog(`[兽潮] 兽潮战力约：${Math.floor(invasionPower)}，我方战力：${gameState.totalPower}`, 'text-orange-400');
+        
+        // 生成妖兽
+        const enemyDisciples = this.generateEnemyDisciples(invasionPower, beastType.name, true);
+        
+        // 执行战斗
+        this.executeInvasionBattle(aliveDisciples, enemyDisciples, '兽潮入侵');
+    }
+    
+    // 生成敌方弟子/妖兽
+    generateEnemyDisciples(totalPower, factionName, isBeast = false) {
+        const enemies = [];
+        const enemyCount = Math.floor(Math.random() * 5) + 3; // 3-7个敌人
+        
+        for (let i = 0; i < enemyCount; i++) {
+            const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
+            
+            if (isBeast) {
+                enemies.push({
+                    name: `${factionName}${i + 1}号`,
+                    power: Math.floor(enemyPower),
+                    type: '妖兽',
+                    realm: this.getRandomBeastRealm(enemyPower)
+                });
+            } else {
+                enemies.push({
+                    name: `${factionName}弟子${i + 1}`,
+                    power: Math.floor(enemyPower),
+                    type: '魔修',
+                    realm: this.getRandomDemonRealm(enemyPower)
+                });
+            }
+        }
+        
+        return enemies;
+    }
+    
+    // 获取随机妖兽境界
+    getRandomBeastRealm(power) {
+        if (power < 500) return '凡兽';
+        if (power < 1500) return '一阶妖兽';
+        if (power < 3000) return '二阶妖兽';
+        if (power < 6000) return '三阶妖兽';
+        if (power < 10000) return '四阶妖兽';
+        return '五阶妖兽';
+    }
+    
+    // 获取随机魔修境界
+    getRandomDemonRealm(power) {
+        if (power < 800) return '炼气期';
+        if (power < 2000) return '筑基期';
+        if (power < 4000) return '金丹期';
+        if (power < 8000) return '元婴期';
+        if (power < 15000) return '化神期';
+        return '返虚期';
+    }
+    
+    // 执行入侵战斗
+    executeInvasionBattle(ourDisciples, enemyDisciples, invasionType) {
+        const battleLog = [];
+        let ourTotalPower = ourDisciples.reduce((sum, d) => sum + d.getCombatPower(), 0);
+        let enemyTotalPower = enemyDisciples.reduce((sum, e) => sum + e.power, 0);
+        
+        battleLog.push(`[战斗] ${invasionType}战斗开始！`);
+        battleLog.push(`[战斗] 我方参战弟子：${ourDisciples.length}人，总战力：${ourTotalPower}`);
+        battleLog.push(`[战斗] 敌方参战单位：${enemyDisciples.length}个，总战力：${enemyTotalPower}`);
+        
+        // 计算战斗结果
+        const powerRatio = ourTotalPower / enemyTotalPower;
+        const winChance = Math.min(0.95, Math.max(0.05, powerRatio * 0.8 + 0.2)); // 基础20%胜利概率
+        const victory = Math.random() < winChance;
+        
+        if (victory) {
+            // 胜利情况
+            battleLog.push(`[胜利] 我方成功击退${invasionType}！`);
+            
+            // 随机损失少量弟子
+            const casualtyRate = 0.05 + Math.random() * 0.1; // 5%-15%损失率
+            const casualties = this.calculateCasualties(ourDisciples, casualtyRate);
+            
+            if (casualties.length > 0) {
+                battleLog.push(`[损失] 不幸牺牲${casualties.length}名弟子：${casualties.map(d => d.name).join('、')}`);
+                
+                // 移除牺牲的弟子
+                casualties.forEach(casualty => {
+                    const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                    if (index > -1) {
+                        gameState.disciples.splice(index, 1);
+                    }
+                });
+            }
+            
+            // 获得奖励
+            const spiritStonesReward = Math.floor(enemyTotalPower * 0.1);
+            const reputationReward = Math.floor(enemyTotalPower * 0.05);
+            
+            gameState.spiritStones += spiritStonesReward;
+            gameState.reputation += reputationReward;
+            
+            battleLog.push(`[奖励] 获得${spiritStonesReward}灵石，${reputationReward}声望`);
+            
+        } else {
+            // 失败情况
+            battleLog.push(`[战败] 我方败给了${invasionType}...`);
+            
+            // 大量弟子损失
+            const casualtyRate = 0.2 + Math.random() * 0.3; // 20%-50%损失率
+            const casualties = this.calculateCasualties(ourDisciples, casualtyRate);
+            
+            battleLog.push(`[损失] 损失${casualties.length}名弟子：${casualties.map(d => d.name).join('、')}`);
+            
+            // 移除牺牲的弟子
+            casualties.forEach(casualty => {
+                const index = gameState.disciples.findIndex(d => d.id === casualty.id);
+                if (index > -1) {
+                    gameState.disciples.splice(index, 1);
+                }
+            });
+            
+            // 损失资源
+            const spiritStonesLoss = Math.floor(gameState.spiritStones * 0.3);
+            const reputationLoss = Math.floor(gameState.reputation * 0.2);
+            
+            gameState.spiritStones = Math.max(0, gameState.spiritStones - spiritStonesLoss);
+            gameState.reputation = Math.max(0, gameState.reputation - reputationLoss);
+            
+            battleLog.push(`[损失] 损失${spiritStonesLoss}灵石，${reputationLoss}声望`);
+        }
+        
+        // 记录到宗门见闻
+        this.recordInvasionToHistory(battleLog, invasionType);
+        
+        // 重新计算战力
+        this.calculateTotalPower();
+    }
+    
+    // 计算伤亡
+    calculateCasualties(disciples, casualtyRate) {
+        const casualties = [];
+        const casualtyCount = Math.floor(disciples.length * casualtyRate);
+        
+        // 随机选择伤亡弟子（优先选择战力较低的）
+        const sortedDisciples = [...disciples].sort((a, b) => a.getCombatPower() - b.getCombatPower());
+        
+        for (let i = 0; i < casualtyCount && i < sortedDisciples.length; i++) {
+            casualties.push(sortedDisciples[i]);
+        }
+        
+        return casualties;
+    }
+    
+    // 记录入侵到宗门见闻
+    recordInvasionToHistory(battleLog, invasionType) {
+        const timestamp = new Date().toLocaleTimeString('zh-CN');
+        const historyEntry = {
+            time: timestamp,
+            type: invasionType,
+            events: [...battleLog]
+        };
+        
+        if (!gameState.invasionHistory) {
+            gameState.invasionHistory = [];
+        }
+        
+        gameState.invasionHistory.unshift(historyEntry);
+        
+        // 只保留最近10次入侵记录
+        if (gameState.invasionHistory.length > 10) {
+            gameState.invasionHistory = gameState.invasionHistory.slice(0, 10);
+        }
+        
+        // 显示战斗日志
+        battleLog.forEach(log => {
+            if (log.includes('[胜利]')) {
+                addLog(log, 'text-green-400 font-bold');
+            } else if (log.includes('[战败]')) {
+                addLog(log, 'text-red-400 font-bold');
+            } else if (log.includes('[损失]')) {
+                addLog(log, 'text-red-500');
+            } else if (log.includes('[奖励]')) {
+                addLog(log, 'text-green-500');
+            } else {
+                addLog(log, 'text-yellow-400');
+            }
+        });
     }
     
     // 更新时间系统
