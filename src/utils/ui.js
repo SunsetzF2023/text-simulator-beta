@@ -1880,8 +1880,8 @@ function checkRealmRequirement(disciple, requiredRealm) {
         disciple.realm.includes('四层') || disciple.realm.includes('五层') || disciple.realm.includes('六层') || 
         disciple.realm.includes('七层') || disciple.realm.includes('八层') || disciple.realm.includes('九层') || 
         disciple.realm.includes('大圆满')) {
-        // 提取基础境界名称
-        discipleRealm = disciple.realm.replace(/一二三四五六七八九十层|大圆满/g, '期');
+        // 提取基础境界名称 - 修复正则表达式
+        discipleRealm = disciple.realm.replace(/(一|二|三|四|五|六|七|八|九|十)层|大圆满/g, '期');
     }
     
     const discipleIndex = realmHierarchy.indexOf(discipleRealm);
@@ -2245,8 +2245,8 @@ function getRealmIndex(realm) {
         realm.includes('四层') || realm.includes('五层') || realm.includes('六层') || 
         realm.includes('七层') || realm.includes('八层') || realm.includes('九层') || 
         realm.includes('大圆满')) {
-        // 提取基础境界名称
-        baseRealm = realm.replace(/一二三四五六七八九十层|大圆满/g, '期');
+        // 提取基础境界名称 - 修复正则表达式
+        baseRealm = realm.replace(/(一|二|三|四|五|六|七|八|九|十)层|大圆满/g, '期');
     }
     
     const realms = ['凡人', '炼气期', '筑基期', '金丹期', '元婴期', '化神期', '炼虚期', '合体期', '大乘期', '渡劫期', '仙人'];
