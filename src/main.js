@@ -393,9 +393,36 @@ class CultivationGame {
     processAutoGain() {
         const aliveDisciples = gameState.disciples.filter(d => d.alive && !d.injured);
         if (aliveDisciples.length > 0) {
-            const gain = aliveDisciples.length * GAME_CONFIG.AUTO_GAIN_PER_DISCIPLE;
-            gameState.spiritStones += gain;
-            console.log(`采集灵石: +${gain}`);
+            let totalGain = 0;
+            
+            aliveDisciples.forEach(disciple => {
+                // 基础采集量
+                let baseGain = GAME_CONFIG.AUTO_GAIN_PER_DISCIPLE;
+                
+                // 境界加成
+                const realmIndex = this.getRealmIndex(disciple.realm);
+                let realmBonus = 1.0;
+                
+                if (realmIndex >= 1) realmBonus = 1.2;      // 炼气期
+                if (realmIndex >= 2) realmBonus = 1.5;      // 筑基期  
+                if (realmIndex >= 3) realmBonus = 2.0;      // 金丹期
+                if (realmIndex >= 4) realmBonus = 3.0;      // 元婴期
+                if (realmIndex >= 5) realmBonus = 5.0;      // 化神期及以上
+                
+                // 天赋加成
+                const talentBonus = 0.5 + (disciple.talent / 100); // 0.5-1.5倍
+                
+                // 计算单个弟子的贡献
+                const discipleGain = Math.floor(baseGain * realmBonus * talentBonus * 10) / 10; // 保留一位小数
+                totalGain += discipleGain;
+            });
+            
+            // 弟子数量加成（鼓励多招收弟子）
+            const discipleCountBonus = Math.min(2.0, 1.0 + (aliveDisciples.length - 1) * 0.1); // 最多2倍
+            totalGain = Math.floor(totalGain * discipleCountBonus * 10) / 10; // 保留一位小数
+            
+            gameState.spiritStones += totalGain;
+            console.log(`采集灵石: +${totalGain} (弟子数:${aliveDisciples.length}, 加成:${discipleCountBonus.toFixed(1)}x)`);
         }
         
         // 自动治疗受伤弟子
