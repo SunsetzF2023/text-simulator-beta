@@ -501,6 +501,8 @@ class CultivationGame {
             colorClass = 'text-purple-400';
         } else if (event.type === 'expedition') {
             colorClass = 'text-blue-400';
+        } else if (event.type === 'expedition_negative') {
+            colorClass = 'text-red-400';
         } else if (event.type === 'pill' || event.type === 'treasure' || event.type === 'weapon') {
             colorClass = 'text-yellow-400';
         }
@@ -582,6 +584,23 @@ class CultivationGame {
             if (event.reward.consumeItem) {
                 // 消耗宝库物品
                 this.consumeTreasuryItem(event.reward.itemType);
+            }
+        }
+        
+        // 应用惩罚
+        if (event.penalty) {
+            if (event.penalty.spiritStones) {
+                gameState.spiritStones = Math.max(0, gameState.spiritStones - event.penalty.spiritStones);
+            }
+            if (event.penalty.reputation) {
+                gameState.reputation = Math.max(0, gameState.reputation + event.penalty.reputation);
+            }
+            if (event.penalty.injured) {
+                const disciple = gameState.disciples.find(d => d.id === event.discipleId);
+                if (disciple) {
+                    disciple.injured = true;
+                    disciple.injuryTime = Date.now();
+                }
             }
         }
         

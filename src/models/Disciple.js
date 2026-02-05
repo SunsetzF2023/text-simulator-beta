@@ -412,7 +412,7 @@ export class Disciple {
         }
         
         // 外出历练事件（获得资源）
-        if (Math.random() < 0.15) { // 15%概率触发外出历练
+        if (Math.random() < 0.30) { // 30%概率触发外出历练
             events.push(this.triggerExpeditionEvent());
         }
         
@@ -734,10 +734,11 @@ export class Disciple {
     // 触发外出历练事件
     triggerExpeditionEvent() {
         const expeditions = [
+            // 正面事件 - 高奖励
             {
                 type: 'expedition',
-                message: `${this.name}外出历练，在山涧中发现了一个小型灵石矿脉，收获了一些灵石。`,
-                reward: { spiritStones: Math.floor(Math.random() * 20) + 10 }, // 10-29灵石
+                message: `${this.name}外出历练，在山涧中发现了一个中型灵石矿脉，收获了大量灵石。`,
+                reward: { spiritStones: Math.floor(Math.random() * 200) + 100 }, // 100-299灵石
                 discipleId: this.id
             },
             {
@@ -748,8 +749,8 @@ export class Disciple {
             },
             {
                 type: 'expedition',
-                message: `${this.name}帮助了一个商队击退山匪，商队赠予了一些灵石和破境丹作为谢礼。`,
-                reward: { spiritStones: Math.floor(Math.random() * 15) + 5, breakthroughPills: 1 }, // 5-19灵石 + 1破境丹
+                message: `${this.name}帮助了一个商队击退山匪，商队赠予了丰厚的灵石和丹药作为谢礼。`,
+                reward: { spiritStones: Math.floor(Math.random() * 150) + 80, breakthroughPills: 1 }, // 80-229灵石 + 1破境丹
                 discipleId: this.id
             },
             {
@@ -761,7 +762,7 @@ export class Disciple {
             {
                 type: 'expedition',
                 message: `${this.name}探索了一处古代修士的洞府，发现了其中的珍藏。`,
-                reward: { spiritStones: Math.floor(Math.random() * 30) + 20, breakthroughPills: Math.floor(Math.random() * 2) + 1 }, // 20-49灵石 + 1-2破境丹
+                reward: { spiritStones: Math.floor(Math.random() * 300) + 200, breakthroughPills: Math.floor(Math.random() * 2) + 1 }, // 200-499灵石 + 1-2破境丹
                 discipleId: this.id
             },
             {
@@ -773,7 +774,69 @@ export class Disciple {
             {
                 type: 'expedition',
                 message: `${this.name}协助官府清剿了一群魔修，获得了丰厚的奖励。`,
-                reward: { spiritStones: Math.floor(Math.random() * 40) + 30, breakthroughPills: Math.floor(Math.random() * 3) + 2 }, // 30-69灵石 + 2-4破境丹
+                reward: { spiritStones: Math.floor(Math.random() * 400) + 300, breakthroughPills: Math.floor(Math.random() * 3) + 2 }, // 300-699灵石 + 2-4破境丹
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}意外发现了一个小型灵石矿脉，收获颇丰！`,
+                reward: { spiritStones: Math.floor(Math.random() * 500) + 400 }, // 400-899灵石
+                discipleId: this.id
+            },
+            {
+                type: 'expedition',
+                message: `${this.name}运气爆棚！在一处上古遗迹中发现了传说中的宝藏！`,
+                reward: { spiritStones: Math.floor(Math.random() * 800) + 1000 }, // 1000-1799灵石（偶尔爆出上千）
+                discipleId: this.id
+            },
+            
+            // 负面事件 - 扣除资源
+            {
+                type: 'expedition_negative',
+                message: `${this.name}外出历练时遭遇劫修，不仅被抢走了灵石，还受了轻伤。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 100) + 50, injured: true }, // 扣除50-149灵石 + 受伤
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}在历练中误入魔修陷阱，损失惨重，狼狈逃回。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 150) + 80, reputation: -10 }, // 扣除80-229灵石 -10声望
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}外出历练时被仇家盯上，经过一番激战才脱身，损失了不少资源。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 120) + 60, reputation: -5 }, // 扣除60-179灵石 -5声望
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}在历练中遭遇妖兽袭击，虽然保住了性命，但损失了所有携带的灵石。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 200) + 100, injured: true }, // 扣除100-299灵石 + 受伤
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}外出历练时误食毒果，不仅没有收获，还中毒受伤。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 80) + 30, injured: true }, // 扣除30-109灵石 + 受伤
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}在历练中被诬陷偷盗，为了摆平事情花费了不少灵石，声望也受到了影响。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 180) + 120, reputation: -15 }, // 扣除120-299灵石 -15声望
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}外出历练时遭遇宗门排挤，被强行索要'过路费'。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 100) + 70, reputation: -8 }, // 扣除70-169灵石 -8声望
+                discipleId: this.id
+            },
+            {
+                type: 'expedition_negative',
+                message: `${this.name}在历练中误入禁地，被守护者重伤驱逐，损失惨重。`,
+                penalty: { spiritStones: Math.floor(Math.random() * 250) + 150, injured: true, reputation: -12 }, // 扣除150-399灵石 + 受伤 -12声望
                 discipleId: this.id
             }
         ];
