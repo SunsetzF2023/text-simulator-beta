@@ -35,9 +35,88 @@ export const SPIRIT_ROOTS = ['金', '木', '水', '火', '土', '雷', '风', '�
 
 export const PERSONALITIES = ['正直', '卑劣', '狂傲', '胆小', '温和', '残暴', '狡诈', '憨厚'];
 
-export const SURNAMES = ['李', '王', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭', '何', '高', '林', '罗'];
+export const SURNAMES = [
+    // 常见姓氏
+    '李', '王', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴', 
+    '徐', '孙', '马', '朱', '胡', '郭', '何', '高', '林', '罗',
+    // 古风姓氏
+    '萧', '慕容', '上官', '欧阳', '司马', '夏侯', '诸葛', '皇甫', '尉迟', '公孙',
+    '轩辕', '令狐', '钟离', '宇文', '长孙', '鲜于', '闾丘', '司徒', '司空', '亓官',
+    // 仙侠特色姓氏
+    '云', '风', '雪', '月', '星', '霜', '冰', '炎', '雷', '电',
+    '紫', '青', '白', '玄', '墨', '苍', '碧', '幽', '冥', '天',
+    // 罕见姓氏
+    '东方', '南宫', '西门', '北堂', '独孤', '赫连', '澹台', '公冶', '宗政', '濮阳',
+    '淳于', '单于', '太叔', '申屠', '公羊', '仲孙', '曲阳', '尔朱', '万俟', '闻人'
+];
 
-export const NAMES = ['明', '华', '强', '芳', '军', '敏', '静', '丽', '勇', '艳', '杰', '涛', '鹏', '飞', '霞', '雪', '梅', '兰', '菊', '竹'];
+export const NAMES = {
+    male: [
+        // 单字名 - 英俊潇洒
+        '轩', '宸', '渊', '泽', '瀚', '宇', '霄', '辰', '逸', '凡',
+        '峰', '峻', '松', '柏', '枫', '桦', '楠', '槐', '柳', '杨',
+        '剑', '刀', '枪', '戟', '弓', '弩', '鞭', '锏', '锤', '斧',
+        '龙', '虎', '豹', '狼', '鹰', '鹤', '凤', '麟', '龟', '蛇',
+        '雷', '电', '风', '云', '雨', '雪', '霜', '冰', '炎', '火',
+        '天', '地', '玄', '黄', '宇', '宙', '洪', '荒', '乾', '坤',
+        '明', '亮', '辉', '煌', '耀', '炫', '烁', '晶', '莹', '亮',
+        '强', '壮', '威', '猛', '勇', '刚', '毅', '坚', '定', '安',
+        '文', '武', '书', '画', '琴', '棋', '诗', '酒', '茶', '花',
+        '德', '仁', '义', '礼', '智', '信', '忠', '孝', '廉', '耻',
+        
+        // 双字名 - 诗意唯美
+        '浩然', '子轩', '天宇', '志强', '俊杰', '伟宸', '博涛', '睿渊', '昊强', '瀚文',
+        '君浩', '修杰', '伟泽', '健瀚', '明辉', '峻熙', '嘉懿', '煜城', '懿轩', '伟祺',
+        '荣轩', '越泽', '浩宇', '瑾瑜', '晟睿', '文轩', '修洁', '昊然', '伟诚', '志泽',
+        '博文', '昊天', '思源', '雨泽', '子骞', '明轩', '浩然', '天翊', '宇辰', '亦凡',
+        '星辰', '凌云', '清风', '明月', '长风', '破军', '七杀', '贪狼', '紫微', '天机',
+        '无痕', '无情', '多情', '痴心', '醉月', '听雨', '观海', '望山', '踏雪', '寻梅',
+        '剑心', '刀魂', '枪神', '戟霸', '弓圣', '弩仙', '鞭王', '锏皇', '锤尊', '斧魔',
+        '龙吟', '虎啸', '豹奔', '狼嚎', '鹰击', '鹤舞', '凤鸣', '麟现', '龟息', '蛇行',
+        '雷动', '电闪', '风起', '云涌', '雨落', '雪飘', '霜降', '冰封', '炎燃', '火燎',
+        '天尊', '地皇', '玄帝', '黄君', '宇王', '宙主', '洪相', '荒将', '乾帅', '坤卒'
+    ],
+    
+    female: [
+        // 单字名 - 温柔美丽
+        '雪', '梅', '兰', '菊', '竹', '荷', '莲', '桃', '李', '杏',
+        '花', '草', '柳', '杨', '松', '柏', '枫', '桦', '楠', '槐',
+        '月', '星', '辰', '日', '光', '影', '霞', '云', '雨', '露',
+        '冰', '霜', '雪', '寒', '冷', '凉', '温', '暖', '热', '炎',
+        '红', '橙', '黄', '绿', '青', '蓝', '紫', '白', '黑', '灰',
+        '琴', '棋', '书', '画', '诗', '酒', '茶', '花', '香', '梦',
+        '美', '丽', '雅', '静', '娴', '淑', '慧', '智', '灵', '巧',
+        '春', '夏', '秋', '冬', '晨', '暮', '晓', '昏', '朝', '夕',
+        '凤', '凰', '莺', '燕', '鹃', '鹊', '鹤', '鸳', '鸯', '蝶',
+        '珠', '玉', '金', '银', '宝', '珍', '翠', '翡', '璃', '晶',
+        
+        // 双字名 - 诗意仙雅
+        '婉儿', '雅琴', '静姝', '慧妍', '美琳', '欣怡', '慧敏', '秀英', '丽华', '美莲',
+        '雨薇', '雨婷', '雨欣', '雨萱', '雨桐', '雨涵', '雨洁', '雨露', '雨晴', '雨荷',
+        '雪儿', '雪梅', '雪莲', '雪蓉', '雪晴', '雪柔', '雪慧', '雪妍', '雪菲', '雪莉',
+        '月儿', '月华', '月娥', '月婵', '月姝', '月婷', '月琳', '月瑶', '月琪', '月莹',
+        '星辰', '星月', '星光', '星辉', '星雨', '雪花', '星梦', '星语', '心愿', '星晴',
+        '清风', '明月', '朝霞', '晚霞', '彩霞', '云霞', '红霞', '紫霞', '青霞', '白霞',
+        '冰心', '冰雪', '冰清', '冰洁', '冰玉', '冰霜', '冰寒', '冰凉', '冰晶', '冰莹',
+        '春花', '夏荷', '秋月', '冬雪', '春雨', '夏风', '秋霜', '冬梅', '春柳', '夏竹',
+        '凤凰', '莺燕', '杜鹃', '喜鹊', '仙鹤', '鸳鸯', '蝴蝶', '蜜蜂', '蜻蜓', '螳螂',
+        '珍珠', '宝玉', '金玉', '银环', '宝珠', '珍宝', '翡翠', '琉璃', '水晶', '玛瑙'
+    ],
+    
+    neutral: [
+        // 中性名字 - 男女皆宜
+        '明', '华', '强', '芳', '军', '敏', '静', '丽', '勇', '艳',
+        '杰', '涛', '鹏', '飞', '霞', '雪', '梅', '兰', '菊', '竹',
+        '松', '柏', '枫', '桦', '楠', '槐', '柳', '杨', '花', '草',
+        '月', '星', '辰', '日', '光', '影', '云', '雨', '露', '霜',
+        '琴', '棋', '书', '画', '诗', '酒', '茶', '香', '梦', '情',
+        '春', '夏', '秋', '冬', '晨', '暮', '晓', '昏', '朝', '夕',
+        '青', '白', '紫', '红', '绿', '蓝', '黄', '橙', '黑', '灰',
+        '东', '西', '南', '北', '中', '上', '下', '左', '右', '前',
+        '山', '水', '林', '海', '湖', '河', '江', '溪', '泉', '瀑',
+        '风', '雨', '雷', '电', '霜', '雪', '冰', '炎', '火', '烟'
+    ]
+};
 
 export const APPEARANCES = [
     '面容清秀，眼神明亮',
@@ -58,7 +137,7 @@ export const TASK_TEMPLATES = [
         name: '灵石采集', 
         difficulty: 1, 
         description: '采集灵石为宗门积累资源',
-        reward: { spiritStones: 5, experience: 10 },
+        reward: { spiritStones: 25, experience: 40 },
         duration: 3000
     },
     { 
@@ -66,7 +145,7 @@ export const TASK_TEMPLATES = [
         name: '宗门守卫', 
         difficulty: 1, 
         description: '守护宗门安全',
-        reward: { spiritStones: 3, experience: 8 },
+        reward: { spiritStones: 20, experience: 35 },
         duration: 4000
     },
     { 
@@ -74,7 +153,7 @@ export const TASK_TEMPLATES = [
         name: '野外历练', 
         difficulty: 2, 
         description: '在野外历练提升实力',
-        reward: { experience: 20, breakthroughPills: 0.1 },
+        reward: { experience: 60, breakthroughPills: 1, spiritStones: 15 },
         duration: 6000
     },
     { 
@@ -82,7 +161,7 @@ export const TASK_TEMPLATES = [
         name: '秘境探索', 
         difficulty: 3, 
         description: '探索附近的小型秘境',
-        reward: { spiritStones: 20, breakthroughPills: 0.3 },
+        reward: { spiritStones: 80, breakthroughPills: 2, experience: 80 },
         duration: 8000
     },
     { 
@@ -90,7 +169,7 @@ export const TASK_TEMPLATES = [
         name: '宗门宣传', 
         difficulty: 1, 
         description: '宣传宗门招收新弟子',
-        reward: { reputation: 10 },
+        reward: { reputation: 30, experience: 25 },
         duration: 5000
     },
     { 
@@ -98,7 +177,7 @@ export const TASK_TEMPLATES = [
         name: '外交任务', 
         difficulty: 2, 
         description: '与其他宗门进行外交活动',
-        reward: { reputation: 20, spiritStones: 15 },
+        reward: { reputation: 50, spiritStones: 45, experience: 40 },
         duration: 7000
     },
     { 
@@ -106,7 +185,7 @@ export const TASK_TEMPLATES = [
         name: '炼丹协助', 
         difficulty: 2, 
         description: '协助炼制丹药',
-        reward: { breakthroughPills: 0.2, experience: 15 },
+        reward: { breakthroughPills: 2, experience: 50, spiritStones: 25 },
         duration: 6000
     },
     { 
@@ -114,7 +193,7 @@ export const TASK_TEMPLATES = [
         name: '药材收集', 
         difficulty: 1, 
         description: '收集炼丹所需的药材',
-        reward: { breakthroughPills: 0.1, spiritStones: 8 },
+        reward: { breakthroughPills: 1, spiritStones: 30, experience: 30 },
         duration: 4000
     },
     { 
@@ -122,7 +201,7 @@ export const TASK_TEMPLATES = [
         name: '妖兽猎杀', 
         difficulty: 3, 
         description: '猎杀威胁宗门的妖兽',
-        reward: { spiritStones: 30, experience: 25 },
+        reward: { spiritStones: 120, experience: 100, breakthroughPills: 3 },
         duration: 10000
     },
     { 
@@ -130,9 +209,102 @@ export const TASK_TEMPLATES = [
         name: '护送任务', 
         difficulty: 2, 
         description: '护送重要人物安全到达目的地',
-        reward: { spiritStones: 18, reputation: 15 },
+        reward: { spiritStones: 70, reputation: 40, experience: 60 },
         duration: 8000
     }
+];
+
+// 功法品质系统
+export const TECHNIQUE_QUALITIES = {
+    '黄阶': { color: '#8B7355', multiplier: 1.0, rarity: 'common', combatMultiplier: 1.0 },
+    '玄阶': { color: '#4A5568', multiplier: 1.5, rarity: 'uncommon', combatMultiplier: 1.5 },
+    '地阶': { color: '#2D3748', multiplier: 2.0, rarity: 'rare', combatMultiplier: 2.5 },
+    '天阶': { color: '#FFD700', multiplier: 3.0, rarity: 'legendary', combatMultiplier: 4.0 }
+};
+
+// 功法修炼等级
+export const TECHNIQUE_LEVELS = [
+    { name: '初学乍练', progress: 0, powerBonus: 1.0, combatBonus: 1.0 },
+    { name: '初出茅庐', progress: 20, powerBonus: 1.2, combatBonus: 1.3 },
+    { name: '登堂入室', progress: 40, powerBonus: 1.5, combatBonus: 1.6 },
+    { name: '炉火纯青', progress: 60, powerBonus: 1.8, combatBonus: 2.0 },
+    { name: '出神入化', progress: 80, powerBonus: 2.2, combatBonus: 2.5 },
+    { name: '登峰造极', progress: 100, powerBonus: 2.5, combatBonus: 3.0 }
+];
+
+// 功法类型战力加成
+export const TECHNIQUE_TYPE_BONUS = {
+    'foundation': { combatBonus: 1.2, cultivationBonus: 1.5 }, // 基础功法
+    'attack': { combatBonus: 2.0, cultivationBonus: 1.0 }, // 攻击功法
+    'defense': { combatBonus: 1.5, cultivationBonus: 1.1 }, // 防御功法
+    'movement': { combatBonus: 1.3, cultivationBonus: 1.2 }, // 身法功法
+    'body': { combatBonus: 1.8, cultivationBonus: 1.1 }, // 炼体功法
+    'healing': { combatBonus: 0.8, cultivationBonus: 1.3 }, // 治疗功法
+    'special': { combatBonus: 2.5, cultivationBonus: 1.4 }  // 特殊功法
+};
+
+// 功法属性相克加成
+export const ELEMENT_COUNTERS = {
+    '金': { counters: ['木'], weak: ['火'], bonus: 1.2 },
+    '木': { counters: ['土'], weak: ['金'], bonus: 1.2 },
+    '水': { counters: ['火'], weak: ['土'], bonus: 1.2 },
+    '火': { counters: ['金'], weak: ['水'], bonus: 1.2 },
+    '土': { counters: ['水'], weak: ['木'], bonus: 1.2 },
+    '风': { counters: ['土'], weak: ['金'], bonus: 1.2 },
+    '雷': { counters: ['金', '水'], weak: ['土'], bonus: 1.3 },
+    '冰': { counters: ['火', '土'], weak: ['雷'], bonus: 1.3 },
+    '无属性': { counters: [], weak: [], bonus: 1.0 }
+};
+
+// 基础功法数据
+export const BASE_TECHNIQUES = [
+    // 黄阶功法
+    { name: '引气诀', quality: '黄阶', attribute: '无属性', type: 'foundation', 
+      description: '最基础的引气功法，适合初学者', basePower: 10, cultivationBonus: 1.1, combatBonus: 1.0 },
+    { name: '炼体术', quality: '黄阶', attribute: '土', type: 'body', 
+      description: '强化肉身的粗浅功法', basePower: 12, cultivationBonus: 1.0, combatBonus: 1.1 },
+    { name: '御风步', quality: '黄阶', attribute: '风', type: 'movement', 
+      description: '提升速度的身法', basePower: 8, cultivationBonus: 1.1, combatBonus: 0.9 },
+    { name: '碎石拳', quality: '黄阶', attribute: '土', type: 'attack', 
+      description: '刚猛的拳法', basePower: 15, cultivationBonus: 1.0, combatBonus: 1.3 },
+    { name: '凝火术', quality: '黄阶', attribute: '火', type: 'attack', 
+      description: '凝聚火焰攻击', basePower: 14, cultivationBonus: 1.1, combatBonus: 1.2 },
+    { name: '聚水诀', quality: '黄阶', attribute: '水', type: 'defense', 
+      description: '操控水流的防御功法', basePower: 11, cultivationBonus: 1.1, combatBonus: 0.8 },
+    { name: '锐金指', quality: '黄阶', attribute: '金', type: 'attack', 
+      description: '锋锐的指法', basePower: 13, cultivationBonus: 1.0, combatBonus: 1.2 },
+    { name: '青木诀', quality: '黄阶', attribute: '木', type: 'healing', 
+      description: '促进恢复的木系功法', basePower: 9, cultivationBonus: 1.2, combatBonus: 0.6 },
+    
+    // 玄阶功法
+    { name: '五行遁法', quality: '玄阶', attribute: '无属性', type: 'movement', 
+      description: '借助五行元素遁走的身法', basePower: 20, cultivationBonus: 1.3, combatBonus: 1.1 },
+    { name: '烈阳掌', quality: '玄阶', attribute: '火', type: 'attack', 
+      description: '炽热如阳的掌法', basePower: 28, cultivationBonus: 1.2, combatBonus: 1.6 },
+    { name: '玄冰盾', quality: '玄阶', attribute: '冰', type: 'defense', 
+      description: '坚不可摧的冰系防御', basePower: 25, cultivationBonus: 1.2, combatBonus: 1.3 },
+    { name: '奔雷剑法', quality: '玄阶', attribute: '雷', type: 'attack', 
+      description: '迅如雷霆的剑法', basePower: 30, cultivationBonus: 1.1, combatBonus: 1.8 },
+    { name: '厚土诀', quality: '玄阶', attribute: '土', type: 'defense', 
+      description: '大地般的防御功法', basePower: 26, cultivationBonus: 1.3, combatBonus: 1.4 },
+    { name: '回春术', quality: '玄阶', attribute: '木', type: 'healing', 
+      description: '快速恢复伤势的治疗术', basePower: 22, cultivationBonus: 1.4, combatBonus: 0.7 },
+    
+    // 地阶功法
+    { name: '九转玄功', quality: '地阶', attribute: '无属性', type: 'foundation', 
+      description: '玄奥无比的顶级功法', basePower: 40, cultivationBonus: 1.6, combatBonus: 1.5 },
+    { name: '焚天诀', quality: '地阶', attribute: '火', type: 'attack', 
+      description: '可焚烧天地的火法', basePower: 50, cultivationBonus: 1.4, combatBonus: 2.2 },
+    { name: '万剑归宗', quality: '地阶', attribute: '金', type: 'attack', 
+      description: '剑道至高绝学', basePower: 55, cultivationBonus: 1.3, combatBonus: 2.5 },
+    { name: '不动明王身', quality: '地阶', attribute: '土', type: 'body', 
+      description: '金刚不坏的护体神功', basePower: 45, cultivationBonus: 1.5, combatBonus: 2.0 },
+    
+    // 天阶功法
+    { name: '混沌开天诀', quality: '天阶', attribute: '无属性', type: 'foundation', 
+      description: '传说中开天辟地的无上功法', basePower: 80, cultivationBonus: 2.0, combatBonus: 3.0 },
+    { name: '轮回诀', quality: '天阶', attribute: '无属性', type: 'special', 
+      description: '涉及轮回法则的禁忌功法', basePower: 70, cultivationBonus: 1.8, combatBonus: 3.5 }
 ];
 
 // 游戏配置
@@ -222,14 +394,31 @@ export const MARKET_ITEMS = [
     { name: '法袍', type: 'armor', basePrice: 60, rarity: 'rare', description: '蕴含法力的道袍' },
     { name: '护身符', type: 'talisman', basePrice: 40, rarity: 'rare', description: '可抵挡一次致命攻击' },
     
-    // 功法秘籍
-    { name: '基础剑诀', type: 'manual', basePrice: 30, rarity: 'uncommon', description: '入门级剑法秘籍' },
-    { name: '炼气心得', type: 'manual', basePrice: 50, rarity: 'rare', description: '前人炼气经验总结' },
-    { name: '筑基要诀', type: 'manual', basePrice: 150, rarity: 'epic', description: '筑基期的修炼指南' },
-    { name: '丹方残卷', type: 'manual', basePrice: 100, rarity: 'rare', description: '记录了某种丹药的炼制方法' },
+    // 功法秘籍（使用新的功法系统）
+    { name: '引气诀(无属性)', type: 'technique', basePrice: 200, rarity: 'common', description: '最基础的引气功法，适合初学者' },
+    { name: '炼体术(土)', type: 'technique', basePrice: 250, rarity: 'common', description: '强化肉身的粗浅功法' },
+    { name: '御风步(风)', type: 'technique', basePrice: 300, rarity: 'common', description: '提升速度的身法' },
+    { name: '碎石拳(土)', type: 'technique', basePrice: 350, rarity: 'common', description: '刚猛的拳法' },
+    { name: '凝火术(火)', type: 'technique', basePrice: 320, rarity: 'common', description: '凝聚火焰攻击' },
+    { name: '聚水诀(水)', type: 'technique', basePrice: 280, rarity: 'common', description: '操控水流的防御功法' },
+    { name: '锐金指(金)', type: 'technique', basePrice: 400, rarity: 'common', description: '锋锐的指法' },
+    { name: '青木诀(木)', type: 'technique', basePrice: 260, rarity: 'common', description: '促进恢复的木系功法' },
+    // 玄阶功法
+    { name: '五行遁法(无属性)', type: 'technique', basePrice: 1200, rarity: 'uncommon', description: '借助五行元素遁走的身法' },
+    { name: '烈阳掌(火)', type: 'technique', basePrice: 1500, rarity: 'uncommon', description: '炽热如阳的掌法' },
+    { name: '玄冰盾(冰)', type: 'technique', basePrice: 1300, rarity: 'uncommon', description: '坚不可摧的冰系防御' },
+    { name: '奔雷剑法(雷)', type: 'technique', basePrice: 1800, rarity: 'uncommon', description: '迅如雷霆的剑法' },
+    { name: '厚土诀(土)', type: 'technique', basePrice: 1400, rarity: 'uncommon', description: '大地般的防御功法' },
+    { name: '回春术(木)', type: 'technique', basePrice: 1100, rarity: 'uncommon', description: '快速恢复伤势的治疗术' },
     
-    // 特殊物品
-    { name: '灵兽蛋', type: 'special', basePrice: 120, rarity: 'epic', description: '神秘的兽蛋，可能孵化出灵兽' },
+    // 地阶功法
+    { name: '九转玄功(无属性)', type: 'technique', basePrice: 55000, rarity: 'rare', description: '玄奥无比的顶级功法' },
+    { name: '焚天诀(火)', type: 'technique', basePrice: 65000, rarity: 'rare', description: '可焚烧天地的火法' },
+    { name: '万剑归宗(金)', type: 'technique', basePrice: 75000, rarity: 'rare', description: '剑道至高绝学' },
+    { name: '不动明王身(土)', type: 'technique', basePrice: 58000, rarity: 'rare', description: '金刚不坏的护体神功' },
+    // 天阶改为非卖品
+    { name: '混沌开天诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '传说中开天辟地的无上功法' },
+    { name: '轮回诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '涉及轮回法则的禁忌功法' },
     { name: '古玉', type: 'special', basePrice: 80, rarity: 'rare', description: '蕴含神秘力量的古玉' },
     { name: '地图残片', type: 'special', basePrice: 60, rarity: 'rare', description: '可能指向某个秘境的地图' },
     { name: '天机符', type: 'special', basePrice: 200, rarity: 'epic', description: '可占卜吉凶的法符' },
@@ -247,7 +436,37 @@ export const AUCTION_CONFIG = {
     AUCTION_DURATION: 30000, // 拍卖持续时间（毫秒）
     EXTENSION_TIME: 10000, // 最后加价延长的时间
     START_ITEMS: 3, // 初始拍卖物品数量
-    MAX_ITEMS: 6 // 最大拍卖物品数量
+MAX_ITEMS: 6, // 最大拍卖物品数量
+    
+    // NPC竞拍者名字池
+    NPC_BIDDERS: [
+        '青云剑仙', '紫霞真人', '玄机子', '丹心道人', '飞羽仙子',
+        '天机老人', '无极剑尊', '碧霄仙子', '金丹大师', '元婴真君',
+        '白云剑客', '红尘炼心士', '逍遥散人', '寒月仙子', '烈火真君',
+        '清风道长', '明月师太', '雷震子', '冰心仙子', '土行孙'
+    ],
+    
+    // NPC竞拍策略
+    NPC_BIDDING_STRATEGIES: {
+        aggressive: { // 激进型：喜欢高价竞拍稀有物品
+            chance: 0.3,
+            minBidMultiplier: 1.5,
+            maxBidMultiplier: 3.0,
+            preferredRarity: ['legendary', 'epic']
+        },
+        moderate: { // 温和型：理性出价，考虑性价比
+            chance: 0.4,
+            minBidMultiplier: 1.0,
+            maxBidMultiplier: 2.0,
+            preferredRarity: ['epic', 'rare']
+        },
+        conservative: { // 保守型：只拍便宜的常见物品
+            chance: 0.3,
+            minBidMultiplier: 0.8,
+            maxBidMultiplier: 1.5,
+            preferredRarity: ['rare', 'uncommon']
+        }
+    }
 };
 
 export const INVASION_CONFIG = {
@@ -375,7 +594,7 @@ export const EVIL_TASKS = [
         duration: 172800000, // 48小时
         rewards: {
             reputation: [-50, -20],
-            breakthroughPills: 3,
+            breakthroughPills: 1,
             evilKarma: [40, 60]
         },
         penalties: {
@@ -767,7 +986,7 @@ export const COLLECTIVE_EVENTS = [
         description: '附近发现了新的灵脉',
         type: 'opportunity',
         difficulty: 'medium',
-        reward: { spiritStones: 200, breakthroughPills: 2 },
+        reward: { spiritStones: 200, breakthroughPills: 1 },
         penalty: {}
     },
     {
@@ -793,6 +1012,115 @@ export const COLLECTIVE_EVENTS = [
         difficulty: 'hard',
         reward: { items: 'epic', experience: 200 },
         penalty: { disciples: 1 }
+    },
+    // 新增群体性增益事件
+    {
+        name: '天降祥瑞',
+        description: '天降祥瑞，灵气充沛，弟子们修炼速度大幅提升',
+        type: 'blessing',
+        difficulty: 'easy',
+        reward: { 
+            globalCultivationBonus: 2.0, 
+            duration: 300000, // 5分钟
+            message: '全体弟子修炼速度提升100%，持续5分钟！'
+        },
+        penalty: {}
+    },
+    {
+        name: '宗门庆典',
+        description: '宗门举办庆典，弟子们士气高涨，修炼效率提升',
+        type: 'celebration',
+        difficulty: 'medium',
+        reward: { 
+            globalCultivationBonus: 1.5, 
+            duration: 240000, // 4分钟
+            reputation: 30,
+            message: '全体弟子修炼速度提升50%，持续4分钟！'
+        },
+        penalty: { spiritStones: -100 }
+    },
+    {
+        name: '灵气潮汐',
+        description: '天地灵气潮汐来袭，修炼事半功倍',
+        type: 'natural',
+        difficulty: 'medium',
+        reward: { 
+            globalCultivationBonus: 3.0, 
+            duration: 180000, // 3分钟
+            message: '灵气潮汐来袭！全体弟子修炼速度提升200%，持续3分钟！'
+        },
+        penalty: {}
+    },
+    {
+        name: '心魔入侵',
+        description: '心魔入侵，弟子们心神不宁，修炼受阻',
+        type: 'curse',
+        difficulty: 'hard',
+        reward: { 
+            reputation: 80,
+            message: '成功抵御心魔入侵，宗门声望大增！'
+        },
+        penalty: { 
+            globalCultivationPenalty: 0.5, 
+            duration: 240000, // 4分钟
+            message: '心魔入侵影响！全体弟子修炼速度降低50%，持续4分钟！'
+        }
+    },
+    {
+        name: '灵石矿脉',
+        description: '发现大型灵石矿脉，宗门财富激增',
+        type: 'discovery',
+        difficulty: 'medium',
+        reward: { 
+            spiritStones: 500,
+            message: '发现灵石矿脉！获得500灵石！'
+        },
+        penalty: { 
+            reputation: -20,
+            message: '过度开采引起其他势力不满，声望-20'
+        }
+    },
+    {
+        name: '丹药风暴',
+        description: '天地间丹药精华汇聚，弟子们修为大进',
+        type: 'miracle',
+        difficulty: 'rare',
+        reward: { 
+            randomBreakthrough: 3,
+            message: '丹药风暴来袭！随机3名弟子修为大进！'
+        },
+        penalty: { 
+            spiritStones: -200,
+            message: '吸收丹药精华消耗200灵石'
+        }
+    },
+    {
+        name: '劫难降临',
+        description: '天地劫难降临，宗门损失惨重',
+        type: 'catastrophe',
+        difficulty: 'hard',
+        reward: { 
+            reputation: 150,
+            message: '成功渡过劫难，宗门声望大增！'
+        },
+        penalty: { 
+            spiritStones: -300,
+            randomInjury: 2,
+            message: '劫难降临！损失300灵石，2名弟子受伤！'
+        }
+    },
+    {
+        name: '仙人指路',
+        description: '神秘仙人现身指路，弟子们受益匪浅',
+        type: 'legendary',
+        difficulty: 'legendary',
+        reward: { 
+            globalRealmBoost: 1,
+            randomTechnique: 2,
+            reputation: 200,
+            message: '仙人指路！全体弟子境界提升，2名弟子获得功法！'
+        },
+        penalty: {}
     }
 ];
 
