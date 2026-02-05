@@ -745,7 +745,8 @@ export function setupButtonListeners(callbacks) {
         techniqueHallBtn: () => callbacks.onTechniqueHall(),
         pastRecordsBtn: () => callbacks.onPastRecords(),
         eventsBtn: () => callbacks.onEvents(),
-        regionBtn: () => callbacks.onRegion()
+        regionBtn: () => callbacks.onRegion(),
+        changeNameBtn: () => callbacks.onChangeName && callbacks.onChangeName()
     };
     
     Object.entries(buttons).forEach(([id, handler]) => {

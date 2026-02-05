@@ -676,7 +676,8 @@ class CultivationGame {
             onTreasury: () => this.handleTreasury(),
             onPastRecords: () => this.handlePastRecords(),
             onEvents: () => this.handleEvents(),
-            onRegion: () => this.handleRegion()
+            onRegion: () => this.handleRegion(),
+            onChangeName: () => this.handleChangeName()
         });
     }
     
@@ -727,6 +728,81 @@ class CultivationGame {
         }
         
         console.log(`突破尝试: ${gameState.playerRealm}`);
+    }
+    
+    // 处理修改名称
+    handleChangeName() {
+        const modal = document.getElementById('changeNameModal');
+        const newSectNameInput = document.getElementById('newSectName');
+        const newPlayerNameInput = document.getElementById('newPlayerName');
+        
+        // 预填充当前名称
+        newSectNameInput.value = gameState.sectName;
+        newPlayerNameInput.value = gameState.playerName;
+        
+        // 显示模态框
+        modal.classList.remove('hidden');
+        
+        // 设置事件监听器
+        this.setupChangeNameModal();
+    }
+    
+    // 设置修改名称模态框事件
+    setupChangeNameModal() {
+        const confirmBtn = document.getElementById('confirmChangeNameBtn');
+        const cancelBtn = document.getElementById('cancelChangeNameBtn');
+        const closeBtn = document.getElementById('closeChangeNameModal');
+        
+        // 移除旧的事件监听器
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newCloseBtn = closeBtn.cloneNode(true);
+        
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        
+        // 添加新的事件监听器
+        newConfirmBtn.addEventListener('click', () => this.confirmChangeName());
+        newCancelBtn.addEventListener('click', () => this.closeChangeNameModal());
+        newCloseBtn.addEventListener('click', () => this.closeChangeNameModal());
+    }
+    
+    // 确认修改名称
+    confirmChangeName() {
+        const newSectName = document.getElementById('newSectName').value.trim();
+        const newPlayerName = document.getElementById('newPlayerName').value.trim();
+        
+        if (!newSectName || !newPlayerName) {
+            alert('请填写完整的宗门名称和玩家姓名！');
+            return;
+        }
+        
+        const oldSectName = gameState.sectName;
+        const oldPlayerName = gameState.playerName;
+        
+        // 更新名称
+        gameState.sectName = newSectName;
+        gameState.playerName = newPlayerName;
+        
+        // 刷新显示
+        updateDisplay(gameState);
+        
+        // 添加日志
+        if (oldSectName !== newSectName) {
+            addLog(`[改名] 宗门名称从"${oldSectName}"改为"${newSectName}"`, 'text-purple-400');
+        }
+        if (oldPlayerName !== newPlayerName) {
+            addLog(`[改名] 玩家姓名从"${oldPlayerName}"改为"${newPlayerName}"`, 'text-purple-400');
+        }
+        
+        // 关闭模态框
+        this.closeChangeNameModal();
+    }
+    
+    // 关闭修改名称模态框
+    closeChangeNameModal() {
+        document.getElementById('changeNameModal').classList.add('hidden');
     }
     
     // 处理招募弟子
