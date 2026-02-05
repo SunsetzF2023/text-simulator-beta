@@ -34,10 +34,12 @@ export function updateDisplay(gameState) {
     const spiritStones = document.getElementById('spiritStones');
     const breakthroughPills = document.getElementById('breakthroughPills');
     const reputation = document.getElementById('reputation');
+    const disciples = document.getElementById('disciples');
     
     if (spiritStones) spiritStones.textContent = gameState.spiritStones || 0;
     if (breakthroughPills) breakthroughPills.textContent = gameState.breakthroughPills || 0;
     if (reputation) reputation.textContent = gameState.reputation || 0;
+    if (disciples) disciples.textContent = gameState.disciples.filter(d => d.alive).length || 0;
     
     // 更新影响力信息
     updateInfluenceDisplay(gameState);
