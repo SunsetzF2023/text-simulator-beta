@@ -735,10 +735,10 @@ class CultivationGame {
     // 触发魔门入侵
     triggerDemonInvasion(aliveDisciples) {
         const demonSects = [
-            { name: '血魔宗', description: '修炼血魔功的邪派宗门', powerMultiplier: 0.8 },
-            { name: '天魔教', description: '信奉天魔的邪恶组织', powerMultiplier: 0.9 },
-            { name: '幽魂殿', description: '收集魂魄的阴邪宗门', powerMultiplier: 0.85 },
-            { name: '万毒门', description: '用毒之术冠绝天下', powerMultiplier: 0.75 }
+            { name: '血魔宗', description: '修炼血魔功的邪派宗门', powerMultiplier: 0.5 },
+            { name: '天魔教', description: '信奉天魔的邪恶组织', powerMultiplier: 0.6 },
+            { name: '幽魂殿', description: '收集魂魄的阴邪宗门', powerMultiplier: 0.55 },
+            { name: '万毒门', description: '用毒之术冠绝天下', powerMultiplier: 0.45 }
         ];
         
         const demonSect = demonSects[Math.floor(Math.random() * demonSects.length)];
@@ -757,10 +757,10 @@ class CultivationGame {
     // 触发兽潮入侵
     triggerBeastTide(aliveDisciples) {
         const beastTypes = [
-            { name: '妖狼群', description: '凶猛的妖狼群体', powerMultiplier: 0.7 },
-            { name: '毒蛇潮', description: '剧毒的毒蛇群', powerMultiplier: 0.65 },
-            { name: '鹰群来袭', description: '从天而降的妖鹰群', powerMultiplier: 0.75 },
-            { name: '猛虎下山', description: '强大的猛虎群体', powerMultiplier: 0.8 }
+            { name: '妖狼群', description: '凶猛的妖狼群体', powerMultiplier: 0.5 },
+            { name: '毒蛇潮', description: '剧毒的毒蛇群', powerMultiplier: 0.45 },
+            { name: '鹰群来袭', description: '从天而降的妖鹰群', powerMultiplier: 0.55 },
+            { name: '猛虎下山', description: '强大的猛虎群体', powerMultiplier: 0.6 }
         ];
         
         const beastType = beastTypes[Math.floor(Math.random() * beastTypes.length)];
@@ -779,7 +779,7 @@ class CultivationGame {
     // 生成敌方弟子/妖兽
     generateEnemyDisciples(totalPower, factionName, isBeast = false) {
         const enemies = [];
-        const enemyCount = Math.floor(Math.random() * 5) + 3; // 3-7个敌人
+        const enemyCount = Math.floor(Math.random() * 3) + 2; // 2-4个敌人
         
         if (isBeast) {
             // 妖兽名称库 - 按实力等级分类
@@ -908,7 +908,7 @@ class CultivationGame {
             
             // 生成魔修弟子
             selectedNames.forEach((demonName, i) => {
-                const enemyPower = totalPower / enemyCount * (0.8 + Math.random() * 0.4);
+                const enemyPower = totalPower / enemyCount * (0.6 + Math.random() * 0.4);
                 
                 // 根据名称确定境界
                 let realm;
