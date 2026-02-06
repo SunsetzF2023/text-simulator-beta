@@ -1355,7 +1355,7 @@ export class Disciple {
             
             // 多维度战力计算
             // 基础战力 × 品质倍数 × 等级倍数 × 类型倍数 × 匹配倍数
-            const baseCombatPower = technique.combatBonus || 1.0;
+            const baseCombatPower = technique.basePower || 1.0;
             const qualityMultiplier = quality.combatMultiplier || 1.0;
             const levelMultiplier = level.combatBonus || 1.0;
             const typeMultiplier = typeBonus.combatBonus || 1.0;
@@ -1417,7 +1417,7 @@ export class Disciple {
             level: this.getTechniqueLevel(technique.name),
             isCurrent: this.currentTechnique?.name === technique.name,
             matchBonus: this.getTechniqueMatchBonus(technique),
-            powerBonus: Math.floor(technique.basePower * TECHNIQUE_QUALITIES[technique.quality].multiplier * this.getTechniqueLevel(technique.name).powerBonus * this.getTechniqueMatchBonus(technique))
+            powerBonus: Math.floor(technique.basePower * TECHNIQUE_QUALITIES[technique.quality].combatMultiplier * this.getTechniqueLevel(technique.name).combatBonus * this.getTechniqueMatchBonus(technique))
         }));
     }
 }
