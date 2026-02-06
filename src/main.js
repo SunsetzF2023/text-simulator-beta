@@ -1191,13 +1191,16 @@ class CultivationGame {
             const ourPower = ourFighter.getCombatPower();
             const enemyPower = enemyFighter.power;
             
+            // 生成战斗场景和对话
+            this.generateBattleScene(ourFighter, enemyFighter, round, battleLog);
+            
             // 计算个体战斗结果
             const ourWinChance = ourPower / (ourPower + enemyPower);
             const ourWins = Math.random() < ourWinChance;
             
             if (ourWins) {
                 // 我方胜利，敌方单位阵亡
-                battleLog.push(`[战斗] ${ourFighter.name}击败${enemyFighter.name}！`);
+                this.generateVictoryScene(ourFighter, enemyFighter, round, battleLog);
                 
                 const enemyIndex = enemySurvivors.indexOf(enemyFighter);
                 if (enemyIndex > -1) {
@@ -1206,7 +1209,7 @@ class CultivationGame {
                 }
             } else {
                 // 敌方胜利，我方弟子阵亡
-                battleLog.push(`[战斗] ${ourFighter.name}被${enemyFighter.name}击败！`);
+                this.generateDefeatScene(ourFighter, enemyFighter, round, battleLog);
                 
                 const ourIndex = ourSurvivors.indexOf(ourFighter);
                 if (ourIndex > -1) {
