@@ -56,57 +56,6 @@ function updateInfluenceDisplay(gameState) {
     }
 }
 
-// 计算战力
-function calculateCombatPower(disciple) {
-    if (!disciple.alive) return 0;
-    
-    // 基础战力：天赋 × 10 (天赋范围1-100，所以基础战力10-1000)
-    let power = disciple.talent * 10;
-    
-    // 修为加成：修为 × 2 (修为0-100，所以加成0-200)
-    power += disciple.cultivation * 2;
-    
-    // 境界加成：根据境界等级大幅提升
-    const realmIndex = REALMS.indexOf(disciple.realm);
-    if (realmIndex >= 0) {
-        // 炼气期：0-10
-        // 筑基期：11-20 (+100基础)
-        // 金丹期：21-30 (+300基础)
-        // 元婴期：31-40 (+600基础)
-        // 化神期：41-50 (+1000基础)
-        if (realmIndex >= 11 && realmIndex <= 20) { // 筑基
-            power += 100;
-        } else if (realmIndex >= 21 && realmIndex <= 30) { // 金丹
-            power += 300;
-        } else if (realmIndex >= 31 && realmIndex <= 40) { // 元婴
-            power += 600;
-        } else if (realmIndex >= 41 && realmIndex <= 50) { // 化神
-            power += 1000;
-        }
-    }
-    
-    // 体质加成：特殊体质提供额外加成
-    if (disciple.constitution && disciple.constitution.combat) {
-        power *= disciple.constitution.combat; // 体质加成是乘数
-    }
-    
-    // 忠诚度加成：忠诚度越高，发挥越稳定 (0-10)
-    power += disciple.loyalty / 10;
-    
-    // 家世背景加成：小幅加成
-    if (disciple.familyBackground && disciple.familyBackground.bonus) {
-        const bonus = disciple.familyBackground.bonus;
-        if (bonus.spiritStones) {
-            power += Math.min(bonus.spiritStones, 50); // 最多加50
-        }
-        if (bonus.reputation) {
-            power += Math.min(bonus.reputation * 2, 100); // 最多加100
-        }
-    }
-    
-    return Math.floor(power);
-}
-
 // 生成弟子携带宝物
 function generateTreasures(disciple) {
     const treasures = [];
@@ -177,7 +126,7 @@ function createDiscipleCard(disciple, gameState) {
             <div class="${statusColor}">
                 <div class="font-bold">${disciple.name}${taskStatus}</div>
                 <div class="text-xs">${disciple.realm} | ${disciple.spiritRoot}灵根</div>
-                <div class="text-xs">天赋: ${disciple.talent.toFixed(1)} | 忠诚: ${disciple.loyalty}</div>
+                <div class="text-xs">天赋: ${disciple.talent.toFixed(1)} | 战力: ${disciple.getCombatPower()}</div>
             </div>
             <div class="text-xs text-amber-300">
                 ${disciple.alive ? (disciple.injured ? '受伤' : '健康') : '已故'}
@@ -199,8 +148,8 @@ export function showDiscipleDetails(disciple, gameState) {
     
     if (!modal || !details) return;
     
-    // 计算战力
-    const combatPower = calculateCombatPower(disciple);
+    // 计算战力 - 使用弟子的完整战力计算方法
+    const combatPower = disciple.getCombatPower();
     
     details.innerHTML = `
         <div class="grid grid-cols-2 gap-4">
@@ -228,12 +177,6 @@ export function showDiscipleDetails(disciple, gameState) {
                 </p>
                 <p><span class="text-amber-300">战力:</span> <span class="text-red-400 font-bold text-lg">${combatPower}</span></p>
                 <p><span class="text-amber-300">天赋:</span> <span class="text-orange-400">${disciple.talent.toFixed(1)}/100</span></p>
-                <p><span class="text-amber-300">忠诚度:</span> 
-                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                        <div class="bg-green-500 h-2 rounded-full" style="width: ${disciple.loyalty}%"></div>
-                    </div>
-                    <span class="text-green-400">${disciple.loyalty}/100</span>
-                </p>
                 <p><span class="text-amber-300">状态:</span> 
                     <span class="${disciple.alive ? (disciple.injured ? 'text-yellow-400' : 'text-green-400') : 'text-red-400'} font-bold">
                         ${disciple.alive ? (disciple.injured ? '🏥 受伤治疗中' : (disciple.onTask ? '⚡ 任务执行中' : '✅ 正常')) : '💀 已故'}
@@ -1970,11 +1913,7 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
                 gameState.treasury[category].splice(itemIndex, 1);
             }
             
-            // 移除忠诚度系统，改为战斗力加成
-            const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
-            disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
-            
-            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}，战斗力+${combatBonus}`, 'text-green-400');
+            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}`, 'text-green-400');
         } else {
             // 境界不足，物品保留在宝库中
             addLog(`[宝库] ${disciple.name}境界不足，无法使用《${item.name}》`, 'text-red-400');
