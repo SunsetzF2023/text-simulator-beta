@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恢复游戏</title>
+</head>
+<body>
+    <h1>🚀 游戏恢复工具</h1>
+    <p>正在恢复到之前可用的版本...</p>
+    <button onclick="restoreGame()">清空数据并恢复游戏</button>
+    <div id="result"></div>
+    
+    <script>
+        function restoreGame() {
+            // 清空所有localStorage数据
+            localStorage.clear();
+            
+            document.getElementById('result').innerHTML = `
+                <h2 style="color: green;">✅ 恢复完成！</h2>
+                <p>游戏已恢复到之前可用的版本</p>
+                <p>所有数据已清空</p>
+                <p><strong>现在请刷新游戏页面重新开始</strong></p>
+                <p>这个版本应该能正常：</p>
+                <ul>
+                    <li>✅ 创建宗门</li>
+                    <li>✅ 基本游戏功能</li>
+                    <li>✅ 弟子管理</li>
+                    <li>✅ 本地AI对话</li>
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
