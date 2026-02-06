@@ -2784,6 +2784,10 @@ window.switchTechnique = function(discipleId, techniqueName) {
     if (disciple.switchTechnique(techniqueName)) {
         showDiscipleDetails(disciple, gameState);
         addLog(`[功法] ${disciple.name}开始修炼${techniqueName}`, 'text-blue-400');
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     }
 };
 
@@ -2805,6 +2809,10 @@ window.practiceTechnique = function(discipleId) {
         if (result.levelUp) {
             addLog(`[功法] ${disciple.name}的${result.technique}修炼至${result.newLevel}！`, 'text-green-400');
         }
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     }
 };
 
@@ -2823,6 +2831,10 @@ window.learnTechnique = function(discipleId, techniqueName) {
     if (disciple.learnTechnique(techniqueData)) {
         showDiscipleDetails(disciple, gameState);
         addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     } else {
         addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
     }
