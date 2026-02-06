@@ -31,7 +31,6 @@ export class Disciple {
         this.realm = '凡人';
         this.cultivation = 0;
         this.talent = Math.random() * 100; // 0-100的天赋值
-        this.loyalty = Math.floor(Math.random() * 30) + 70; // 70-100忠诚度
         this.alive = true;
         this.injured = false;
         this.onTask = false;
@@ -248,7 +247,12 @@ export class Disciple {
             basePower += this.temporaryBonus.combat;
         }
         
-        // 宝物加成
+        // 宝物加成（新的combatPower属性）
+        if (this.combatPower) {
+            basePower += this.combatPower;
+        }
+        
+        // 旧的宝物加成（保持兼容性）
         if (this.powerBonus) {
             basePower += this.powerBonus;
         }

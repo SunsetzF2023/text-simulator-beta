@@ -1970,10 +1970,11 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
                 gameState.treasury[category].splice(itemIndex, 1);
             }
             
-            // 增加忠诚度
-            disciple.loyalty = Math.min(100, disciple.loyalty + 5);
+            // 移除忠诚度系统，改为战斗力加成
+            const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+            disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
             
-            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}，忠诚度+5`, 'text-green-400');
+            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}，战斗力+${combatBonus}`, 'text-green-400');
         } else {
             // 境界不足，物品保留在宝库中
             addLog(`[宝库] ${disciple.name}境界不足，无法使用《${item.name}》`, 'text-red-400');
@@ -2046,48 +2047,10 @@ function applyTreasureEffect(item, disciple) {
 
 // 应用丹药效果
 function applyPillEffect(item, disciple) {
-    switch (item.name) {
-        case '聚气丹':
-            disciple.cultivation += 20;
-            addLog(`[丹药] ${disciple.name}服用聚气丹，修为+20`, 'text-green-400');
-            break;
-        case '筑基丹':
-            disciple.cultivation += 50;
-            addLog(`[丹药] ${disciple.name}服用筑基丹，修为+50`, 'text-green-400');
-            break;
-        case '金丹丸':
-            disciple.cultivation += 100;
-            addLog(`[丹药] ${disciple.name}服用金丹丸，修为+100`, 'text-green-400');
-            break;
-        case '洗髓丹':
-            // 改善体质
-            if (disciple.talent < 90) {
-                disciple.talent = Math.min(90, disciple.talent + 10);
-                addLog(`[丹药] ${disciple.name}服用洗髓丹，天赋+10`, 'text-purple-400');
-            }
-            break;
-        case '换骨丹':
-            // 改善灵根
-            disciple.spiritRoot = upgradeSpiritRoot(disciple.spiritRoot);
-            addLog(`[丹药] ${disciple.name}服用换骨丹，灵根提升为${disciple.spiritRoot}`, 'text-blue-400');
-            break;
-        case '破障丹':
-            // 增加突破成功率
-            if (!disciple.breakthroughBonus) disciple.breakthroughBonus = 0;
-            disciple.breakthroughBonus += 0.2;
-            addLog(`[丹药] ${disciple.name}服用破障丹，突破成功率+20%`, 'text-yellow-400');
-            break;
-        case '回血丹':
-            if (disciple.injured) {
-                disciple.heal();
-                addLog(`[丹药] ${disciple.name}服用了回血丹，伤势恢复`, 'text-green-400');
-            }
-            break;
-        default:
-            // 通用丹药效果
-            disciple.cultivation += 10;
-            addLog(`[丹药] ${disciple.name}服用了${item.name}，修为+10`, 'text-green-400');
-    }
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[丹药] ${disciple.name}服用${item.name}，战斗力+${combatBonus}`, 'text-green-400');
 }
 
 // 应用武器效果
@@ -2095,44 +2058,24 @@ function applyWeaponEffect(item, disciple) {
     // 为弟子添加武器属性
     if (!disciple.weapon) disciple.weapon = {};
     
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
     disciple.weapon = {
         name: item.name,
         rarity: item.rarity,
-        combatBonus: getCombatBonusByRarity(item.rarity)
+        combatBonus: combatBonus
     };
     
-    const combatBonus = disciple.weapon.combatBonus;
     addLog(`[武器] ${disciple.name}装备了${item.name}，战斗力+${combatBonus}`, 'text-red-400');
 }
 
 // 应用材料效果
 function applyMaterialEffect(item, disciple) {
-    switch (item.name) {
-        case '千年灵草':
-            disciple.cultivation += 30;
-            addLog(`[材料] ${disciple.name}使用了千年灵草，修为+30`, 'text-green-400');
-            break;
-        case '万年玄铁':
-            // 可以用来锻造武器，暂时增加战斗力
-            if (!disciple.temporaryBonus) disciple.temporaryBonus = {};
-            disciple.temporaryBonus.combat = (disciple.temporaryBonus.combat || 0) + 15;
-            addLog(`[材料] ${disciple.name}获得了万年玄铁，战斗力+15`, 'text-red-400');
-            break;
-        case '雷击木':
-            // 雷系修士加成
-            if (disciple.spiritRoot === '雷') {
-                disciple.cultivation += 40;
-                addLog(`[材料] ${disciple.name}使用雷击木，修为+40（雷系灵根加成）`, 'text-cyan-400');
-            } else {
-                disciple.cultivation += 20;
-                addLog(`[材料] ${disciple.name}使用了雷击木，修为+20`, 'text-green-400');
-            }
-            break;
-        default:
-            // 通用材料效果
-            disciple.cultivation += 15;
-            addLog(`[材料] ${disciple.name}使用了${item.name}，修为+15`, 'text-green-400');
-    }
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[材料] ${disciple.name}使用了${item.name}，战斗力+${combatBonus}`, 'text-green-400');
 }
 
 // 检查弟子境界是否满足要求
@@ -2160,222 +2103,10 @@ function checkRealmRequirement(disciple, requiredRealm) {
 
 // 应用其他物品效果
 function applyOtherEffect(item, disciple) {
-    switch (item.name) {
-        case '功法秘籍':
-            // 增加修炼速度
-            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
-            disciple.cultivationBonus += 0.1;
-            addLog(`[功法] ${disciple.name}学习了功法秘籍，修炼速度+10%`, 'text-purple-400');
-            break;
-        case '修炼心得':
-            disciple.cultivation += 25;
-            addLog(`[心得] ${disciple.name}研读修炼心得，修为+25`, 'text-green-400');
-            break;
-        case '护身符':
-            // 减少受伤概率
-            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
-            disciple.injuryReduction += 0.2;
-            addLog(`[护符] ${disciple.name}佩戴了护身符，受伤概率-20%`, 'text-blue-400');
-            break;
-        case '灵兽契约':
-            // 获得灵兽伙伴 - 金丹期可解锁
-            if (!checkRealmRequirement(disciple, '金丹期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到金丹期才能签订灵兽契约`, 'text-red-400');
-                // 退回物品到宝库
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '灵兽伙伴',
-                type: '凡兽',
-                combatBonus: 15,
-                cultivationBonus: 0.1,
-                specialAbility: '守护'
-            };
-            addLog(`[灵兽] ${disciple.name}与灵兽签订契约，战斗力+15，修炼速度+10%`, 'text-cyan-400');
-            break;
-        case '妖狐幼崽':
-            // 低级灵兽 - 筑基期可解锁
-            if (!checkRealmRequirement(disciple, '筑基期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到筑基期才能收服妖狐`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '妖狐伙伴',
-                type: '妖兽',
-                combatBonus: 12,
-                cultivationBonus: 0.08,
-                specialAbility: '魅惑'
-            };
-            addLog(`[妖兽] ${disciple.name}收服了妖狐幼崽，战斗力+12，修炼速度+8%`, 'text-pink-400');
-            break;
-        case '灵蛇':
-            // 中级灵兽 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到元婴期才能收服灵蛇`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '灵蛇伙伴',
-                type: '灵兽',
-                combatBonus: 20,
-                cultivationBonus: 0.12,
-                specialAbility: '剧毒'
-            };
-            addLog(`[灵兽] ${disciple.name}收服了灵蛇，战斗力+20，修炼速度+12%`, 'text-green-400');
-            break;
-        case '风狼':
-            // 中级灵兽 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到元婴期才能收服风狼`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '风狼伙伴',
-                type: '灵兽',
-                combatBonus: 18,
-                cultivationBonus: 0.15,
-                specialAbility: '速度'
-            };
-            addLog(`[灵兽] ${disciple.name}收服了风狼，战斗力+18，修炼速度+15%`, 'text-cyan-400');
-            break;
-        case '青龙幼崽':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能收服青龙`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '青龙伙伴',
-                type: '神兽',
-                combatBonus: 35,
-                cultivationBonus: 0.2,
-                specialAbility: '水系加成'
-            };
-            // 青龙特殊效果：水系灵根弟子额外加成
-            if (disciple.spiritRoot === '水') {
-                disciple.spiritBeast.combatBonus += 8;
-                disciple.spiritBeast.cultivationBonus += 0.05;
-                addLog(`[神兽] ${disciple.name}收服了青龙，水系灵根共鸣！战斗力+43，修炼速度+25%`, 'text-blue-400');
-            } else {
-                addLog(`[神兽] ${disciple.name}收服了青龙，战斗力+35，修炼速度+20%`, 'text-blue-400');
-            }
-            break;
-        case '白虎精魄':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得白虎精魄`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '白虎伙伴',
-                type: '凶兽',
-                combatBonus: 30,
-                cultivationBonus: 0.08,
-                specialAbility: '杀伐加成'
-            };
-            addLog(`[凶兽] ${disciple.name}获得了白虎精魄，战斗力+30，修炼速度+8%`, 'text-red-400');
-            break;
-        case '朱雀之羽':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得朱雀之羽`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '朱雀伙伴',
-                type: '神鸟',
-                combatBonus: 28,
-                cultivationBonus: 0.15,
-                specialAbility: '火系加成'
-            };
-            // 朱雀特殊效果：火系灵根弟子额外加成
-            if (disciple.spiritRoot === '火') {
-                disciple.spiritBeast.combatBonus += 6;
-                disciple.spiritBeast.cultivationBonus += 0.05;
-                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，火系灵根共鸣！战斗力+34，修炼速度+20%`, 'text-orange-400');
-            } else {
-                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，战斗力+28，修炼速度+15%`, 'text-orange-400');
-            }
-            break;
-        case '玄武鳞片':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得玄武鳞片`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '玄武伙伴',
-                type: '神兽',
-                combatBonus: 25,
-                cultivationBonus: 0.12,
-                specialAbility: '绝对防御'
-            };
-            // 玄武特殊效果：大幅减少受伤概率
-            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
-            disciple.injuryReduction += 0.3;
-            addLog(`[神兽] ${disciple.name}获得了玄武鳞片，战斗力+25，修炼速度+12%，受伤概率-30%`, 'text-teal-400');
-            break;
-        case '麒麟血':
-            // 传说级物品 - 大乘期可解锁
-            if (!checkRealmRequirement(disciple, '大乘期')) {
-                addLog(`[圣兽] ${disciple.name}境界不足，需要达到大乘期才能获得麒麟血脉`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '麒麟伙伴',
-                type: '圣兽',
-                combatBonus: 40,
-                cultivationBonus: 0.2,
-                specialAbility: '祥瑞之力'
-            };
-            // 麒麟特殊效果：全面提升
-            if (disciple.talent < 90) {
-                disciple.talent = Math.min(90, disciple.talent + 3);
-                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，天赋+3，战斗力+40，修炼速度+20%`, 'text-yellow-400');
-            } else {
-                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，战斗力+40，修炼速度+20%`, 'text-yellow-400');
-            }
-            break;
-        case '修仙秘典':
-            // 传说功法 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[秘典] ${disciple.name}境界不足，需要达到元婴期才能研读修仙秘典`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
-            disciple.cultivationBonus += 0.2;
-            disciple.cultivation += 40;
-            addLog(`[秘典] ${disciple.name}研读修仙秘典，修为+40，修炼速度+20%`, 'text-purple-400');
-            break;
-        case '仙丹':
-            // 传说丹药 - 合体期可解锁
-            if (!checkRealmRequirement(disciple, '合体期')) {
-                addLog(`[仙丹] ${disciple.name}境界不足，需要达到合体期才能服用仙丹`, 'text-red-400');
-                return false;
-            }
-            disciple.cultivation += 150;
-            if (disciple.talent < 85) {
-                disciple.talent = Math.min(85, disciple.talent + 5);
-                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+150，天赋+5`, 'text-gold-400');
-            } else {
-                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+150`, 'text-gold-400');
-            }
-            break;
-        default:
-            // 通用效果
-            disciple.cultivation += 10;
-            addLog(`[宝物] ${disciple.name}获得了${item.name}，修为+10`, 'text-green-400');
-    }
-    return true; // 成功应用效果
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[宝物] ${disciple.name}获得了${item.name}，战斗力+${combatBonus}`, 'text-purple-400');
 }
 
 // 升级灵根

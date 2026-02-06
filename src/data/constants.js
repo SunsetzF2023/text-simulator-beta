@@ -372,62 +372,62 @@ export const SECT_STYLE_BONUSES = {
 // 坊市商品配置
 export const MARKET_ITEMS = [
     // 基础物品
-    { name: '下品灵石', type: 'resource', basePrice: 1, rarity: 'common', description: '最基础的修炼资源' },
-    { name: '中品灵石', type: 'resource', basePrice: 10, rarity: 'uncommon', description: '品质较好的灵石' },
-    { name: '上品灵石', type: 'resource', basePrice: 100, rarity: 'rare', description: '高品质灵石，修炼效果极佳' },
+    { name: '下品灵石', type: 'resource', basePrice: 1, rarity: 'common', description: '最基础的修炼资源', combatPower: 15 },
+    { name: '中品灵石', type: 'resource', basePrice: 10, rarity: 'uncommon', description: '品质较好的灵石', combatPower: 45 },
+    { name: '上品灵石', type: 'resource', basePrice: 100, rarity: 'rare', description: '高品质灵石，修炼效果极佳', combatPower: 120 },
     
     // 丹药
-    { name: '回血丹', type: 'pill', basePrice: 5, rarity: 'common', description: '快速恢复伤势' },
-    { name: '聚气丹', type: 'pill', basePrice: 15, rarity: 'uncommon', description: '短时间内提升修炼效率' },
-    { name: '破障丹', type: 'pill', basePrice: 50, rarity: 'rare', description: '增加突破成功率' },
-    { name: '筑基丹', type: 'pill', basePrice: 200, rarity: 'epic', description: '筑基期必备丹药' },
+    { name: '回血丹', type: 'pill', basePrice: 5, rarity: 'common', description: '快速恢复伤势', combatPower: 20 },
+    { name: '聚气丹', type: 'pill', basePrice: 15, rarity: 'uncommon', description: '短时间内提升修炼效率', combatPower: 55 },
+    { name: '破障丹', type: 'pill', basePrice: 50, rarity: 'rare', description: '增加突破成功率', combatPower: 150 },
+    { name: '筑基丹', type: 'pill', basePrice: 200, rarity: 'epic', description: '筑基期必备丹药', combatPower: 350 },
     
     // 法器
-    { name: '木剑', type: 'weapon', basePrice: 8, rarity: 'common', description: '新手修士的基础武器' },
-    { name: '铁剑', type: 'weapon', basePrice: 25, rarity: 'uncommon', description: '坚固的铁制长剑' },
-    { name: '灵剑', type: 'weapon', basePrice: 80, rarity: 'rare', description: '蕴含灵气的法剑' },
-    { name: '飞剑', type: 'weapon', basePrice: 300, rarity: 'epic', description: '可御使飞行的高级法器' },
+    { name: '木剑', type: 'weapon', basePrice: 8, rarity: 'common', description: '新手修士的基础武器', combatPower: 25 },
+    { name: '铁剑', type: 'weapon', basePrice: 25, rarity: 'uncommon', description: '坚固的铁制长剑', combatPower: 70 },
+    { name: '灵剑', type: 'weapon', basePrice: 80, rarity: 'rare', description: '蕴含灵气的法剑', combatPower: 180 },
+    { name: '飞剑', type: 'weapon', basePrice: 300, rarity: 'epic', description: '可御使飞行的高级法器', combatPower: 420 },
     
     // 防具
-    { name: '布衣', type: 'armor', basePrice: 5, rarity: 'common', description: '简单的防护衣物' },
-    { name: '皮甲', type: 'armor', basePrice: 20, rarity: 'uncommon', description: '兽皮制成的护甲' },
-    { name: '法袍', type: 'armor', basePrice: 60, rarity: 'rare', description: '蕴含法力的道袍' },
-    { name: '护身符', type: 'talisman', basePrice: 40, rarity: 'rare', description: '可抵挡一次致命攻击' },
+    { name: '布衣', type: 'armor', basePrice: 5, rarity: 'common', description: '简单的防护衣物', combatPower: 18 },
+    { name: '皮甲', type: 'armor', basePrice: 20, rarity: 'uncommon', description: '兽皮制成的护甲', combatPower: 65 },
+    { name: '法袍', type: 'armor', basePrice: 60, rarity: 'rare', description: '蕴含法力的道袍', combatPower: 160 },
+    { name: '护身符', type: 'talisman', basePrice: 40, rarity: 'rare', description: '可抵挡一次致命攻击', combatPower: 140 },
     
     // 功法秘籍（使用新的功法系统）
-    { name: '引气诀(无属性)', type: 'technique', basePrice: 200, rarity: 'common', description: '最基础的引气功法，适合初学者' },
-    { name: '炼体术(土)', type: 'technique', basePrice: 250, rarity: 'common', description: '强化肉身的粗浅功法' },
-    { name: '御风步(风)', type: 'technique', basePrice: 300, rarity: 'common', description: '提升速度的身法' },
-    { name: '碎石拳(土)', type: 'technique', basePrice: 350, rarity: 'common', description: '刚猛的拳法' },
-    { name: '凝火术(火)', type: 'technique', basePrice: 320, rarity: 'common', description: '凝聚火焰攻击' },
-    { name: '聚水诀(水)', type: 'technique', basePrice: 280, rarity: 'common', description: '操控水流的防御功法' },
-    { name: '锐金指(金)', type: 'technique', basePrice: 400, rarity: 'common', description: '锋锐的指法' },
-    { name: '青木诀(木)', type: 'technique', basePrice: 260, rarity: 'common', description: '促进恢复的木系功法' },
+    { name: '引气诀(无属性)', type: 'technique', basePrice: 200, rarity: 'common', description: '最基础的引气功法，适合初学者', combatPower: 85 },
+    { name: '炼体术(土)', type: 'technique', basePrice: 250, rarity: 'common', description: '强化肉身的粗浅功法', combatPower: 95 },
+    { name: '御风步(风)', type: 'technique', basePrice: 300, rarity: 'common', description: '提升速度的身法', combatPower: 110 },
+    { name: '碎石拳(土)', type: 'technique', basePrice: 350, rarity: 'common', description: '刚猛的拳法', combatPower: 120 },
+    { name: '凝火术(火)', type: 'technique', basePrice: 320, rarity: 'common', description: '凝聚火焰攻击', combatPower: 115 },
+    { name: '聚水诀(水)', type: 'technique', basePrice: 280, rarity: 'common', description: '操控水流的防御功法', combatPower: 100 },
+    { name: '锐金指(金)', type: 'technique', basePrice: 400, rarity: 'common', description: '锋锐的指法', combatPower: 130 },
+    { name: '青木诀(木)', type: 'technique', basePrice: 260, rarity: 'common', description: '促进恢复的木系功法', combatPower: 90 },
     // 玄阶功法
-    { name: '五行遁法(无属性)', type: 'technique', basePrice: 1200, rarity: 'uncommon', description: '借助五行元素遁走的身法' },
-    { name: '烈阳掌(火)', type: 'technique', basePrice: 1500, rarity: 'uncommon', description: '炽热如阳的掌法' },
-    { name: '玄冰盾(冰)', type: 'technique', basePrice: 1300, rarity: 'uncommon', description: '坚不可摧的冰系防御' },
-    { name: '奔雷剑法(雷)', type: 'technique', basePrice: 1800, rarity: 'uncommon', description: '迅如雷霆的剑法' },
-    { name: '厚土诀(土)', type: 'technique', basePrice: 1400, rarity: 'uncommon', description: '大地般的防御功法' },
-    { name: '回春术(木)', type: 'technique', basePrice: 1100, rarity: 'uncommon', description: '快速恢复伤势的治疗术' },
+    { name: '五行遁法(无属性)', type: 'technique', basePrice: 1200, rarity: 'uncommon', description: '借助五行元素遁走的身法', combatPower: 280 },
+    { name: '烈阳掌(火)', type: 'technique', basePrice: 1500, rarity: 'uncommon', description: '炽热如阳的掌法', combatPower: 320 },
+    { name: '玄冰盾(冰)', type: 'technique', basePrice: 1300, rarity: 'uncommon', description: '坚不可摧的冰系防御', combatPower: 300 },
+    { name: '奔雷剑法(雷)', type: 'technique', basePrice: 1800, rarity: 'uncommon', description: '迅如雷霆的剑法', combatPower: 350 },
+    { name: '厚土诀(土)', type: 'technique', basePrice: 1400, rarity: 'uncommon', description: '大地般的防御功法', combatPower: 290 },
+    { name: '回春术(木)', type: 'technique', basePrice: 1100, rarity: 'uncommon', description: '快速恢复伤势的治疗术', combatPower: 260 },
     
     // 地阶功法
-    { name: '九转玄功(无属性)', type: 'technique', basePrice: 55000, rarity: 'rare', description: '玄奥无比的顶级功法' },
-    { name: '焚天诀(火)', type: 'technique', basePrice: 65000, rarity: 'rare', description: '可焚烧天地的火法' },
-    { name: '万剑归宗(金)', type: 'technique', basePrice: 75000, rarity: 'rare', description: '剑道至高绝学' },
-    { name: '不动明王身(土)', type: 'technique', basePrice: 58000, rarity: 'rare', description: '金刚不坏的护体神功' },
+    { name: '九转玄功(无属性)', type: 'technique', basePrice: 55000, rarity: 'rare', description: '玄奥无比的顶级功法', combatPower: 850 },
+    { name: '焚天诀(火)', type: 'technique', basePrice: 65000, rarity: 'rare', description: '可焚烧天地的火法', combatPower: 920 },
+    { name: '万剑归宗(金)', type: 'technique', basePrice: 75000, rarity: 'rare', description: '剑道至高绝学', combatPower: 980 },
+    { name: '不动明王身(土)', type: 'technique', basePrice: 58000, rarity: 'rare', description: '金刚不坏的护体神功', combatPower: 880 },
     // 天阶改为非卖品
-    { name: '混沌开天诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '传说中开天辟地的无上功法' },
-    { name: '轮回诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '涉及轮回法则的禁忌功法' },
-    { name: '古玉', type: 'special', basePrice: 80, rarity: 'rare', description: '蕴含神秘力量的古玉' },
-    { name: '地图残片', type: 'special', basePrice: 60, rarity: 'rare', description: '可能指向某个秘境的地图' },
-    { name: '天机符', type: 'special', basePrice: 200, rarity: 'epic', description: '可占卜吉凶的法符' },
+    { name: '混沌开天诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '传说中开天辟地的无上功法', combatPower: 1500 },
+    { name: '轮回诀(无属性)', type: 'technique', basePrice: 0, rarity: 'epic', description: '涉及轮回法则的禁忌功法', combatPower: 1400 },
+    { name: '古玉', type: 'special', basePrice: 80, rarity: 'rare', description: '蕴含神秘力量的古玉', combatPower: 175 },
+    { name: '地图残片', type: 'special', basePrice: 60, rarity: 'rare', description: '可能指向某个秘境的地图', combatPower: 155 },
+    { name: '天机符', type: 'special', basePrice: 200, rarity: 'epic', description: '可占卜吉凶的法符', combatPower: 380 },
     
-    // 垃圾物品（增加趣味性）
-    { name: '破碗', type: 'junk', basePrice: 1, rarity: 'junk', description: '一个破了的碗，好像没什么用' },
-    { name: '石头', type: 'junk', basePrice: 1, rarity: 'junk', description: '普通的石头' },
-    { name: '树枝', type: 'junk', basePrice: 1, rarity: 'junk', description: '一根干枯的树枝' },
-    { name: '废纸', type: 'junk', basePrice: 1, rarity: 'junk', description: '写了些奇怪符号的废纸' }
+    // 垃圾物品（增加趣味性，但给予少量战斗力）
+    { name: '破碗', type: 'junk', basePrice: 1, rarity: 'junk', description: '一个破了的碗，好像没什么用', combatPower: 3 },
+    { name: '石头', type: 'junk', basePrice: 1, rarity: 'junk', description: '普通的石头', combatPower: 2 },
+    { name: '树枝', type: 'junk', basePrice: 1, rarity: 'junk', description: '一根干枯的树枝', combatPower: 1 },
+    { name: '废纸', type: 'junk', basePrice: 1, rarity: 'junk', description: '写了些奇怪符号的废纸', combatPower: 4 }
 ];
 
 // 拍卖会配置

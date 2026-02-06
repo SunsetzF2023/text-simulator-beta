@@ -472,8 +472,7 @@ class CultivationGame {
             name: this.generateNPCName(),
             realm: discipleRealm,
             power: this.calculateNPCPower(discipleRealm, '普通'),
-            talent: 70 + Math.random() * 30, // 70-100天赋
-            loyalty: 80 + Math.random() * 20 // 80-100忠诚度
+            talent: 70 + Math.random() * 30 // 70-100天赋
         };
     }
     
@@ -1637,7 +1636,6 @@ class CultivationGame {
             // 高天赋弟子
             newDisciple.talent = 70 + Math.random() * 25; // 70-95天赋
             newDisciple.cultivation = Math.random() * 50; // 额外修为
-            newDisciple.loyalty = 80 + Math.random() * 15; // 初始忠诚度更高
         }
         
         // 添加到弟子列表
@@ -2198,12 +2196,18 @@ class CultivationGame {
         }
     }
     
-    // 弟子倒戈事件
+    // 弟子倒戈事件（简化为随机事件）
     triggerDiscipleDefection(newRealm) {
-        const eligibleDisciples = gameState.disciples.filter(d => d.alive && d.loyalty < 85);
+        const eligibleDisciples = gameState.disciples.filter(d => d.alive);
         
         if (eligibleDisciples.length === 0) {
-            addLog(`[道心] ${gameState.playerName}突破引发道心考验，弟子们忠诚坚定，无人动摇！`, 'text-blue-400');
+            addLog(`[道心] ${gameState.playerName}突破引发道心考验，弟子们意志坚定，无人动摇！`, 'text-blue-400');
+            return;
+        }
+        
+        // 10%概率有弟子动摇
+        if (Math.random() > 0.1) {
+            addLog(`[道心] ${gameState.playerName}突破引发道心考验，弟子们意志坚定，无人动摇！`, 'text-blue-400');
             return;
         }
         
@@ -3294,10 +3298,7 @@ CultivationGame.prototype.calculateSectStrength = function() {
             // 天赋加成
             const talentBonus = disciple.talent / 100;
             
-            // 忠诚度加成
-            const loyaltyBonus = disciple.loyalty / 100;
-            
-            strength += baseStrength * (1 + talentBonus) * loyaltyBonus;
+            strength += baseStrength * (1 + talentBonus);
         }
     });
     
@@ -3570,8 +3571,6 @@ CultivationGame.prototype.resolveDiscipleConflict = function(conflict, disciples
                 const victim = lowRank[Math.floor(Math.random() * lowRank.length)];
                 
                 participants = [bully, victim];
-                bully.loyalty += conflict.effects.bully.loyalty;
-                victim.loyalty += conflict.effects.victim.loyalty;
                 
                 if (Math.random() < conflict.effects.victim.injured) {
                     victim.injured = true;
@@ -3593,9 +3592,7 @@ CultivationGame.prototype.resolveDiscipleConflict = function(conflict, disciples
                 const winner = Math.random() < 0.5 ? challenger : opponent;
                 const loser = winner === challenger ? opponent : challenger;
                 
-                winner.loyalty += conflict.effects.winner.loyalty;
                 winner.cultivation = Math.min(100, winner.cultivation + conflict.effects.winner.cultivation);
-                loser.loyalty += conflict.effects.loser.loyalty;
                 
                 if (Math.random() < conflict.effects.loser.injured) {
                     loser.injured = true;
@@ -3616,8 +3613,6 @@ CultivationGame.prototype.resolveDiscipleConflict = function(conflict, disciples
                 const lover2 = female[Math.floor(Math.random() * female.length)];
                 
                 participants = [lover1, lover2];
-                lover1.loyalty += conflict.effects.participants.loyalty;
-                lover2.loyalty += conflict.effects.participants.loyalty;
                 lover1.cultivation = Math.min(100, lover1.cultivation + conflict.effects.participants.cultivation);
                 lover2.cultivation = Math.min(100, lover2.cultivation + conflict.effects.participants.cultivation);
                 
@@ -3634,8 +3629,6 @@ CultivationGame.prototype.resolveDiscipleConflict = function(conflict, disciples
                 const victim = potentialVictims[Math.floor(Math.random() * potentialVictims.length)];
                 
                 participants = [saboteur, victim];
-                saboteur.loyalty += conflict.effects.saboteur.loyalty;
-                victim.loyalty += conflict.effects.victim.loyalty;
                 
                 if (Math.random() < conflict.effects.victim.injured) {
                     victim.injured = true;
@@ -3653,7 +3646,6 @@ CultivationGame.prototype.resolveDiscipleConflict = function(conflict, disciples
             
             participants = selectedAlliance;
             selectedAlliance.forEach(member => {
-                member.loyalty += conflict.effects.members.loyalty;
                 member.cultivation = Math.min(100, member.cultivation + conflict.effects.members.cultivation);
             });
             
