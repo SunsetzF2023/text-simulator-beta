@@ -1892,6 +1892,12 @@ class CultivationGame {
             colorClass = 'text-red-400';
         } else if (event.type === 'pill' || event.type === 'treasure' || event.type === 'weapon') {
             colorClass = 'text-yellow-400';
+        } else if (event.type === 'daily_life') {
+            colorClass = 'text-gray-400'; // 日常活动用灰色
+        } else if (event.type === 'emotional') {
+            colorClass = 'text-pink-400'; // 情感事件用粉色
+        } else if (event.type === 'complete_technique') {
+            colorClass = 'text-purple-400 font-bold'; // 完整功法用紫色加粗
         }
         
         addLog(`[弟子] ${event.message}`, colorClass);

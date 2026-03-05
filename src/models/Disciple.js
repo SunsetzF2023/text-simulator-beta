@@ -1,5 +1,6 @@
 import { REALMS, SPIRIT_ROOTS, TRAITS, SPECIAL_CONSTITUTIONS, FAMILY_BACKGROUNDS, APPEARANCES, PERSONALITIES, SURNAMES, NAMES, AFFECTION_CONFIG, AI_CONFIG, DESTINIES, BASE_TECHNIQUES, TECHNIQUE_LEVELS, TECHNIQUE_QUALITIES, TECHNIQUE_TYPE_BONUS, ELEMENT_COUNTERS } from '../data/constants.js';
 import { advancedAI } from '../ai/AdvancedAI.js';
+import { generateInitialTalents, calculateTalentEffects, applyTalentBonus } from '../utils/TalentSystem.js';
 
 // 数据迁移函数 - 修复旧格式的天赋词条
 function migrateTraitsData(disciple) {
@@ -197,6 +198,9 @@ export class Disciple {
         const talentBonus = 0.5 + (this.talent / 100); // 0.5-1.5的加成
         baseSpeed *= talentBonus;
         
+        // **词条加成** - 这是新增的！
+        baseSpeed = applyTalentBonus(baseSpeed, 'cultivation', this.traits);
+        
         return baseSpeed;
     }
     
@@ -256,6 +260,9 @@ export class Disciple {
         if (this.powerBonus) {
             basePower += this.powerBonus;
         }
+        
+        // **词条加成** - 这是新增的！
+        basePower = applyTalentBonus(basePower, 'combat', this.traits);
         
         return Math.floor(basePower);
     }
@@ -476,20 +483,11 @@ export class Disciple {
         return null;
     }
     
-    // 生成词条
+    // 生成词条 - 现在使用 TalentSystem 的新词条库
     generateTraits() {
-        const traits = [];
-        const traitCount = Math.floor(Math.random() * 3) + 1; // 1-3个词条
-        
-        for (let i = 0; i < traitCount; i++) {
-            const availableTraits = TRAITS.filter(t => !traits.includes(t.name));
-            if (availableTraits.length > 0) {
-                const trait = availableTraits[Math.floor(Math.random() * availableTraits.length)];
-                traits.push(trait.name); // 只存储名称
-            }
-        }
-        
-        return traits;
+        // 使用新的 TalentSystem 生成词条
+        // 返回词条名称数组，这些名称可以在 TalentSystem 中查询效果
+        return generateInitialTalents(Math.floor(Math.random() * 3) + 1); // 1-3个词条
     }
     
     // 添加个人日志
@@ -510,28 +508,186 @@ export class Disciple {
     triggerAutonomousEvent(allDisciples, gameTick) {
         const events = [];
         
-        // 修炼事件
-        if (Math.random() < 0.3) {
+        // 修炼事件（高概率）
+        if (Math.random() < 0.6) { // 提高到60%
             events.push(this.triggerCultivationEvent());
         }
         
-        // 社交事件
-        if (Math.random() < 0.2) {
+        // 社交事件（中概率）
+        if (Math.random() < 0.4) { // 提高到40%
             events.push(this.triggerSocialEvent(allDisciples));
         }
         
         // 外出历练事件（获得资源）
-        if (Math.random() < 0.30) { // 30%概率触发外出历练
+        if (Math.random() < 0.5) { // 提高到50%
             events.push(this.triggerExpeditionEvent());
         }
         
+        // 日常活动事件（新增）
+        if (Math.random() < 0.7) { // 70%概率触发日常活动
+            events.push(this.triggerDailyLifeEvent());
+        }
+        
+        // 情感事件（新增）
+        if (Math.random() < 0.3) { // 30%概率触发情感事件
+            events.push(this.triggerEmotionalEvent(allDisciples));
+        }
+        
         // 奇遇事件（小概率获得功法）
-        if (Math.random() < 0.05) { // 5%概率触发奇遇
+        if (Math.random() < 0.1) { // 提高到10%
             events.push(this.triggerAdventureEvent());
         }
         
         // 返回第一个有效事件
         return events.find(event => event !== null);
+    }
+    
+    // 触发日常活动事件
+    triggerDailyLifeEvent() {
+        const dailyEvents = [
+            {
+                type: 'daily_life',
+                message: `${this.name}在宗门内打扫庭院，保持环境整洁。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在厨房帮忙准备饭菜，学习烹饪技巧。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在药圃中照料灵草，学习基础药理知识。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在练功场练习基础招式，巩固修为根基。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在藏书阁阅读典籍，增进修仙见识。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在丹房观摩炼丹，学习丹药知识。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在锻造房观摩兵器制作，了解装备知识。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在宗门广场晨练，保持身体状态。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}帮助宗门处理杂务，体现责任心。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在茶室品茶静思，调整心境。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在花园中赏花，陶冶情操。`,
+                discipleId: this.id
+            },
+            {
+                type: 'daily_life',
+                message: `${this.name}在观星台夜观星象，感悟天地之道。`,
+                discipleId: this.id
+            }
+        ];
+        
+        return dailyEvents[Math.floor(Math.random() * dailyEvents.length)];
+    }
+    
+    // 触发情感事件
+    triggerEmotionalEvent(allDisciples) {
+        const emotionalEvents = [
+            {
+                type: 'emotional',
+                message: `${this.name}感到修为有所精进，心情愉悦。`,
+                discipleId: this.id,
+                effect: { loyalty: 1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}思念家人，但为了修仙道路坚持下来。`,
+                discipleId: this.id,
+                effect: { loyalty: -1, cultivation: 2 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}对宗主的教导心怀感激。`,
+                discipleId: this.id,
+                effect: { loyalty: 2 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}与同门师兄弟切磋，增进感情。`,
+                discipleId: this.id,
+                effect: { loyalty: 1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}感到修为遇到瓶颈，有些沮丧。`,
+                discipleId: this.id,
+                effect: { loyalty: -1, cultivation: -1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}看到宗门发展壮大，感到自豪。`,
+                discipleId: this.id,
+                effect: { loyalty: 2 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}在月下独坐，思考人生意义。`,
+                discipleId: this.id,
+                effect: { cultivation: 1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}帮助新来的弟子适应宗门生活。`,
+                discipleId: this.id,
+                effect: { loyalty: 1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}回忆起入门时的初心，更加坚定。`,
+                discipleId: this.id,
+                effect: { loyalty: 2, cultivation: 1 }
+            },
+            {
+                type: 'emotional',
+                message: `${this.name}对未来的修仙道路充满期待。`,
+                discipleId: this.id,
+                effect: { cultivation: 2 }
+            }
+        ];
+        
+        const event = emotionalEvents[Math.floor(Math.random() * emotionalEvents.length)];
+        
+        // 应用效果
+        if (event.effect) {
+            if (event.effect.loyalty) {
+                this.loyalty = Math.max(0, Math.min(100, this.loyalty + event.effect.loyalty));
+            }
+            if (event.effect.cultivation) {
+                this.cultivation = Math.max(0, Math.min(100, this.cultivation + event.effect.cultivation));
+            }
+        }
+        
+        return event;
     }
     
     // 触发奇遇事件

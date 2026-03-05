@@ -310,7 +310,7 @@ export const BASE_TECHNIQUES = [
 // 游戏配置
 export const GAME_CONFIG = {
     AUTO_SAVE_INTERVAL: 30000, // 30秒自动保存
-    DISCIPLE_EVENT_INTERVAL: 15000, // 15秒弟子事件
+    DISCIPLE_EVENT_INTERVAL: 3000, // 3秒弟子事件（大幅提高频率）
     AUTO_GAIN_INTERVAL: 1000, // 1秒自动增益
     INITIAL_SPIRIT_STONES: 10,
     RECRUIT_COST: 10,
