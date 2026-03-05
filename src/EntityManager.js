@@ -12,8 +12,8 @@ export class EntityManager {
     return d;
   }
 
-  update(timestamp) {
-    // 为每个实体调用更新方法
-    this.state.disciples.forEach(d => d.update && d.update(timestamp));
+  update(delta=0) {
+    // 为每个实体调用更新方法，可传递时间差
+    this.state.disciples.forEach(d => d.update && d.update(delta));
   }
 }

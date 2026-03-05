@@ -5,8 +5,9 @@ export class SectSystem {
     this.entities = entities;
   }
 
-  update(timestamp) {
+  update(delta=0) {
     // 更新宗门内部逻辑（例如清算任务、处理事件等）
+    // delta 可让系统根据停顿时间推进状态
   }
 
   recruitDisciple() {

@@ -245,12 +245,12 @@
 
     <!-- 弟子详情模态框 -->
     <div id="discipleModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4">
-            <div class="flex justify-between items-center mb-4">
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-amber-200">弟子详情</h2>
                 <button id="closeDiscipleModal" class="text-amber-300 hover:text-amber-200 text-2xl">&times;</button>
             </div>
-            <div id="discipleDetails">
+            <div id="discipleDetails" class="overflow-y-auto flex-1">
                 <!-- 弟子详情将在这里动态生成 -->
             </div>
         </div>

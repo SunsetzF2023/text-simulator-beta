@@ -56,57 +56,6 @@ function updateInfluenceDisplay(gameState) {
     }
 }
 
-// 计算战力
-function calculateCombatPower(disciple) {
-    if (!disciple.alive) return 0;
-    
-    // 基础战力：天赋 × 10 (天赋范围1-100，所以基础战力10-1000)
-    let power = disciple.talent * 10;
-    
-    // 修为加成：修为 × 2 (修为0-100，所以加成0-200)
-    power += disciple.cultivation * 2;
-    
-    // 境界加成：根据境界等级大幅提升
-    const realmIndex = REALMS.indexOf(disciple.realm);
-    if (realmIndex >= 0) {
-        // 炼气期：0-10
-        // 筑基期：11-20 (+100基础)
-        // 金丹期：21-30 (+300基础)
-        // 元婴期：31-40 (+600基础)
-        // 化神期：41-50 (+1000基础)
-        if (realmIndex >= 11 && realmIndex <= 20) { // 筑基
-            power += 100;
-        } else if (realmIndex >= 21 && realmIndex <= 30) { // 金丹
-            power += 300;
-        } else if (realmIndex >= 31 && realmIndex <= 40) { // 元婴
-            power += 600;
-        } else if (realmIndex >= 41 && realmIndex <= 50) { // 化神
-            power += 1000;
-        }
-    }
-    
-    // 体质加成：特殊体质提供额外加成
-    if (disciple.constitution && disciple.constitution.combat) {
-        power *= disciple.constitution.combat; // 体质加成是乘数
-    }
-    
-    // 忠诚度加成：忠诚度越高，发挥越稳定 (0-10)
-    power += disciple.loyalty / 10;
-    
-    // 家世背景加成：小幅加成
-    if (disciple.familyBackground && disciple.familyBackground.bonus) {
-        const bonus = disciple.familyBackground.bonus;
-        if (bonus.spiritStones) {
-            power += Math.min(bonus.spiritStones, 50); // 最多加50
-        }
-        if (bonus.reputation) {
-            power += Math.min(bonus.reputation * 2, 100); // 最多加100
-        }
-    }
-    
-    return Math.floor(power);
-}
-
 // 生成弟子携带宝物
 function generateTreasures(disciple) {
     const treasures = [];
@@ -155,7 +104,10 @@ export function updateDiscipleList(gameState) {
     
     discipleList.innerHTML = '';
     
-    gameState.disciples.forEach(disciple => {
+    // 只显示活着的弟子
+    const aliveDisciples = gameState.disciples.filter(disciple => disciple.alive);
+    
+    aliveDisciples.forEach(disciple => {
         const discipleCard = createDiscipleCard(disciple, gameState);
         discipleList.appendChild(discipleCard);
     });
@@ -174,7 +126,7 @@ function createDiscipleCard(disciple, gameState) {
             <div class="${statusColor}">
                 <div class="font-bold">${disciple.name}${taskStatus}</div>
                 <div class="text-xs">${disciple.realm} | ${disciple.spiritRoot}灵根</div>
-                <div class="text-xs">天赋: ${disciple.talent.toFixed(1)} | 忠诚: ${disciple.loyalty}</div>
+                <div class="text-xs">天赋: ${disciple.talent.toFixed(1)} | 战力: ${disciple.getCombatPower()}</div>
             </div>
             <div class="text-xs text-amber-300">
                 ${disciple.alive ? (disciple.injured ? '受伤' : '健康') : '已故'}
@@ -196,8 +148,8 @@ export function showDiscipleDetails(disciple, gameState) {
     
     if (!modal || !details) return;
     
-    // 计算战力
-    const combatPower = calculateCombatPower(disciple);
+    // 计算战力 - 使用弟子的完整战力计算方法
+    const combatPower = disciple.getCombatPower();
     
     details.innerHTML = `
         <div class="grid grid-cols-2 gap-4">
@@ -225,12 +177,6 @@ export function showDiscipleDetails(disciple, gameState) {
                 </p>
                 <p><span class="text-amber-300">战力:</span> <span class="text-red-400 font-bold text-lg">${combatPower}</span></p>
                 <p><span class="text-amber-300">天赋:</span> <span class="text-orange-400">${disciple.talent.toFixed(1)}/100</span></p>
-                <p><span class="text-amber-300">忠诚度:</span> 
-                    <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-                        <div class="bg-green-500 h-2 rounded-full" style="width: ${disciple.loyalty}%"></div>
-                    </div>
-                    <span class="text-green-400">${disciple.loyalty}/100</span>
-                </p>
                 <p><span class="text-amber-300">状态:</span> 
                     <span class="${disciple.alive ? (disciple.injured ? 'text-yellow-400' : 'text-green-400') : 'text-red-400'} font-bold">
                         ${disciple.alive ? (disciple.injured ? '🏥 受伤治疗中' : (disciple.onTask ? '⚡ 任务执行中' : '✅ 正常')) : '💀 已故'}
@@ -1028,12 +974,51 @@ window.selectDiscipleForTechnique = function(discipleId, techniqueName) {
     document.querySelector('.fixed').remove();
 };
 
-// 应用物品效果（存入宝库）
+// 应用物品效果（存入宝库或功法堂）
 function applyItemEffect(item, gameState) {
     console.log('应用物品效果，物品:', item);
     console.log('当前宝库:', gameState.treasury);
     
-    // 将物品存入宝库
+    // 如果是功法，存入功法堂
+    if (item.type === 'technique') {
+        // 检查功法堂是否已有此功法
+        const existingTechnique = gameState.techniqueHall.find(t => t.name === item.name);
+        if (existingTechnique) {
+            existingTechnique.stock++;
+            addLog(`[功法堂] ${item.name}库存+1，当前库存：${existingTechnique.stock}`, 'text-blue-400');
+        } else {
+            // 从BASE_TECHNIQUES中查找功法数据
+            const techniqueData = BASE_TECHNIQUES.find(t => t.name === item.name);
+            if (techniqueData) {
+                gameState.techniqueHall.push({
+                    ...techniqueData,
+                    stock: 1,
+                    obtainedFrom: item.obtainedFrom || '拍卖会获得',
+                    purchaseDate: Date.now()
+                });
+                addLog(`[功法堂] ${item.name}已存入功法堂`, 'text-purple-400');
+            } else {
+                // 如果找不到基础数据，创建基础功法记录
+                gameState.techniqueHall.push({
+                    name: item.name,
+                    quality: item.rarity === 'legendary' ? '天阶' : 
+                            item.rarity === 'epic' ? '地阶' : 
+                            item.rarity === 'rare' ? '玄阶' : '黄阶',
+                    attribute: '无属性',
+                    type: 'special',
+                    basePower: 100,
+                    description: item.description || '神秘的功法秘籍',
+                    stock: 1,
+                    obtainedFrom: item.obtainedFrom || '拍卖会获得',
+                    purchaseDate: Date.now()
+                });
+                addLog(`[功法堂] ${item.name}已存入功法堂`, 'text-purple-400');
+            }
+        }
+        return;
+    }
+    
+    // 其他物品存入宝库
     const category = getCategoryByType(item.type);
     console.log('物品分类:', category);
     
@@ -1554,11 +1539,213 @@ function endAuction(gameState) {
 // 显示功法阁
 export function showTechniqueHall(gameState) {
     const modal = document.getElementById('techniqueHallModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        // TODO: 实现功法阁内容
-        console.log('显示功法阁');
+    const techniqueFragments = document.getElementById('techniqueFragments');
+    
+    if (!modal || !techniqueFragments) return;
+    
+    // 清空并重新生成功法堂内容
+    techniqueFragments.innerHTML = '';
+    
+    if (gameState.techniqueHall && gameState.techniqueHall.length > 0) {
+        gameState.techniqueHall.forEach((technique, index) => {
+            const techniqueCard = document.createElement('div');
+            techniqueCard.className = 'bg-slate-800 p-4 rounded ancient-border';
+            
+            const qualityColor = {
+                '凡阶': 'text-gray-400',
+                '黄阶': 'text-yellow-400', 
+                '玄阶': 'text-blue-400',
+                '地阶': 'text-green-400',
+                '天阶': 'text-purple-400'
+            }[technique.quality] || 'text-gray-400';
+            
+            techniqueCard.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-lg font-bold ${qualityColor}">${technique.name}</h4>
+                    <span class="text-sm text-amber-300">库存: ${technique.stock || 1}</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-300 mb-3">
+                    <p><strong>品质：</strong><span class="${qualityColor}">${technique.quality}</span></p>
+                    <p><strong>属性：</strong>${technique.attribute}</p>
+                    <p><strong>类型：</strong>${technique.type}</p>
+                    <p><strong>战力加成：</strong>+${technique.basePower}</p>
+                    <p><strong>描述：</strong>${technique.description}</p>
+                    <p class="text-xs text-amber-200"><strong>来源：</strong>${technique.obtainedFrom || '未知'}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="assign-technique-btn px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded" 
+                            data-technique-name="${technique.name}" data-technique-index="${index}">
+                        📚 分配给弟子
+                    </button>
+                    ${technique.stock > 1 ? `
+                        <button class="batch-assign-btn px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded" 
+                                data-technique-name="${technique.name}" data-technique-index="${index}">
+                            🎯 批量分配
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            techniqueFragments.appendChild(techniqueCard);
+        });
+        
+        // 绑定分配按钮事件
+        bindTechniqueAssignmentEvents(gameState);
+        
+    } else {
+        techniqueFragments.innerHTML = `
+            <div class="col-span-2 text-center py-8">
+                <p class="text-gray-400 text-lg mb-2">📚 功法堂空空如也</p>
+                <p class="text-gray-500 text-sm">前往坊市或拍卖会购买功法秘籍</p>
+            </div>
+        `;
     }
+    
+    modal.classList.remove('hidden');
+    console.log('显示功法堂');
+}
+
+// 绑定功法分配事件
+function bindTechniqueAssignmentEvents(gameState) {
+    // 单个分配按钮
+    document.querySelectorAll('.assign-technique-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const techniqueName = e.target.dataset.techniqueName;
+            showTechniqueAssignmentDialog(techniqueName, gameState, false);
+        };
+    });
+    
+    // 批量分配按钮
+    document.querySelectorAll('.batch-assign-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const techniqueName = e.target.dataset.techniqueName;
+            showTechniqueAssignmentDialog(techniqueName, gameState, true);
+        };
+    });
+}
+
+// 显示功法分配对话框
+function showTechniqueAssignmentDialog(techniqueName, gameState, isBatch = false) {
+    const technique = gameState.techniqueHall.find(t => t.name === techniqueName);
+    if (!technique) return;
+    
+    const eligibleDisciples = gameState.disciples.filter(d => d.alive && !d.onTask);
+    const availableDisciples = isBatch ? 
+        eligibleDisciples.filter(d => !d.techniques.some(t => t.name === techniqueName)) :
+        eligibleDisciples;
+    
+    if (availableDisciples.length === 0) {
+        addLog(`[功法] 没有合适的弟子可以分配${techniqueName}`, 'text-red-400');
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-slate-900 ancient-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <h3 class="text-xl font-bold text-amber-200 mb-4">📚 分配功法：${techniqueName}</h3>
+            <div class="mb-4 p-3 bg-slate-800 rounded">
+                <p class="text-gray-300"><strong>品质：</strong><span class="text-purple-400">${technique.quality}</span></p>
+                <p class="text-gray-300"><strong>库存：</strong><span class="text-green-400">${technique.stock}</span></p>
+                <p class="text-gray-300"><strong>描述：</strong>${technique.description}</p>
+            </div>
+            <div class="mb-4">
+                <p class="text-amber-200 mb-2">选择要分配的弟子：</p>
+                <div class="space-y-2 max-h-60 overflow-y-auto">
+                    ${availableDisciples.map(disciple => `
+                        <label class="flex items-center p-2 bg-slate-800 rounded hover:bg-slate-700 cursor-pointer">
+                            <input type="${isBatch ? 'checkbox' : 'radio'}" 
+                                   name="discipleSelection" 
+                                   value="${disciple.id}"
+                                   class="mr-3">
+                            <div class="flex-1">
+                                <span class="text-amber-200 font-bold">${disciple.name}</span>
+                                <span class="text-gray-400 ml-2">${disciple.realm}</span>
+                                <span class="text-blue-400 ml-2">战力:${disciple.getCombatPower()}</span>
+                                ${disciple.techniques.some(t => t.name === techniqueName) ? 
+                                    '<span class="text-yellow-400 ml-2">[已学会]</span>' : ''}
+                            </div>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirmAssignment" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded">
+                    确认分配
+                </button>
+                <button id="cancelAssignment" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded">
+                    取消
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 绑定事件
+    document.getElementById('confirmAssignment').onclick = () => {
+        const selectedDisciples = isBatch ? 
+            Array.from(document.querySelectorAll('input[name="discipleSelection"]:checked')).map(input => input.value) :
+            [document.querySelector('input[name="discipleSelection"]:checked')?.value].filter(Boolean);
+        
+        if (selectedDisciples.length === 0) {
+            addLog('[功法] 请选择至少一名弟子', 'text-red-400');
+            return;
+        }
+        
+        executeTechniqueAssignment(selectedDisciples, technique, gameState);
+        document.body.removeChild(modal);
+    };
+    
+    document.getElementById('cancelAssignment').onclick = () => {
+        document.body.removeChild(modal);
+    };
+}
+
+// 执行功法分配
+function executeTechniqueAssignment(discipleIds, technique, gameState) {
+    let successCount = 0;
+    let alreadyLearnedCount = 0;
+    
+    discipleIds.forEach(discipleId => {
+        const disciple = gameState.disciples.find(d => d.id == discipleId);
+        if (!disciple) return;
+        
+        if (disciple.techniques.some(t => t.name === technique.name)) {
+            alreadyLearnedCount++;
+            return;
+        }
+        
+        if (disciple.learnTechnique(technique)) {
+            // 减少库存
+            technique.stock--;
+            if (technique.stock <= 0) {
+                const index = gameState.techniqueHall.findIndex(t => t.name === technique.name);
+                if (index > -1) {
+                    gameState.techniqueHall.splice(index, 1);
+                }
+            }
+            
+            successCount++;
+        }
+    });
+    
+    if (successCount > 0) {
+        addLog(`[功法] 成功将${technique.name}分配给${successCount}名弟子！`, 'text-green-400');
+    }
+    
+    if (alreadyLearnedCount > 0) {
+        addLog(`[功法] ${alreadyLearnedCount}名弟子已经学会了${technique.name}`, 'text-yellow-400');
+    }
+    
+    if (technique.stock > 0) {
+        addLog(`[功法] ${technique.name}剩余库存：${technique.stock}`, 'text-blue-400');
+    } else {
+        addLog(`[功法] ${technique.name}已分配完毕`, 'text-purple-400');
+    }
+    
+    // 刷新功法堂显示
+    showTechniqueHall(gameState);
 }
 
 // 显示宝库
@@ -1726,10 +1913,7 @@ window.confirmGrantItem = function(category, itemIndex, discipleId) {
                 gameState.treasury[category].splice(itemIndex, 1);
             }
             
-            // 增加忠诚度
-            disciple.loyalty = Math.min(100, disciple.loyalty + 5);
-            
-            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}，忠诚度+5`, 'text-green-400');
+            addLog(`[宝库] 将《${item.name}》赐予${disciple.name}`, 'text-green-400');
         } else {
             // 境界不足，物品保留在宝库中
             addLog(`[宝库] ${disciple.name}境界不足，无法使用《${item.name}》`, 'text-red-400');
@@ -1802,48 +1986,10 @@ function applyTreasureEffect(item, disciple) {
 
 // 应用丹药效果
 function applyPillEffect(item, disciple) {
-    switch (item.name) {
-        case '聚气丹':
-            disciple.cultivation += 20;
-            addLog(`[丹药] ${disciple.name}服用聚气丹，修为+20`, 'text-green-400');
-            break;
-        case '筑基丹':
-            disciple.cultivation += 50;
-            addLog(`[丹药] ${disciple.name}服用筑基丹，修为+50`, 'text-green-400');
-            break;
-        case '金丹丸':
-            disciple.cultivation += 100;
-            addLog(`[丹药] ${disciple.name}服用金丹丸，修为+100`, 'text-green-400');
-            break;
-        case '洗髓丹':
-            // 改善体质
-            if (disciple.talent < 90) {
-                disciple.talent = Math.min(90, disciple.talent + 10);
-                addLog(`[丹药] ${disciple.name}服用洗髓丹，天赋+10`, 'text-purple-400');
-            }
-            break;
-        case '换骨丹':
-            // 改善灵根
-            disciple.spiritRoot = upgradeSpiritRoot(disciple.spiritRoot);
-            addLog(`[丹药] ${disciple.name}服用换骨丹，灵根提升为${disciple.spiritRoot}`, 'text-blue-400');
-            break;
-        case '破障丹':
-            // 增加突破成功率
-            if (!disciple.breakthroughBonus) disciple.breakthroughBonus = 0;
-            disciple.breakthroughBonus += 0.2;
-            addLog(`[丹药] ${disciple.name}服用破障丹，突破成功率+20%`, 'text-yellow-400');
-            break;
-        case '回血丹':
-            if (disciple.injured) {
-                disciple.heal();
-                addLog(`[丹药] ${disciple.name}服用了回血丹，伤势恢复`, 'text-green-400');
-            }
-            break;
-        default:
-            // 通用丹药效果
-            disciple.cultivation += 10;
-            addLog(`[丹药] ${disciple.name}服用了${item.name}，修为+10`, 'text-green-400');
-    }
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[丹药] ${disciple.name}服用${item.name}，战斗力+${combatBonus}`, 'text-green-400');
 }
 
 // 应用武器效果
@@ -1851,44 +1997,24 @@ function applyWeaponEffect(item, disciple) {
     // 为弟子添加武器属性
     if (!disciple.weapon) disciple.weapon = {};
     
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
     disciple.weapon = {
         name: item.name,
         rarity: item.rarity,
-        combatBonus: getCombatBonusByRarity(item.rarity)
+        combatBonus: combatBonus
     };
     
-    const combatBonus = disciple.weapon.combatBonus;
     addLog(`[武器] ${disciple.name}装备了${item.name}，战斗力+${combatBonus}`, 'text-red-400');
 }
 
 // 应用材料效果
 function applyMaterialEffect(item, disciple) {
-    switch (item.name) {
-        case '千年灵草':
-            disciple.cultivation += 30;
-            addLog(`[材料] ${disciple.name}使用了千年灵草，修为+30`, 'text-green-400');
-            break;
-        case '万年玄铁':
-            // 可以用来锻造武器，暂时增加战斗力
-            if (!disciple.temporaryBonus) disciple.temporaryBonus = {};
-            disciple.temporaryBonus.combat = (disciple.temporaryBonus.combat || 0) + 15;
-            addLog(`[材料] ${disciple.name}获得了万年玄铁，战斗力+15`, 'text-red-400');
-            break;
-        case '雷击木':
-            // 雷系修士加成
-            if (disciple.spiritRoot === '雷') {
-                disciple.cultivation += 40;
-                addLog(`[材料] ${disciple.name}使用雷击木，修为+40（雷系灵根加成）`, 'text-cyan-400');
-            } else {
-                disciple.cultivation += 20;
-                addLog(`[材料] ${disciple.name}使用了雷击木，修为+20`, 'text-green-400');
-            }
-            break;
-        default:
-            // 通用材料效果
-            disciple.cultivation += 15;
-            addLog(`[材料] ${disciple.name}使用了${item.name}，修为+15`, 'text-green-400');
-    }
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[材料] ${disciple.name}使用了${item.name}，战斗力+${combatBonus}`, 'text-green-400');
 }
 
 // 检查弟子境界是否满足要求
@@ -1916,222 +2042,10 @@ function checkRealmRequirement(disciple, requiredRealm) {
 
 // 应用其他物品效果
 function applyOtherEffect(item, disciple) {
-    switch (item.name) {
-        case '功法秘籍':
-            // 增加修炼速度
-            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
-            disciple.cultivationBonus += 0.1;
-            addLog(`[功法] ${disciple.name}学习了功法秘籍，修炼速度+10%`, 'text-purple-400');
-            break;
-        case '修炼心得':
-            disciple.cultivation += 25;
-            addLog(`[心得] ${disciple.name}研读修炼心得，修为+25`, 'text-green-400');
-            break;
-        case '护身符':
-            // 减少受伤概率
-            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
-            disciple.injuryReduction += 0.2;
-            addLog(`[护符] ${disciple.name}佩戴了护身符，受伤概率-20%`, 'text-blue-400');
-            break;
-        case '灵兽契约':
-            // 获得灵兽伙伴 - 金丹期可解锁
-            if (!checkRealmRequirement(disciple, '金丹期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到金丹期才能签订灵兽契约`, 'text-red-400');
-                // 退回物品到宝库
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '灵兽伙伴',
-                type: '凡兽',
-                combatBonus: 15,
-                cultivationBonus: 0.1,
-                specialAbility: '守护'
-            };
-            addLog(`[灵兽] ${disciple.name}与灵兽签订契约，战斗力+15，修炼速度+10%`, 'text-cyan-400');
-            break;
-        case '妖狐幼崽':
-            // 低级灵兽 - 筑基期可解锁
-            if (!checkRealmRequirement(disciple, '筑基期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到筑基期才能收服妖狐`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '妖狐伙伴',
-                type: '妖兽',
-                combatBonus: 12,
-                cultivationBonus: 0.08,
-                specialAbility: '魅惑'
-            };
-            addLog(`[妖兽] ${disciple.name}收服了妖狐幼崽，战斗力+12，修炼速度+8%`, 'text-pink-400');
-            break;
-        case '灵蛇':
-            // 中级灵兽 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到元婴期才能收服灵蛇`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '灵蛇伙伴',
-                type: '灵兽',
-                combatBonus: 20,
-                cultivationBonus: 0.12,
-                specialAbility: '剧毒'
-            };
-            addLog(`[灵兽] ${disciple.name}收服了灵蛇，战斗力+20，修炼速度+12%`, 'text-green-400');
-            break;
-        case '风狼':
-            // 中级灵兽 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[灵兽] ${disciple.name}境界不足，需要达到元婴期才能收服风狼`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '风狼伙伴',
-                type: '灵兽',
-                combatBonus: 18,
-                cultivationBonus: 0.15,
-                specialAbility: '速度'
-            };
-            addLog(`[灵兽] ${disciple.name}收服了风狼，战斗力+18，修炼速度+15%`, 'text-cyan-400');
-            break;
-        case '青龙幼崽':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能收服青龙`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '青龙伙伴',
-                type: '神兽',
-                combatBonus: 35,
-                cultivationBonus: 0.2,
-                specialAbility: '水系加成'
-            };
-            // 青龙特殊效果：水系灵根弟子额外加成
-            if (disciple.spiritRoot === '水') {
-                disciple.spiritBeast.combatBonus += 8;
-                disciple.spiritBeast.cultivationBonus += 0.05;
-                addLog(`[神兽] ${disciple.name}收服了青龙，水系灵根共鸣！战斗力+43，修炼速度+25%`, 'text-blue-400');
-            } else {
-                addLog(`[神兽] ${disciple.name}收服了青龙，战斗力+35，修炼速度+20%`, 'text-blue-400');
-            }
-            break;
-        case '白虎精魄':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得白虎精魄`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '白虎伙伴',
-                type: '凶兽',
-                combatBonus: 30,
-                cultivationBonus: 0.08,
-                specialAbility: '杀伐加成'
-            };
-            addLog(`[凶兽] ${disciple.name}获得了白虎精魄，战斗力+30，修炼速度+8%`, 'text-red-400');
-            break;
-        case '朱雀之羽':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得朱雀之羽`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '朱雀伙伴',
-                type: '神鸟',
-                combatBonus: 28,
-                cultivationBonus: 0.15,
-                specialAbility: '火系加成'
-            };
-            // 朱雀特殊效果：火系灵根弟子额外加成
-            if (disciple.spiritRoot === '火') {
-                disciple.spiritBeast.combatBonus += 6;
-                disciple.spiritBeast.cultivationBonus += 0.05;
-                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，火系灵根共鸣！战斗力+34，修炼速度+20%`, 'text-orange-400');
-            } else {
-                addLog(`[神鸟] ${disciple.name}获得了朱雀之羽，战斗力+28，修炼速度+15%`, 'text-orange-400');
-            }
-            break;
-        case '玄武鳞片':
-            // 高级神兽 - 化神期可解锁
-            if (!checkRealmRequirement(disciple, '化神期')) {
-                addLog(`[神兽] ${disciple.name}境界不足，需要达到化神期才能获得玄武鳞片`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '玄武伙伴',
-                type: '神兽',
-                combatBonus: 25,
-                cultivationBonus: 0.12,
-                specialAbility: '绝对防御'
-            };
-            // 玄武特殊效果：大幅减少受伤概率
-            if (!disciple.injuryReduction) disciple.injuryReduction = 0;
-            disciple.injuryReduction += 0.3;
-            addLog(`[神兽] ${disciple.name}获得了玄武鳞片，战斗力+25，修炼速度+12%，受伤概率-30%`, 'text-teal-400');
-            break;
-        case '麒麟血':
-            // 传说级物品 - 大乘期可解锁
-            if (!checkRealmRequirement(disciple, '大乘期')) {
-                addLog(`[圣兽] ${disciple.name}境界不足，需要达到大乘期才能获得麒麟血脉`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.spiritBeast) disciple.spiritBeast = {};
-            disciple.spiritBeast = {
-                name: '麒麟伙伴',
-                type: '圣兽',
-                combatBonus: 40,
-                cultivationBonus: 0.2,
-                specialAbility: '祥瑞之力'
-            };
-            // 麒麟特殊效果：全面提升
-            if (disciple.talent < 90) {
-                disciple.talent = Math.min(90, disciple.talent + 3);
-                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，天赋+3，战斗力+40，修炼速度+20%`, 'text-yellow-400');
-            } else {
-                addLog(`[圣兽] ${disciple.name}获得了麒麟血脉，战斗力+40，修炼速度+20%`, 'text-yellow-400');
-            }
-            break;
-        case '修仙秘典':
-            // 传说功法 - 元婴期可解锁
-            if (!checkRealmRequirement(disciple, '元婴期')) {
-                addLog(`[秘典] ${disciple.name}境界不足，需要达到元婴期才能研读修仙秘典`, 'text-red-400');
-                return false;
-            }
-            if (!disciple.cultivationBonus) disciple.cultivationBonus = 0;
-            disciple.cultivationBonus += 0.2;
-            disciple.cultivation += 40;
-            addLog(`[秘典] ${disciple.name}研读修仙秘典，修为+40，修炼速度+20%`, 'text-purple-400');
-            break;
-        case '仙丹':
-            // 传说丹药 - 合体期可解锁
-            if (!checkRealmRequirement(disciple, '合体期')) {
-                addLog(`[仙丹] ${disciple.name}境界不足，需要达到合体期才能服用仙丹`, 'text-red-400');
-                return false;
-            }
-            disciple.cultivation += 150;
-            if (disciple.talent < 85) {
-                disciple.talent = Math.min(85, disciple.talent + 5);
-                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+150，天赋+5`, 'text-gold-400');
-            } else {
-                addLog(`[仙丹] ${disciple.name}服用仙丹，修为+150`, 'text-gold-400');
-            }
-            break;
-        default:
-            // 通用效果
-            disciple.cultivation += 10;
-            addLog(`[宝物] ${disciple.name}获得了${item.name}，修为+10`, 'text-green-400');
-    }
-    return true; // 成功应用效果
+    const combatBonus = item.combatPower || getCombatBonusByRarity(item.rarity);
+    disciple.combatPower = (disciple.combatPower || 0) + combatBonus;
+    
+    addLog(`[宝物] ${disciple.name}获得了${item.name}，战斗力+${combatBonus}`, 'text-purple-400');
 }
 
 // 升级灵根
@@ -2870,6 +2784,10 @@ window.switchTechnique = function(discipleId, techniqueName) {
     if (disciple.switchTechnique(techniqueName)) {
         showDiscipleDetails(disciple, gameState);
         addLog(`[功法] ${disciple.name}开始修炼${techniqueName}`, 'text-blue-400');
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     }
 };
 
@@ -2891,6 +2809,10 @@ window.practiceTechnique = function(discipleId) {
         if (result.levelUp) {
             addLog(`[功法] ${disciple.name}的${result.technique}修炼至${result.newLevel}！`, 'text-green-400');
         }
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     }
 };
 
@@ -2909,6 +2831,10 @@ window.learnTechnique = function(discipleId, techniqueName) {
     if (disciple.learnTechnique(techniqueData)) {
         showDiscipleDetails(disciple, gameState);
         addLog(`[功法] ${disciple.name}学会了${techniqueData.name}！`, 'text-purple-400');
+        // 刷新主界面显示，更新弟子列表中的战力
+        if (window.game && window.game.updateDisplay) {
+            window.game.updateDisplay();
+        }
     } else {
         addLog(`[功法] ${disciple.name}已经学会了${techniqueData.name}`, 'text-gray-400');
     }

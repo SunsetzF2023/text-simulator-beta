@@ -31,7 +31,6 @@ export class Disciple {
         this.realm = '凡人';
         this.cultivation = 0;
         this.talent = Math.random() * 100; // 0-100的天赋值
-        this.loyalty = Math.floor(Math.random() * 30) + 70; // 70-100忠诚度
         this.alive = true;
         this.injured = false;
         this.onTask = false;
@@ -248,6 +247,16 @@ export class Disciple {
             basePower += this.temporaryBonus.combat;
         }
         
+        // 宝物加成（新的combatPower属性）
+        if (this.combatPower) {
+            basePower += this.combatPower;
+        }
+        
+        // 旧的宝物加成（保持兼容性）
+        if (this.powerBonus) {
+            basePower += this.powerBonus;
+        }
+        
         return Math.floor(basePower);
     }
     
@@ -360,11 +369,111 @@ export class Disciple {
         return FAMILY_BACKGROUNDS[0]; // 默认凡人
     }
     
-    // 生成姓名
+    // 生成姓名 - 智能化名字生成系统
     generateName() {
         const surname = SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
-        const name = NAMES[Math.floor(Math.random() * NAMES.length)];
+        
+        // 特殊组合：某些姓氏与特定名字的经典搭配
+        if (Math.random() < 0.15) { // 15%概率生成经典组合
+            const classicName = this.generateClassicName(surname);
+            if (classicName) {
+                return surname + classicName;
+            }
+        }
+        
+        // 根据性别和概率选择名字类型
+        let namePool;
+        let useDoubleName;
+        
+        if (this.gender === '男') {
+            // 男性名字：70%使用男性名字库，30%使用中性名字库
+            namePool = Math.random() < 0.7 ? NAMES.male : NAMES.neutral;
+            // 40%概率使用双字名，60%概率使用单字名
+            useDoubleName = Math.random() < 0.4;
+        } else {
+            // 女性名字：70%使用女性名字库，30%使用中性名字库
+            namePool = Math.random() < 0.7 ? NAMES.female : NAMES.neutral;
+            // 50%概率使用双字名，50%概率使用单字名
+            useDoubleName = Math.random() < 0.5;
+        }
+        
+        // 特殊姓氏处理：复姓通常搭配单字名
+        if (surname.length > 1) {
+            useDoubleName = false;
+            // 复姓时优先从中性名字库中选择，更显古风
+            if (Math.random() < 0.6) {
+                namePool = NAMES.neutral;
+            }
+        }
+        
+        let name;
+        if (useDoubleName) {
+            // 使用双字名
+            const doubleNames = namePool.filter(n => n.length === 2);
+            if (doubleNames.length > 0) {
+                name = doubleNames[Math.floor(Math.random() * doubleNames.length)];
+            } else {
+                // 如果没有双字名，使用单字名
+                const singleNames = namePool.filter(n => n.length === 1);
+                name = singleNames.length > 0 ? 
+                    singleNames[Math.floor(Math.random() * singleNames.length)] :
+                    namePool[Math.floor(Math.random() * namePool.length)];
+            }
+        } else {
+            // 使用单字名
+            const singleNames = namePool.filter(n => n.length === 1);
+            if (singleNames.length > 0) {
+                name = singleNames[Math.floor(Math.random() * singleNames.length)];
+            } else {
+                // 如果没有单字名，使用双字名
+                const doubleNames = namePool.filter(n => n.length === 2);
+                name = doubleNames.length > 0 ? 
+                    doubleNames[Math.floor(Math.random() * doubleNames.length)] :
+                    namePool[Math.floor(Math.random() * namePool.length)];
+            }
+        }
+        
+        // 确保名字不为空
+        if (!name) {
+            // 备用方案：从中性名字库中随机选择
+            name = NAMES.neutral[Math.floor(Math.random() * NAMES.neutral.length)];
+        }
+        
         return surname + name;
+    }
+    
+    // 生成经典名字组合
+    generateClassicName(surname) {
+        const classicCombinations = {
+            '慕容': ['紫英', '雪痕', '星河', '复', '容'],
+            '上官': ['婉儿', '明月', '清风', '云', '雪'],
+            '欧阳': ['克', '锋', '修', '雪', '云'],
+            '司马': ['相如', '迁', '光', '懿', '昭'],
+            '诸葛': ['亮', '孔明', '瞻', '云', '风'],
+            '独孤': ['求败', '剑', '影', '鸿', '云'],
+            '东方': ['不败', '朔', '白', '青', '玉'],
+            '西门': ['吹雪', '恨', '情', '柳', '月'],
+            '南宫': ['问天', '梦', '痕', '玉', '瑶'],
+            '萧': ['炎', '薰', '遥', '然', '逸'],
+            '云': ['天河', '韵', '凡', '舒', '逸'],
+            '风': ['清扬', '陵', '行', '逸', '然'],
+            '雪': ['见愁', '儿', '痕', '瑶', '琪'],
+            '月': ['如霜', '清', '影', '华', '婵'],
+            '星': ['魂', '河', '辰', '辉', '璇'],
+            '紫': ['萱', '苏', '英', '霞', '瑶'],
+            '青': ['莲', '霜', '竹', '梅', '松'],
+            '白': ['浅', '露', '霜', '雪', '云'],
+            '玄': ['墨', '玉', '清', '幽', '冥'],
+            '墨': ['尘', '玉', '痕', '心', '渊']
+        };
+        
+        if (classicCombinations[surname]) {
+            const names = classicCombinations[surname];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+        
+        // 如果没有经典组合，返回null，使用普通生成逻辑
+        return null;
     }
     
     // 生成词条
@@ -1246,7 +1355,7 @@ export class Disciple {
             
             // 多维度战力计算
             // 基础战力 × 品质倍数 × 等级倍数 × 类型倍数 × 匹配倍数
-            const baseCombatPower = technique.combatBonus || 1.0;
+            const baseCombatPower = technique.basePower || 1.0;
             const qualityMultiplier = quality.combatMultiplier || 1.0;
             const levelMultiplier = level.combatBonus || 1.0;
             const typeMultiplier = typeBonus.combatBonus || 1.0;
@@ -1308,7 +1417,7 @@ export class Disciple {
             level: this.getTechniqueLevel(technique.name),
             isCurrent: this.currentTechnique?.name === technique.name,
             matchBonus: this.getTechniqueMatchBonus(technique),
-            powerBonus: Math.floor(technique.basePower * TECHNIQUE_QUALITIES[technique.quality].multiplier * this.getTechniqueLevel(technique.name).powerBonus * this.getTechniqueMatchBonus(technique))
+            powerBonus: Math.floor(technique.basePower * TECHNIQUE_QUALITIES[technique.quality].combatMultiplier * this.getTechniqueLevel(technique.name).combatBonus * this.getTechniqueMatchBonus(technique))
         }));
     }
 }

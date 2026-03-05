@@ -5,8 +5,9 @@ export class PhysicsEngine {
     // 初始化参数
   }
 
-  update(state) {
+  update(state, delta=0) {
     // 这里可以处理时间步长、移动、事件触发等
+    // delta 参数表示自上一帧经过的毫秒数，可用于补偿后台暂停
     // 目前没有特定物理需求，留作占位
   }
 }
